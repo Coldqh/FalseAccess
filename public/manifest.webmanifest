@@ -1,0 +1,12 @@
+{
+  "name": "FALSE ACCESS",
+  "short_name": "FA//OS",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#0a0b0d",
+  "description": "Сюжетная RPG и практический тренажёр по информационной безопасности.",
+  "icons": [
+    { "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
