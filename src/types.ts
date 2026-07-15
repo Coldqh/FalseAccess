@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type AppId = 'missions' | 'academy' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'skills' | 'notes';
+export type AppId = 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'skills' | 'notes';
 
 export interface AppDefinition {
   id: AppId;

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { BookOpen, Check, CheckCircle2, ChevronLeft, ChevronRight, Code2, Copy, Eye, FileText, HelpCircle, Play, RotateCcw, TerminalSquare, WandSparkles, XCircle } from 'lucide-react';
+import { BookOpen, Check, CheckCircle2, ChevronLeft, ChevronRight, Code2, Copy, Eye, FileText, HelpCircle, MessageSquare, Play, Radio, RotateCcw, TerminalSquare, WandSparkles, XCircle } from 'lucide-react';
 import { authLog, pythonGuideSteps, pythonSolution, pythonStarter } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 
@@ -39,7 +39,7 @@ export function CodeApp() {
   const [code, setCode] = useState(progress.pythonComplete ? pythonSolution : buildCode(progress.pythonLessonStep));
   const [activeStep, setActiveStep] = useState(initialStep);
   const [runState, setRunState] = useState<RunState>(progress.pythonComplete ? 'success' : 'idle');
-  const [output, setOutput] = useState(progress.pythonComplete ? 'Failed logins: 6\n\nЛаборатория уже пройдена.' : 'Код ещё не запускался. Сначала собери программу по шагам слева.');
+  const [output, setOutput] = useState(progress.pythonComplete ? 'Failed logins: 6\n\nЛаборатория уже пройдена.' : 'Максим ждёт первую строку. Код выполняется только после нажатия RUN.');
   const [showLog, setShowLog] = useState(false);
   const [mode, setMode] = useState<'guided' | 'free'>('guided');
   const pyodideRef = useRef<any>(null);
@@ -133,40 +133,52 @@ _result = _capture.getvalue()
 
   return (
     <div className="code-app code-app-v3">
-      <aside className="lesson-panel app-scroll">
-        <div className="code-zero-header">
-          <p className="eyebrow">PYTHON / ПЕРВАЯ ПРОГРАММА</p>
-          <h3>Счётчик ошибок входа</h3>
-          <p>Ты не обязан знать код. Иди по шагам. Каждый шаг объясняет, <b>куда писать, что означает строка и зачем она нужна</b>.</p>
-          <div className="mode-switch"><button className={mode === 'guided' ? 'active' : ''} onClick={() => setMode('guided')}><BookOpen size={14} />Обучение</button><button className={mode === 'free' ? 'active' : ''} onClick={() => setMode('free')}><Code2 size={14} />Самостоятельно</button></div>
+      <aside className="lesson-panel app-scroll mentor-code-panel">
+        <header className="mentor-console-header code-mentor-header">
+          <div className="mentor-avatar">МБ<span /></div>
+          <div><strong>Максим Белов</strong><small><Radio size={11} /> демонстрация экрана</small></div>
+          <b>{completedSteps}/{pythonGuideSteps.length}</b>
+        </header>
+
+        <div className="code-zero-header mission-code-brief">
+          <p className="eyebrow">CLINIC-01 / ЗАЧЕМ НУЖЕН КОД</p>
+          <h3>Посчитать ошибки в большом журнале</h3>
+          <p>Сейчас строк мало, их можно пересчитать глазами. На работе журнал содержит тысячи записей. Скрипт повторит одну проверку для каждой строки и не устанет.</p>
+          <div className="mode-switch"><button className={mode === 'guided' ? 'active' : ''} onClick={() => setMode('guided')}><MessageSquare size={14} />С Максимом</button><button className={mode === 'free' ? 'active' : ''} onClick={() => setMode('free')}><Code2 size={14} />Самостоятельно</button></div>
         </div>
 
         {mode === 'guided' ? (
           <>
-            <div className="python-step-progress"><span>СОБРАНО</span><strong>{completedSteps}/{pythonGuideSteps.length}</strong><i><b style={{ width: `${completedSteps / pythonGuideSteps.length * 100}%` }} /></i></div>
-            <div className="syntax-index beginner-step-index">
+            <div className="mentor-chat-stream code-mentor-chat">
+              {activeStep === 0 && <div className="mentor-bubble"><span>МБ</span><p>Программа — это текстовый файл с инструкциями. Python читает его сверху вниз. Мы напишем не всё сразу, а одну понятную строку за раз.</p></div>}
+              <div className="mentor-bubble"><span>МБ</span><p>{active.why}</p></div>
+              <div className="mentor-bubble"><span>МБ</span><p>{active.instruction}</p></div>
+              {currentPassed && <div className="mentor-bubble result"><span>МБ</span><p>Строка на месте. {active.read}</p></div>}
+            </div>
+
+            <section className="live-action-card code-live-action">
+              <p className="eyebrow">ТВОЁ ДЕЙСТВИЕ / ШАГ {activeStep + 1} ИЗ {pythonGuideSteps.length}</p>
+              <div className="write-location"><FileText size={16} /><span>Пиши в центральном редакторе под меткой шага.</span><b>примерно строка {markerLine + 1}</b></div>
+              <pre>{active.snippet}</pre>
+              <div className="micro-theory"><strong>Как прочитать</strong><p>{active.read}</p></div>
+              <div className="guided-actions">
+                <button onClick={() => navigator.clipboard?.writeText(active.snippet)}><Copy size={14} />Копировать</button>
+                <button onClick={() => updateCode(insertStep(code, active))}><WandSparkles size={14} />Вставить пример</button>
+              </div>
+              <button className="primary-action full-step" onClick={checkStep}>{currentPassed ? <><Check size={16} />Передать Максиму</> : 'Проверить строку'}</button>
+            </section>
+
+            <div className="python-step-progress"><span>ПРОГРАММА СОБРАНА</span><strong>{completedSteps}/{pythonGuideSteps.length}</strong><i><b style={{ width: `${completedSteps / pythonGuideSteps.length * 100}%` }} /></i></div>
+            <div className="syntax-index beginner-step-index compact-step-list">
               {pythonGuideSteps.map((step, index) => {
                 const passed = step.check.test(code);
                 const unlocked = index <= Math.max(progress.pythonLessonStep, completedSteps);
                 return <button key={step.id} disabled={!unlocked} className={`${activeStep === index ? 'active' : ''} ${passed ? 'passed' : ''}`} onClick={() => setActiveStep(index)}><span>{passed ? <Check size={12} /> : String(index + 1).padStart(2, '0')}</span><div><strong>{step.title}</strong><small>{step.concept}</small></div><ChevronRight size={14} /></button>;
               })}
             </div>
-            <section className="guided-code-step">
-              <p className="eyebrow">ШАГ {activeStep + 1} / {pythonGuideSteps.length}</p>
-              <h3>{active.title}</h3>
-              <div className="write-location"><FileText size={16} /><span>{active.instruction}</span><b>примерно строка {markerLine + 1}</b></div>
-              <pre>{active.snippet}</pre>
-              <div className="why-code"><strong>Зачем</strong><p>{active.why}</p></div>
-              <div className="read-code"><strong>Как читать</strong><p>{active.read}</p></div>
-              <div className="guided-actions">
-                <button onClick={() => navigator.clipboard?.writeText(active.snippet)}><Copy size={14} />Копировать</button>
-                <button onClick={() => updateCode(insertStep(code, active))}><WandSparkles size={14} />Вставить пример</button>
-              </div>
-              <button className="primary-action full-step" onClick={checkStep}>{currentPassed ? <><Check size={16} />Проверить и продолжить</> : 'Проверить шаг'}</button>
-            </section>
           </>
         ) : (
-          <section className="free-mode-guide"><Code2 size={28} /><h3>Самостоятельный режим</h3><p>Собери программу без пошаговой вставки. Справа остаются проверка структуры, журнал и перевод ошибок.</p><button className="secondary-action full" onClick={() => updateCode(pythonStarter)}>Пустой учебный шаблон</button></section>
+          <section className="free-mode-guide"><Code2 size={28} /><h3>Самостоятельный режим</h3><p>Собери программу без реплик и вставки. Журнал, проверка структуры и перевод ошибок остаются доступными.</p><button className="secondary-action full" onClick={() => updateCode(pythonStarter)}>Пустой учебный шаблон</button></section>
         )}
       </aside>
 

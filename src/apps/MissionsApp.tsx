@@ -1,21 +1,18 @@
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, Check, Circle, Code2, FileText, GraduationCap, Mail, Radar, Repeat2, ShieldCheck, TerminalSquare, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BriefcaseBusiness, Check, Circle, Code2, FileText, Mail, MessageSquare, Radar, Repeat2, ShieldCheck, TerminalSquare, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { terminalObjectiveDefinitions } from '../data/content';
-import { academyLessons } from '../data/academy';
 import { useProgress } from '../system/ProgressContext';
 
 export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   const { progress } = useProgress();
-  const academyDone = progress.academyLessons.length === academyLessons.length;
   const terminalDone = terminalObjectiveDefinitions.every((item) => progress.terminalObjectives.includes(item.id));
   const clinicStages = [
-    { id: 'academy' as AppId, label: 'База с абсолютного нуля', sub: `${progress.academyLessons.length}/${academyLessons.length} уроков`, done: academyDone, unlocked: true, icon: GraduationCap },
-    { id: 'terminal' as AppId, label: 'Осмотр системы', sub: 'Linux и пути', done: terminalDone, unlocked: true, icon: TerminalSquare },
-    { id: 'code' as AppId, label: 'Первая программа', sub: 'Python по строкам', done: progress.pythonComplete, unlocked: terminalDone, icon: Code2 },
+    { id: 'terminal' as AppId, label: 'Созвон с Максимом', sub: 'Linux прямо во время дела', done: terminalDone, unlocked: true, icon: TerminalSquare },
+    { id: 'code' as AppId, label: 'Первая программа', sub: 'Python по одной строке', done: progress.pythonComplete, unlocked: terminalDone, icon: Code2 },
     { id: 'siem' as AppId, label: 'Разбор алерта', sub: 'SOC triage', done: progress.alertReviewed, unlocked: progress.pythonComplete, icon: Radar },
     { id: 'notes' as AppId, label: 'Технический отчёт', sub: 'Факты и выводы', done: progress.reportSubmitted, unlocked: progress.alertReviewed, icon: FileText },
   ];
-  const clinicComplete = clinicStages.slice(1).every((stage) => stage.done);
+  const clinicComplete = clinicStages.every((stage) => stage.done);
   const totalStages = clinicStages.length + 3;
   const completeStages = clinicStages.filter((stage) => stage.done).length + Number(progress.interviewComplete) + Number(progress.jobAccepted) + Number(progress.firstShiftComplete);
 
@@ -24,21 +21,27 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       <section className="mission-hero">
         <div>
           <p className="eyebrow">ПРОЛОГ / ОТ НУЛЯ ДО ПЕРВОЙ СМЕНЫ</p>
-          <h2>Илья ещё ничего<br />не знает</h2>
-          <p className="mission-lead">Сначала разберись, что такое файл, путь, команда, лог и программа. Потом решай дело клиники, проходи собеседование и выходи на первую смену в SOC.</p>
+          <h2>Первое дело<br />начинается сразу</h2>
+          <p className="mission-lead">Максим подключён к твоему экрану. Он объясняет только то, что нужно сейчас. После каждой реплики ты сразу вводишь команду, читаешь результат или пишешь строку программы.</p>
         </div>
-        <div className="case-stamp"><span>PROGRESS</span><strong>0.3</strong><i>{completeStages}/{totalStages}</i></div>
+        <div className="case-stamp"><span>PROGRESS</span><strong>0.3.1</strong><i>{completeStages}/{totalStages}</i></div>
       </section>
 
       <section className="mission-status-strip">
+        <div><span>КУРАТОР</span><strong>Максим Белов</strong></div>
+        <div><span>ФОРМАТ</span><strong>Диалог и практика</strong></div>
         <div><span>СТАРТ</span><strong>Абсолютный ноль</strong></div>
-        <div><span>ЦЕЛЬ</span><strong>Первая смена SOC</strong></div>
-        <div><span>РЕЖИМ</span><strong>Обучение включено</strong></div>
         <div><span>ВРЕМЯ</span><strong>60–100 мин</strong></div>
       </section>
 
+      <section className="mentor-call-card">
+        <div className="mentor-call-avatar">МБ<span /></div>
+        <div><p className="eyebrow">ЗАЩИЩЁННЫЙ ЗВОНОК / 21:20</p><h3>Максим Белов на связи</h3><p>«Не будем сначала читать курс. Открой терминал. Я скажу, что мы ищем и зачем нужна каждая команда».</p></div>
+        <button className="primary-action compact" onClick={() => openApp('terminal')}><MessageSquare size={17} />Подключиться</button>
+      </section>
+
       <section className="chapter-block">
-        <header><div><p className="eyebrow">ГЛАВА 01 / CLINIC-01</p><h3>Рабочая станция городской клиники</h3><p>Максим прислал безопасную копию журналов. Нужно понять, что произошло, и не назвать попытки входа успешным взломом без доказательств.</p></div><span className={clinicComplete ? 'done' : ''}>{clinicComplete ? 'ЗАВЕРШЕНО' : 'В РАБОТЕ'}</span></header>
+        <header><div><p className="eyebrow">ГЛАВА 01 / CLINIC-01</p><h3>Рабочая станция городской клиники</h3><p>Компьютер регистратуры тормозит. Ночью были попытки входа. Нужно разобрать копию данных и не придумать то, чего в них нет.</p></div><span className={clinicComplete ? 'done' : ''}>{clinicComplete ? 'ЗАВЕРШЕНО' : 'В РАБОТЕ'}</span></header>
         <div className="mission-timeline">
           {clinicStages.map((stage, index) => {
             const Icon = stage.icon;
@@ -65,8 +68,6 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
           <span className="road-number">04</span><ShieldCheck size={25} /><div><p className="eyebrow">ПЕРВЫЙ ДЕНЬ</p><h3>Фишинговый тикет</h3><p>Проверь отправителя, ссылку, вложение и выбери первые действия аналитика.</p></div><button disabled={!progress.jobAccepted} onClick={() => openApp('firstshift')}>{progress.firstShiftComplete ? 'Смена закрыта' : 'Начать смену'}<ArrowRight size={15} /></button>
         </article>
       </section>
-
-      {!academyDone && <section className="beginner-warning"><BookOpenCheck size={22} /><div><strong>Начни с Academy</strong><p>Там объясняются слова, которые раньше игра бросала без подготовки: операционная система, путь, команда, IP, порт, лог, переменная, цикл и факт.</p></div><button className="primary-action compact" onClick={() => openApp('academy')}>Открыть Academy</button></section>}
 
       <section className="repeatable-mode-card">
         <div className="repeatable-mark"><Repeat2 size={23} /></div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { Check, Clipboard, CornerDownLeft, FolderTree, Keyboard, MapPin, Play, TerminalSquare } from 'lucide-react';
+import { Check, Clipboard, CornerDownLeft, Keyboard, MapPin, MessageSquare, Play, Radio, TerminalSquare } from 'lucide-react';
 import { terminalObjectiveDefinitions } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 import { runShellCommand } from '../system/virtualShell';
@@ -36,6 +36,8 @@ export function TerminalApp() {
   useEffect(() => { completeRef.current = completeTerminalObjective; }, [completeTerminalObjective]);
 
   const nextObjective = useMemo(() => terminalObjectiveDefinitions.find((item) => !progress.terminalObjectives.includes(item.id)), [progress.terminalObjectives]);
+  const completed = terminalObjectiveDefinitions.filter((item) => progress.terminalObjectives.includes(item.id));
+  const lastCompleted = [...terminalObjectiveDefinitions].reverse().find((item) => progress.terminalObjectives.includes(item.id));
   const suggestedCommand = commandForObjective(nextObjective?.id, cwdState);
 
   useEffect(() => {
@@ -81,9 +83,9 @@ export function TerminalApp() {
       redraw();
     };
 
-    terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS // BEGINNER SHELL\x1b[0m');
-    terminal.writeln('Печатай после знака $. Слева показано, что писать и зачем.');
-    terminal.writeln('Ошибки безопасны. Команда \x1b[1mhelp\x1b[0m покажет доступные инструменты.');
+    terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS // LIVE TRAINING SHELL\x1b[0m');
+    terminal.writeln('Максим подключён. Смотри реплики слева и вводи действие после знака $.');
+    terminal.writeln('Ошибки безопасны. Терминал не выполняет действия вне учебной системы.');
     prompt();
 
     const disposable = terminal.onData((data) => {
@@ -103,7 +105,7 @@ export function TerminalApp() {
         result.lines.forEach((line) => terminal.writeln(line));
         if (result.objective) {
           completeRef.current(result.objective);
-          terminal.writeln('\x1b[38;2;157;207;116m[ШАГ ВЫПОЛНЕН]\x1b[0m');
+          terminal.writeln('\x1b[38;2;157;207;116m[МАКСИМ ПОЛУЧИЛ РЕЗУЛЬТАТ]\x1b[0m');
         }
         prompt();
         return;
@@ -157,55 +159,55 @@ export function TerminalApp() {
     };
   }, []);
 
-  const completed = terminalObjectiveDefinitions.filter((item) => progress.terminalObjectives.includes(item.id));
   const parts = pathParts(cwdState);
 
   return (
-    <div className="terminal-app beginner-terminal">
-      <aside className="terminal-guide app-scroll">
-        <div className="guide-header">
-          <div><p className="eyebrow">LINUX / С НУЛЯ</p><strong>{completed.length}/{terminalObjectiveDefinitions.length}</strong></div>
-          <span>{nextObjective ? 'СЛЕДУЮЩИЙ ШАГ' : 'ТЕРМИНАЛ ПРОЙДЕН'}</span>
-        </div>
+    <div className="terminal-app beginner-terminal live-terminal">
+      <aside className="terminal-guide app-scroll mentor-console">
+        <header className="mentor-console-header">
+          <div className="mentor-avatar">МБ<span /></div>
+          <div><strong>Максим Белов</strong><small><Radio size={11} /> экран подключён</small></div>
+          <b>{completed.length}/{terminalObjectiveDefinitions.length}</b>
+        </header>
 
         <section className="location-card">
-          <header><MapPin size={15} /><span>ТЫ НАХОДИШЬСЯ ЗДЕСЬ</span></header>
+          <header><MapPin size={15} /><span>ТЕКУЩАЯ ПАПКА</span></header>
           <div className="path-breadcrumb"><b>/</b>{parts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}</div>
-          <p>Все относительные пути считаются от этой папки.</p>
         </section>
+
+        <div className="mentor-chat-stream">
+          {completed.length === 0 && <div className="mentor-bubble"><span>МБ</span><p>Не буду грузить теорией заранее. Я даю одну задачу, ты сразу делаешь её справа. После результата разберём, что произошло.</p></div>}
+          {lastCompleted && <div className="mentor-bubble result"><span>МБ</span><p>{lastCompleted.after}</p></div>}
+          {nextObjective ? (
+            <>
+              <div className="mentor-bubble"><span>МБ</span><p>{nextObjective.mentor}</p></div>
+              <div className="mentor-bubble"><span>МБ</span><p>{nextObjective.reply}</p></div>
+            </>
+          ) : <div className="mentor-bubble result"><span>МБ</span><p>Готово. Ты сам нашёл журнал, отфильтровал события и заметил процесс. Открывай Code Editor — теперь автоматизируем подсчёт.</p></div>}
+        </div>
 
         {nextObjective ? (
-          <section className="terminal-coach-card">
-            <p className="eyebrow">ШАГ {String(completed.length + 1).padStart(2, '0')}</p>
-            <h3>{nextObjective.label}</h3>
-            <div className="where-to-type"><Keyboard size={16} /><span>Пиши в чёрном окне после знака <code>$</code></span></div>
+          <section className="live-action-card">
+            <p className="eyebrow">ТВОЁ ДЕЙСТВИЕ / ШАГ {completed.length + 1}</p>
+            <div className="where-to-type"><Keyboard size={16} /><span>Печатай справа после знака <code>$</code></span></div>
             <button className="command-to-run" onClick={() => fillCommandRef.current(suggestedCommand)}><code>{suggestedCommand}</code><Play size={15} /></button>
-            <p>{nextObjective.why}</p>
-            <div className="expected-result"><span>ЧТО ДОЛЖНО ПРОИЗОЙТИ</span><strong>{nextObjective.result}</strong></div>
+            <div className="micro-theory"><strong>Зачем</strong><p>{nextObjective.why}</p></div>
+            <div className="expected-result"><span>ОЖИДАЕМЫЙ РЕЗУЛЬТАТ</span><strong>{nextObjective.result}</strong></div>
             <div className="terminal-coach-actions">
-              <button onClick={() => navigator.clipboard?.writeText(suggestedCommand)}><Clipboard size={14} />Скопировать</button>
-              <button onClick={() => fillCommandRef.current(suggestedCommand)}><CornerDownLeft size={14} />Вставить в терминал</button>
+              <button onClick={() => navigator.clipboard?.writeText(suggestedCommand)}><Clipboard size={14} />Копировать</button>
+              <button onClick={() => fillCommandRef.current(suggestedCommand)}><CornerDownLeft size={14} />Вставить</button>
             </div>
           </section>
-        ) : (
-          <section className="terminal-complete-card"><Check size={24} /><div><strong>Базовый осмотр закончен</strong><span>Теперь открой Code Editor. Там журнал будет обработан программой.</span></div></section>
-        )}
+        ) : <section className="terminal-complete-card"><Check size={24} /><div><strong>Разговор продолжится в Code Editor</strong><span>Там ты напишешь первую программу по одной строке.</span></div></section>}
 
-        <section className="command-anatomy">
-          <header><TerminalSquare size={15} /><span>КАК ЧИТАТЬ КОМАНДУ</span></header>
-          <code>grep -c "Failed" auth.log</code>
-          <div><b>grep</b><span>программа</span></div>
-          <div><b>-c</b><span>параметр</span></div>
+        <section className="command-anatomy live-reference">
+          <header><TerminalSquare size={15} /><span>ШПАРГАЛКА, НЕ ЛЕКЦИЯ</span></header>
+          <p>Команда читается слева направо: программа → настройка → данные.</p>
+          <code>grep "Failed" auth.log</code>
+          <div><b>grep</b><span>что запустить</span></div>
           <div><b>"Failed"</b><span>что искать</span></div>
-          <div><b>auth.log</b><span>где искать</span></div>
+          <div><b>auth.log</b><span>в каком файле</span></div>
         </section>
-
-        <div className="objective-list compact-objectives">
-          {terminalObjectiveDefinitions.map((objective, index) => {
-            const done = progress.terminalObjectives.includes(objective.id);
-            return <div className={`objective-item ${done ? 'done' : ''}`} key={objective.id}><span>{done ? '✓' : String(index + 1).padStart(2, '0')}</span><div><strong>{objective.label}</strong><small>{objective.command}</small></div></div>;
-          })}
-        </div>
       </aside>
       <div className="terminal-host" ref={hostRef} />
     </div>
