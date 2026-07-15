@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Code2, Copy, Eye, FileText, Play, Radio, RotateCcw, TerminalSquare, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, ChevronLeft, ChevronRight, Code2, Copy, Eye, FileText, Play, Radio, RotateCcw, TerminalSquare, UserRound, XCircle } from 'lucide-react';
 import { authLog, pythonGuideSteps, pythonSolution, pythonStarter } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 
@@ -32,6 +32,7 @@ export function CodeApp() {
   const [output, setOutput] = useState(progress.pythonComplete ? 'Failed logins: 6' : '');
   const [showLog, setShowLog] = useState(false);
   const [mode, setMode] = useState<'guided' | 'free'>('guided');
+  const [mobilePane, setMobilePane] = useState<'brief' | 'code'>('brief');
   const pyodideRef = useRef<any>(null);
   const active = pythonGuideSteps[Math.min(activeStep, pythonGuideSteps.length - 1)];
   const lineNumbers = useMemo(() => code.split('\n').map((_, index) => index + 1), [code]);
@@ -122,7 +123,11 @@ _result = _capture.getvalue()
   };
 
   return (
-    <div className="code-app code-app-v3">
+    <div className={`code-app code-app-v3 mobile-pane-${mobilePane}`}>
+      <nav className="mobile-work-tabs code-mobile-tabs" aria-label="Панели редактора">
+        <button className={mobilePane === 'brief' ? 'active' : ''} onClick={() => setMobilePane('brief')}><UserRound size={15} />Максим</button>
+        <button className={mobilePane === 'code' ? 'active' : ''} onClick={() => setMobilePane('code')}><Code2 size={15} />Код</button>
+      </nav>
       <aside className="lesson-panel app-scroll mentor-code-panel">
         <header className="mentor-console-header code-mentor-header">
           <div className="mentor-avatar">МБ<span /></div>
@@ -151,7 +156,7 @@ _result = _capture.getvalue()
               <pre>{active.snippet}</pre>
               <div className="guided-actions">
                 <button onClick={() => navigator.clipboard?.writeText(active.snippet)}><Copy size={14} />Копировать</button>
-                <button onClick={() => updateCode(insertStep(code, active))}><FileText size={14} />Вставить</button>
+                <button onClick={() => { updateCode(insertStep(code, active)); setMobilePane('code'); }}><FileText size={14} />Вставить</button>
               </div>
               <button className="primary-action full-step" onClick={checkStep}>{currentPassed ? <><Check size={16} />Готово</> : 'Проверить'}</button>
             </section>

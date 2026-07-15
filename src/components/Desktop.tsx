@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, BriefcaseBusiness, ChevronUp, CircleUserRound, Code2,
-  Globe2, Mail, Menu, MessageSquare, Minus, NotebookPen, Power, Radar, Search,
-  Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
+  Globe2, Mail, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
+  Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -18,6 +18,8 @@ import { SkillsApp } from '../apps/SkillsApp';
 import { NotesApp } from '../apps/NotesApp';
 import { InterviewApp } from '../apps/InterviewApp';
 import { FirstShiftApp } from '../apps/FirstShiftApp';
+import { SettingsApp } from '../apps/SettingsApp';
+import { GameLogo } from './GameLogo';
 import { Onboarding } from './Onboarding';
 import { useProgress } from '../system/ProgressContext';
 
@@ -34,6 +36,7 @@ const apps: AppDefinition[] = [
   { id: 'firstshift', title: 'First Shift', shortTitle: 'First Shift', icon: ShieldCheck, width: 1120, height: 720, accent: '#67c7c4' },
   { id: 'skills', title: 'Skills', shortTitle: 'Skills', icon: Shield, width: 900, height: 650, accent: '#9dcf74' },
   { id: 'notes', title: 'Notes / Report', shortTitle: 'Notes', icon: NotebookPen, width: 1000, height: 680, accent: '#efc46b' },
+  { id: 'settings', title: 'Settings', shortTitle: 'Settings', icon: SettingsIcon, width: 960, height: 700, accent: '#8f949e' },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -50,6 +53,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'firstshift': return <FirstShiftApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp />;
+    case 'settings': return <SettingsApp />;
   }
 }
 
@@ -63,7 +67,7 @@ function useClock() {
 }
 
 export function Desktop() {
-  const { progress, resetProgress } = useProgress();
+  const { progress } = useProgress();
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [zCounter, setZCounter] = useState(10);
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -179,7 +183,7 @@ export function Desktop() {
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
           <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
-          <footer><button onClick={resetProgress}><Power size={16} />Сбросить прогресс</button><span>FA//OS 0.3.2</span></footer>
+          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FA//OS 0.3.3</span></footer>
         </section>
       )}
 
@@ -192,7 +196,7 @@ export function Desktop() {
       )}
 
       <section className="mobile-os">
-        <header className="mobile-status"><span>{clock}</span><strong>FA//MOBILE</strong><div><Signal size={13} /><Wifi size={13} /><Shield size={13} /></div></header>
+        <header className="mobile-status"><span>{clock}</span><strong><GameLogo compact />FA//MOBILE</strong><div><Signal size={13} /><Wifi size={13} /><Shield size={13} /></div></header>
         {mobileApp ? (
           <div className="mobile-app-view">
             <header><button onClick={() => setMobileApp(null)}><ChevronUp size={18} /></button><strong>{apps.find((app) => app.id === mobileApp)?.title}</strong><button onClick={() => setMobileApp(null)}><Minus size={18} /></button></header>
@@ -200,7 +204,7 @@ export function Desktop() {
           </div>
         ) : (
           <>
-            <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
+            <div className="mobile-hero"><GameLogo /><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
             <div className="mobile-alert" onClick={() => openApp(progress.jobOfferUnlocked ? 'contracts' : 'missions')}><BookOpenCheck size={20} /><div><strong>{progress.jobOfferUnlocked ? 'WORK//QUEUE' : 'CLINIC-01'}</strong><span>{progress.jobOfferUnlocked ? 'Новые заказы доступны' : 'Продолжить расследование'}</span></div><ChevronUp size={17} /></div>
             <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={locked ? 'locked' : ''} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>

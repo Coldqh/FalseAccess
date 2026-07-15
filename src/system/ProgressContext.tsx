@@ -16,11 +16,43 @@ interface ProgressContextValue {
   abandonContract: () => void;
   completeContract: (clean: boolean) => void;
   refreshContracts: () => void;
+  saveNow: () => string;
+  importProgress: (value: unknown) => boolean;
   resetProgress: () => void;
 }
 
 const STORAGE_KEY = 'false-access-progress-v3';
+const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
+
+function normalizeProgress(value: unknown, legacy = false): ProgressState | null {
+  if (!value || typeof value !== 'object') return null;
+  const parsed = value as Partial<ProgressState>;
+  const fallback = createInitialProgress();
+  return {
+    ...fallback,
+    ...parsed,
+    booted: Boolean(parsed.booted),
+    onboardingDone: Boolean(parsed.onboardingDone),
+    interviewComplete: legacy ? false : Boolean(parsed.interviewComplete),
+    interviewScore: legacy ? 0 : Number(parsed.interviewScore ?? 0),
+    jobOfferUnlocked: legacy ? false : Boolean(parsed.jobOfferUnlocked),
+    jobAccepted: legacy ? false : Boolean(parsed.jobAccepted),
+    firstShiftComplete: legacy ? false : Boolean(parsed.firstShiftComplete),
+    firstShiftMistakes: legacy ? 0 : Number(parsed.firstShiftMistakes ?? 0),
+    pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
+    academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
+    terminalObjectives: Array.isArray(parsed.terminalObjectives) ? parsed.terminalObjectives.filter((item): item is string => typeof item === 'string') : [],
+    readMail: Array.isArray(parsed.readMail) ? parsed.readMail.filter((item): item is string => typeof item === 'string') : [],
+    readMessages: Array.isArray(parsed.readMessages) ? parsed.readMessages.filter((item): item is string => typeof item === 'string') : [],
+    contractOffers: Array.isArray(parsed.contractOffers) ? parsed.contractOffers : [],
+    completedContracts: Array.isArray(parsed.completedContracts) ? parsed.completedContracts : [],
+    factionRep: { ...fallback.factionRep, ...(parsed.factionRep ?? {}) },
+    notes: typeof parsed.notes === 'string' ? parsed.notes : '',
+    balance: Number.isFinite(Number(parsed.balance)) ? Number(parsed.balance) : fallback.balance,
+    contractRefreshes: Number.isFinite(Number(parsed.contractRefreshes)) ? Number(parsed.contractRefreshes) : 0,
+  };
+}
 
 function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
@@ -30,35 +62,24 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Partial<ProgressState>;
-    const legacy = !currentRaw;
-    return {
-      ...fallback,
-      ...parsed,
-      interviewComplete: legacy ? false : Boolean(parsed.interviewComplete),
-      interviewScore: legacy ? 0 : Number(parsed.interviewScore ?? 0),
-      jobOfferUnlocked: legacy ? false : Boolean(parsed.jobOfferUnlocked),
-      jobAccepted: legacy ? false : Boolean(parsed.jobAccepted),
-      firstShiftComplete: legacy ? false : Boolean(parsed.firstShiftComplete),
-      firstShiftMistakes: legacy ? 0 : Number(parsed.firstShiftMistakes ?? 0),
-      academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons : [],
-      terminalObjectives: Array.isArray(parsed.terminalObjectives) ? parsed.terminalObjectives : [],
-      readMail: Array.isArray(parsed.readMail) ? parsed.readMail : [],
-      readMessages: Array.isArray(parsed.readMessages) ? parsed.readMessages : [],
-      contractOffers: Array.isArray(parsed.contractOffers) ? parsed.contractOffers : [],
-      completedContracts: Array.isArray(parsed.completedContracts) ? parsed.completedContracts : [],
-      factionRep: { ...fallback.factionRep, ...(parsed.factionRep ?? {}) },
-    };
+    return normalizeProgress(JSON.parse(raw), !currentRaw) ?? fallback;
   } catch {
     return fallback;
   }
+}
+
+function persist(progress: ProgressState) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  const timestamp = new Date().toISOString();
+  localStorage.setItem(SAVE_TIME_KEY, timestamp);
+  return timestamp;
 }
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>(loadProgress);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    persist(progress);
   }, [progress]);
 
   useEffect(() => {
@@ -135,7 +156,19 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       };
     }),
     refreshContracts: () => setProgress((current) => ({ ...current, contractRefreshes: current.contractRefreshes + 1, contractOffers: [] })),
-    resetProgress: () => setProgress({ ...createInitialProgress(), booted: true }),
+    saveNow: () => persist(progress),
+    importProgress: (raw) => {
+      const next = normalizeProgress(raw);
+      if (!next) return false;
+      setProgress(next);
+      persist(next);
+      return true;
+    },
+    resetProgress: () => {
+      const next = { ...createInitialProgress(), booted: true };
+      setProgress(next);
+      persist(next);
+    },
   }), [progress]);
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;

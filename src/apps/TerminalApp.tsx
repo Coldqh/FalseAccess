@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { Check, CornerDownLeft, MapPin, Radio } from 'lucide-react';
+import { Check, CornerDownLeft, MapPin, Radio, TerminalSquare, UserRound } from 'lucide-react';
 import { terminalObjectiveDefinitions } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 import { runShellCommand } from '../system/virtualShell';
@@ -30,6 +30,7 @@ export function TerminalApp() {
   const { progress, completeTerminalObjective } = useProgress();
   const completeRef = useRef(completeTerminalObjective);
   const [cwdState, setCwdState] = useState('/home/ilya');
+  const [mobilePane, setMobilePane] = useState<'brief' | 'shell'>('brief');
 
   useEffect(() => { completeRef.current = completeTerminalObjective; }, [completeTerminalObjective]);
 
@@ -44,7 +45,7 @@ export function TerminalApp() {
       cursorBlink: true,
       cursorStyle: 'block',
       fontFamily: 'JetBrains Mono, IBM Plex Mono, Consolas, monospace',
-      fontSize: 13,
+      fontSize: window.matchMedia('(max-width: 720px)').matches ? 11 : 13,
       lineHeight: 1.25,
       scrollback: 1000,
       theme: {
@@ -160,7 +161,11 @@ export function TerminalApp() {
   const parts = pathParts(cwdState);
 
   return (
-    <div className="terminal-app beginner-terminal live-terminal">
+    <div className={`terminal-app beginner-terminal live-terminal mobile-pane-${mobilePane}`}>
+      <nav className="mobile-work-tabs" aria-label="Панели терминала">
+        <button className={mobilePane === 'brief' ? 'active' : ''} onClick={() => setMobilePane('brief')}><UserRound size={15} />Максим</button>
+        <button className={mobilePane === 'shell' ? 'active' : ''} onClick={() => setMobilePane('shell')}><TerminalSquare size={15} />Терминал</button>
+      </nav>
       <aside className="terminal-guide app-scroll mentor-console">
         <header className="mentor-console-header">
           <div className="mentor-avatar">МБ<span /></div>
@@ -187,7 +192,7 @@ export function TerminalApp() {
         {nextObjective ? (
           <section className="live-action-card">
             <p className="eyebrow">КОМАНДА</p>
-            <button className="command-to-run" onClick={() => fillCommandRef.current(suggestedCommand)}><code>{suggestedCommand}</code><CornerDownLeft size={15} /></button>
+            <button className="command-to-run" onClick={() => { fillCommandRef.current(suggestedCommand); setMobilePane('shell'); }}><code>{suggestedCommand}</code><CornerDownLeft size={15} /></button>
             <small>{nextObjective.label}</small>
           </section>
         ) : <section className="terminal-complete-card"><Check size={24} /><div><strong>Осмотр закончен</strong><span>Следующий шаг: analyze_auth.py</span></div></section>}
