@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type AppId = 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'skills' | 'notes';
+export type AppId = 'missions' | 'academy' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'skills' | 'notes';
 
 export interface AppDefinition {
   id: AppId;
@@ -78,11 +78,18 @@ export interface CompletedContract {
 export interface ProgressState {
   booted: boolean;
   onboardingDone: boolean;
+  academyLessons: string[];
   terminalObjectives: string[];
+  pythonLessonStep: number;
   pythonComplete: boolean;
   alertReviewed: boolean;
   reportSubmitted: boolean;
+  interviewComplete: boolean;
+  interviewScore: number;
   jobOfferUnlocked: boolean;
+  jobAccepted: boolean;
+  firstShiftComplete: boolean;
+  firstShiftMistakes: number;
   readMail: string[];
   readMessages: string[];
   notes: string;

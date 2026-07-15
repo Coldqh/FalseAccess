@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpenCheck, BriefcaseBusiness, ChevronUp, CircleUserRound, Code2,
+  Bell, BookOpenCheck, BriefcaseBusiness, ChevronUp, CircleUserRound, Code2, GraduationCap,
   Globe2, Mail, Menu, MessageSquare, Minus, NotebookPen, Power, Radar, Search,
-  Shield, Signal, TerminalSquare, Wifi, X,
+  Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
 import { MissionsApp } from '../apps/MissionsApp';
+import { AcademyApp } from '../apps/AcademyApp';
 import { TerminalApp } from '../apps/TerminalApp';
 import { ContractsApp } from '../apps/ContractsApp';
 import { CodeApp } from '../apps/CodeApp';
@@ -16,11 +17,14 @@ import { BrowserApp } from '../apps/BrowserApp';
 import { SiemApp } from '../apps/SiemApp';
 import { SkillsApp } from '../apps/SkillsApp';
 import { NotesApp } from '../apps/NotesApp';
+import { InterviewApp } from '../apps/InterviewApp';
+import { FirstShiftApp } from '../apps/FirstShiftApp';
 import { Onboarding } from './Onboarding';
 import { useProgress } from '../system/ProgressContext';
 
 const apps: AppDefinition[] = [
   { id: 'missions', title: 'Missions', shortTitle: 'Missions', icon: BookOpenCheck, width: 920, height: 670, accent: '#ff5a38' },
+  { id: 'academy', title: 'Academy Zero', shortTitle: 'Academy', icon: GraduationCap, width: 1120, height: 720, accent: '#70a5d8' },
   { id: 'contracts', title: 'Work Queue', shortTitle: 'Contracts', icon: BriefcaseBusiness, width: 1180, height: 720, accent: '#efc46b' },
   { id: 'terminal', title: 'Terminal', shortTitle: 'Terminal', icon: TerminalSquare, width: 1080, height: 690, accent: '#9dcf74' },
   { id: 'code', title: 'Code Editor', shortTitle: 'Code', icon: Code2, width: 1180, height: 720, accent: '#70a5d8' },
@@ -28,6 +32,8 @@ const apps: AppDefinition[] = [
   { id: 'messenger', title: 'Messenger', shortTitle: 'Wire', icon: MessageSquare, width: 950, height: 650, accent: '#67c7c4' },
   { id: 'browser', title: 'Browser', shortTitle: 'Browser', icon: Globe2, width: 1080, height: 700, accent: '#b58bd8' },
   { id: 'siem', title: 'SIEM', shortTitle: 'SIEM', icon: Radar, width: 1080, height: 690, accent: '#ff5a38' },
+  { id: 'interview', title: 'Technical Interview', shortTitle: 'Interview', icon: UserRoundCheck, width: 1080, height: 700, accent: '#efc46b' },
+  { id: 'firstshift', title: 'First Shift', shortTitle: 'First Shift', icon: ShieldCheck, width: 1120, height: 720, accent: '#67c7c4' },
   { id: 'skills', title: 'Skills', shortTitle: 'Skills', icon: Shield, width: 900, height: 650, accent: '#9dcf74' },
   { id: 'notes', title: 'Notes / Report', shortTitle: 'Notes', icon: NotebookPen, width: 1000, height: 680, accent: '#efc46b' },
 ];
@@ -35,6 +41,7 @@ const apps: AppDefinition[] = [
 function appContent(id: AppId, openApp: (id: AppId) => void) {
   switch (id) {
     case 'missions': return <MissionsApp openApp={openApp} />;
+    case 'academy': return <AcademyApp />;
     case 'contracts': return <ContractsApp />;
     case 'terminal': return <TerminalApp />;
     case 'code': return <CodeApp />;
@@ -42,6 +49,8 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'messenger': return <MessengerApp />;
     case 'browser': return <BrowserApp />;
     case 'siem': return <SiemApp />;
+    case 'interview': return <InterviewApp />;
+    case 'firstshift': return <FirstShiftApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp />;
   }
@@ -66,6 +75,9 @@ export function Desktop() {
   const time = useClock();
 
   const activeWindowId = useMemo(() => [...windows].filter((win) => !win.minimized).sort((a, b) => b.z - a.z)[0]?.id, [windows]);
+  const isLocked = (id: AppId) => (id === 'siem' && !progress.pythonComplete)
+    || (id === 'interview' && !progress.reportSubmitted)
+    || (id === 'firstshift' && !progress.jobAccepted);
 
   const focusWindow = (id: AppId) => {
     setZCounter((value) => value + 1);
@@ -73,6 +85,7 @@ export function Desktop() {
   };
 
   const openApp = (id: AppId) => {
+    if (isLocked(id)) return;
     if (window.matchMedia('(max-width: 720px)').matches) {
       setMobileApp(id);
       return;
@@ -110,7 +123,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 001</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 003</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -122,7 +135,7 @@ export function Desktop() {
       <section className="desktop-icons">
         {apps.map((app) => {
           const Icon = app.icon;
-          const locked = app.id === 'siem' && !progress.pythonComplete;
+          const locked = isLocked(app.id);
           return (
             <button key={app.id} onDoubleClick={() => !locked && openApp(app.id)} onClick={() => !locked && openApp(app.id)} className={locked ? 'locked' : ''}>
               <span className="desktop-icon" style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={27} strokeWidth={1.45} /></span>
@@ -168,8 +181,8 @@ export function Desktop() {
         <section className="launcher-panel">
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
-          <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; return <button key={app.id} onClick={() => openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
-          <footer><button onClick={resetProgress}><Power size={16} />Сбросить прогресс</button><span>FA//OS 0.1.0</span></footer>
+          <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
+          <footer><button onClick={resetProgress}><Power size={16} />Сбросить прогресс</button><span>FA//OS 0.3.0</span></footer>
         </section>
       )}
 
@@ -192,7 +205,7 @@ export function Desktop() {
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
             <div className="mobile-alert" onClick={() => openApp(progress.jobOfferUnlocked ? 'contracts' : 'missions')}><BookOpenCheck size={20} /><div><strong>{progress.jobOfferUnlocked ? 'WORK//QUEUE' : 'CLINIC-01'}</strong><span>{progress.jobOfferUnlocked ? 'Новые заказы доступны' : 'Продолжить расследование'}</span></div><ChevronUp size={17} /></div>
-            <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; return <button key={app.id} onClick={() => openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
+            <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={locked ? 'locked' : ''} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
           </>
         )}

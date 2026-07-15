@@ -9,15 +9,40 @@ const paths: Record<string, string[]> = {
 };
 
 const files: Record<string, string> = {
-  '/home/ilya/README.txt': `FALSE ACCESS TRAINING TERMINAL\n\nhelp      список команд\nmission   текущая задача\nclear     очистить экран`,
-  '/home/ilya/cases/clinic-01/brief.txt': `ДЕЛО CLINIC-01\n\nРабочая станция регистратуры медленно отвечает.\nСотрудники сообщают о ночных попытках входа.\n\nЗадача:\n1. Проверь журнал SSH.\n2. Определи число неудачных входов.\n3. Проверь список процессов.\n4. Передай результат в SIEM.`,
+  '/home/ilya/README.txt': `FALSE ACCESS TRAINING TERMINAL
+
+help      список команд
+mission   текущая задача
+academy   краткие основы
+clear     очистить экран`,
+  '/home/ilya/cases/clinic-01/brief.txt': `ДЕЛО CLINIC-01
+
+Рабочая станция регистратуры медленно отвечает.
+Сотрудники сообщают о ночных попытках входа.
+
+Задача:
+1. Проверь журнал SSH.
+2. Определи число неудачных входов.
+3. Проверь список процессов.
+4. Передай результат в SIEM.
+
+Важно: Failed password означает неудачную попытку. Это ещё не доказательство взлома.`,
   '/home/ilya/cases/clinic-01/auth.log': authLog,
-  '/home/ilya/cases/clinic-01/processes.txt': `PID USER     COMMAND\n1   root     /sbin/init\n412 root     /usr/sbin/sshd -D\n667 nurse    /usr/bin/firefox\n804 root     /usr/local/bin/clinic-backup\n911 nobody   /tmp/.cache/update-agent --silent`,
-  '/home/ilya/cases/clinic-01/network.txt': `10.14.2.18 clinic-ws\n10.14.2.5 backup-node\n10.14.2.1 gateway`,
+  '/home/ilya/cases/clinic-01/processes.txt': `PID USER     COMMAND
+1   root     /sbin/init
+412 root     /usr/sbin/sshd -D
+667 nurse    /usr/bin/firefox
+804 root     /usr/local/bin/clinic-backup
+911 nobody   /tmp/.cache/update-agent --silent`,
+  '/home/ilya/cases/clinic-01/network.txt': `10.14.2.18 clinic-ws
+10.14.2.5 backup-node
+10.14.2.1 gateway`,
 };
 
 function normalizePath(cwd: string, input: string): string {
-  const raw = input.startsWith('/') ? input : `${cwd}/${input}`;
+  if (!input || input === '~') return '/home/ilya';
+  const expanded = input.startsWith('~/') ? `/home/ilya/${input.slice(2)}` : input;
+  const raw = expanded.startsWith('/') ? expanded : `${cwd}/${expanded}`;
   const parts = raw.split('/').filter(Boolean);
   const stack: string[] = [];
   for (const part of parts) {
@@ -39,6 +64,13 @@ function formatLs(path: string, detailed: boolean): string[] {
   });
 }
 
+function readFile(cwd: string, fileName: string | undefined) {
+  if (!fileName) return { target: '', error: 'missing operand' };
+  const target = normalizePath(cwd, fileName);
+  if (!(target in files)) return { target, error: `${fileName}: No such file` };
+  return { target, content: files[target] };
+}
+
 export function runShellCommand(raw: string, cwd: string): ShellResult {
   const command = raw.trim();
   if (!command) return { lines: [] };
@@ -48,52 +80,80 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
     case 'help':
       return { lines: [
         'ОСНОВНЫЕ КОМАНДЫ',
-        'pwd                 показать текущую папку',
-        'ls [-la] [path]     показать файлы',
-        'cd <path>           перейти в папку',
-        'cat <file>          прочитать файл',
-        'grep <text> <file>  найти строки',
-        'ps                  показать процессы',
-        'ss -tulpn           показать сетевые порты',
-        'whoami              текущий пользователь',
-        'tree                дерево файлов',
-        'mission             активные задачи',
-        'clear               очистить терминал',
+        'pwd                        показать текущую папку',
+        'ls [-la] [path]            показать файлы',
+        'cd <path>                  перейти в папку',
+        'cat <file>                 прочитать весь файл',
+        'head <file>                первые 5 строк',
+        'tail <file>                последние 5 строк',
+        'grep [-c] <text> <file>    найти или посчитать строки',
+        'wc -l <file>               количество строк',
+        'ps                         показать процессы',
+        'ss -tulpn                  показать сетевые порты',
+        'whoami                     текущий пользователь',
+        'tree                       дерево файлов',
+        'mission                    текущая задача',
+        'academy                    основные термины',
+        'clear                      очистить терминал',
       ] };
     case 'pwd':
-      return { lines: [cwd], objective: 'pwd' };
+      return { lines: [cwd], objective: cwd === '/home/ilya' ? 'pwd' : undefined };
     case 'whoami':
       return { lines: ['ilya'] };
     case 'hostname':
       return { lines: ['fa-training-01'] };
     case 'clear':
       return { lines: [], clear: true };
+    case 'echo':
+      return { lines: [args.join(' ')] };
     case 'ls': {
       const detailed = args.includes('-la') || args.includes('-al') || args.includes('-l');
       const pathArg = args.find((arg) => !arg.startsWith('-'));
       const target = pathArg ? normalizePath(cwd, pathArg) : cwd;
-      return { lines: formatLs(target, detailed), objective: target === '/home/ilya' ? 'ls' : undefined };
+      const lines = formatLs(target, detailed);
+      return { lines, objective: target === '/home/ilya' && !lines[0]?.startsWith('ls:') ? 'ls' : undefined };
     }
     case 'cd': {
-      const target = normalizePath(cwd, args[0] ?? '/home/ilya');
-      if (!paths[target]) return { lines: [`bash: cd: ${args[0] ?? ''}: No such directory`] };
+      const requested = args[0] ?? '~';
+      const target = normalizePath(cwd, requested);
+      if (!paths[target]) {
+        return { lines: [
+          `bash: cd: ${requested}: No such directory`,
+          `Подсказка: ты находишься в ${cwd}. Относительный путь добавляется к этой папке.`,
+          'Проверь содержимое командой ls или используй полный путь, начинающийся с /.',
+        ] };
+      }
       return { lines: [], cwd: target, objective: target === '/home/ilya/cases/clinic-01' ? 'cd-case' : undefined };
     }
     case 'cat': {
-      if (!args[0]) return { lines: ['cat: missing operand'] };
-      const target = normalizePath(cwd, args[0]);
-      if (!(target in files)) return { lines: [`cat: ${args[0]}: No such file`] };
-      return { lines: files[target].split('\n'), objective: target.endsWith('/brief.txt') ? 'read-brief' : undefined };
+      const result = readFile(cwd, args[0]);
+      if (result.error) return { lines: [`cat: ${result.error}`] };
+      return { lines: result.content!.split('\n'), objective: result.target.endsWith('/brief.txt') ? 'read-brief' : undefined };
+    }
+    case 'head':
+    case 'tail': {
+      const result = readFile(cwd, args[0]);
+      if (result.error) return { lines: [`${name}: ${result.error}`] };
+      const lines = result.content!.split('\n');
+      return { lines: name === 'head' ? lines.slice(0, 5) : lines.slice(-5) };
+    }
+    case 'wc': {
+      if (args[0] !== '-l') return { lines: ['usage: wc -l <file>'] };
+      const result = readFile(cwd, args[1]);
+      if (result.error) return { lines: [`wc: ${result.error}`] };
+      return { lines: [`${result.content!.split('\n').length} ${args[1]}`] };
     }
     case 'grep': {
-      if (args.length < 2) return { lines: ['usage: grep <text> <file>'] };
-      const text = args[0];
-      const target = normalizePath(cwd, args[1]);
-      if (!(target in files)) return { lines: [`grep: ${args[1]}: No such file`] };
-      const matches = files[target].split('\n').filter((line) => line.includes(text));
+      const countOnly = args[0] === '-c';
+      const text = countOnly ? args[1] : args[0];
+      const fileName = countOnly ? args[2] : args[1];
+      if (!text || !fileName) return { lines: ['usage: grep [-c] <text> <file>'] };
+      const result = readFile(cwd, fileName);
+      if (result.error) return { lines: [`grep: ${result.error}`] };
+      const matches = result.content!.split('\n').filter((line) => line.includes(text));
       return {
-        lines: matches.length ? matches : [],
-        objective: target.endsWith('/auth.log') && text.includes('Failed password') ? 'grep-failed' : undefined,
+        lines: countOnly ? [String(matches.length)] : matches,
+        objective: result.target.endsWith('/auth.log') && text.includes('Failed password') ? 'grep-failed' : undefined,
       };
     }
     case 'ps':
@@ -123,12 +183,25 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
     case 'mission':
       return { lines: [
         'CLINIC-01 / ПЕРВИЧНЫЙ ОСМОТР',
-        'Проверь рабочую станцию, найди ошибки входа и подозрительный процесс.',
-        'После терминала открой CODE и напиши анализатор журнала.',
+        `Текущая папка: ${cwd}`,
+        'Задача: открыть дело, найти ошибки входа и проверить процессы.',
+        'Слева показан следующий шаг и объяснение команды.',
       ] };
-    case 'history':
-      return { lines: ['История команд хранится в текущей сессии терминала. Используй ↑ и ↓.'] };
+    case 'academy':
+      return { lines: [
+        'КРАТКИЕ ОСНОВЫ',
+        'файл       данные с именем',
+        'папка      контейнер для файлов',
+        'путь       адрес файла или папки',
+        'процесс    запущенная программа',
+        'лог        записи о событиях',
+        'IP         адрес устройства в сети',
+        'порт       номер сетевой службы',
+        'Открой приложение ACADEMY для полного объяснения.',
+      ] };
+    case 'man':
+      return { lines: [`В учебной сборке справка собрана в help. Для команды ${args[0] ?? ''} используй боковую панель.`] };
     default:
-      return { lines: [`${name}: command not found. Напиши help.`] };
+      return { lines: [`${name}: command not found. Напиши help.`, 'Проверь раскладку, регистр и пробелы.'] };
   }
 }

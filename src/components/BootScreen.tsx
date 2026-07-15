@@ -39,7 +39,7 @@ export function BootScreen() {
         </div>
         <div className="boot-title-row">
           <div>
-            <p className="eyebrow">LOCAL TRAINING BUILD 0.1</p>
+            <p className="eyebrow">LOCAL TRAINING BUILD 0.3</p>
             <h1>FALSE<br />ACCESS</h1>
           </div>
           <ShieldCheck size={46} strokeWidth={1.2} />

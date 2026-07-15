@@ -1,4 +1,4 @@
-const CACHE = 'false-access-v2';
+const CACHE = 'false-access-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)));
