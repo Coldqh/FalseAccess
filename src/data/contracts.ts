@@ -152,7 +152,7 @@ function secretContract(seed: number, index: number): GeneratedContract {
     difficulty,
     pay: payFor(difficulty, random),
     summary: `В архиве проекта ${repo} нашли конфигурационный файл. Проверь, есть ли в нём секрет, и укажи правильное первое действие.`,
-    constraint: 'Не используй найденные данные. Анализ проводится на учебной копии.',
+    constraint: 'Не используй найденный секрет. Сразу подготовь его отзыв и замену.',
     files: [
       { name: '.env', content: `APP_ENV=production\nAPI_URL=https://api.${repo}.local\n${secretName}=${secretValue}\nLOG_LEVEL=info` },
       { name: '.gitignore', content: `node_modules/\ndist/\n*.log` },

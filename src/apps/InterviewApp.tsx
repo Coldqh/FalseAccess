@@ -45,11 +45,11 @@ export function InterviewApp() {
   const allChecked = checked.every(Boolean);
 
   if (!available) {
-    return <div className="interview-locked"><UserRoundCheck size={48} /><h2>Сначала закончи CLINIC-01</h2><p>Собеседование откроется после терминала, Python, SIEM и технического отчёта.</p></div>;
+    return <div className="interview-locked"><UserRoundCheck size={48} /><h2>Сначала закончи CLINIC-01</h2><p>Анна ждёт итоговый отчёт по CLINIC-01.</p></div>;
   }
 
   if (progress.interviewComplete) {
-    return <div className="interview-result-screen"><div className="interview-seal"><CheckCircle2 size={40} /></div><p className="eyebrow">СОБЕСЕДОВАНИЕ ЗАВЕРШЕНО</p><h2>{progress.interviewScore}/{questions.length}</h2><p>Анна не ждала идеальных терминов. Ей был нужен человек, который читает данные, признаёт границы уверенности и не уничтожает доказательства.</p><div className="result-next"><strong>Новое письмо</strong><span>Предложение от «Сферы-Интеграции» уже в Mail.</span></div></div>;
+    return <div className="interview-result-screen"><div className="interview-seal"><CheckCircle2 size={40} /></div><p className="eyebrow">СОБЕСЕДОВАНИЕ ЗАВЕРШЕНО</p><h2>{progress.interviewScore}/{questions.length}</h2><p>Анна закрыла ноутбук и сказала ждать письмо от отдела кадров.</p><div className="result-next"><strong>Новое письмо</strong><span>Предложение от «Сферы-Интеграции» уже в Mail.</span></div></div>;
   }
 
   const question = questions[active];
@@ -77,13 +77,13 @@ export function InterviewApp() {
       <aside className="interview-room">
         <div className="interview-company"><span>СФЕРА</span><strong>SECURITY OPERATIONS</strong></div>
         <div className="interviewer-card"><div className="interviewer-avatar">АС</div><strong>Анна Соколова</strong><span>Руководитель смены SOC</span><p>«Не торопись. Мне важнее ход мысли, чем выученная формулировка».</p></div>
-        <div className="interview-rules"><span>КАК ЭТО РАБОТАЕТ</span><p>Выбери ответ. После проверки появится объяснение. Ошибка не закрывает прохождение: собеседование тоже часть обучения.</p></div>
+        <div className="interview-rules"><span>АННА СОКОЛОВА</span><p>«Отвечай по данным. Не додумывай».</p></div>
       </aside>
       <main className="interview-main">
         <header><div><p className="eyebrow">ТЕХНИЧЕСКОЕ СОБЕСЕДОВАНИЕ</p><h2>Вопрос {active + 1} из {questions.length}</h2></div><strong>{score} верно</strong></header>
         <div className="interview-progress">{questions.map((_, index) => <button key={index} className={`${active === index ? 'active' : ''} ${checked[index] ? (answers[index] === questions[index].correct ? 'correct' : 'wrong') : ''}`} onClick={() => setActive(index)}>{checked[index] ? (answers[index] === questions[index].correct ? <Check size={13} /> : <XCircle size={13} />) : <Circle size={10} />}</button>)}</div>
         <section className="interview-question"><p>{question.question}</p><div>{question.options.map((option, index) => <button key={option} className={`${selected === index ? 'selected' : ''} ${isChecked ? (index === question.correct ? 'correct' : selected === index ? 'wrong' : '') : ''}`} onClick={() => choose(index)}><span>{String.fromCharCode(65 + index)}</span><strong>{option}</strong>{isChecked && index === question.correct && <Check size={18} />}</button>)}</div></section>
-        {isChecked && <section className={`interview-explanation ${correct ? 'success' : 'error'}`}><strong>{correct ? 'Верно.' : 'Ответ неточный.'}</strong><p>{question.explanation}</p></section>}
+        {isChecked && <section className={`interview-explanation ${correct ? 'success' : 'error'}`}><strong>{correct ? 'Анна: «Да».' : 'Анна: «Нет».'}</strong><p>{question.explanation}</p></section>}
         <footer>
           <button className="secondary-action" onClick={() => { setAnswers(questions.map(() => null)); setChecked(questions.map(() => false)); setActive(0); }}><RotateCcw size={15} />Начать заново</button>
           {!isChecked ? <button className="primary-action" disabled={selected === null} onClick={check}>Проверить ответ</button> : <button className="primary-action" onClick={next}>{active === questions.length - 1 ? 'Завершить собеседование' : 'Следующий вопрос'}<ChevronRight size={17} /></button>}

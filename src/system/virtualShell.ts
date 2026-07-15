@@ -9,11 +9,10 @@ const paths: Record<string, string[]> = {
 };
 
 const files: Record<string, string> = {
-  '/home/ilya/README.txt': `FALSE ACCESS TRAINING TERMINAL
+  '/home/ilya/README.txt': `FALSE ACCESS // CLINIC-01
 
-help      список команд
-mission   текущая задача
-coach     подсказка куратора
+help      команды
+mission   дело
 clear     очистить экран`,
   '/home/ilya/cases/clinic-01/brief.txt': `ДЕЛО CLINIC-01
 
@@ -93,7 +92,6 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
         'whoami                     текущий пользователь',
         'tree                       дерево файлов',
         'mission                    текущая задача',
-        'coach                      подсказка куратора',
         'clear                      очистить терминал',
       ] };
     case 'pwd':
@@ -101,7 +99,7 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
     case 'whoami':
       return { lines: ['ilya'] };
     case 'hostname':
-      return { lines: ['fa-training-01'] };
+      return { lines: ['clinic-ws-copy'] };
     case 'clear':
       return { lines: [], clear: true };
     case 'echo':
@@ -117,11 +115,7 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
       const requested = args[0] ?? '~';
       const target = normalizePath(cwd, requested);
       if (!paths[target]) {
-        return { lines: [
-          `bash: cd: ${requested}: No such directory`,
-          `Подсказка: ты находишься в ${cwd}. Относительный путь добавляется к этой папке.`,
-          'Проверь содержимое командой ls или используй полный путь, начинающийся с /.',
-        ] };
+        return { lines: [`bash: cd: ${requested}: No such file or directory`] };
       }
       return { lines: [], cwd: target, objective: target === '/home/ilya/cases/clinic-01' ? 'cd-case' : undefined };
     }
@@ -184,18 +178,12 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
       return { lines: [
         'CLINIC-01 / ПЕРВИЧНЫЙ ОСМОТР',
         `Текущая папка: ${cwd}`,
-        'Задача: открыть дело, найти ошибки входа и проверить процессы.',
-        'Слева показан следующий шаг и объяснение команды.',
-      ] };
-    case 'coach':
-      return { lines: [
-        'МАКСИМ / АКТИВНЫЙ СОЗВОН',
-        'Следующая реплика и действие показаны слева от терминала.',
-        'Выполни одну команду, прочитай результат и только потом переходи дальше.',
+        'Проверить auth.log и список процессов.',
+        'Ничего не удалять.',
       ] };
     case 'man':
-      return { lines: [`В учебной сборке справка собрана в help. Для команды ${args[0] ?? ''} используй боковую панель.`] };
+      return { lines: [`No manual entry for ${args[0] ?? ''}`] };
     default:
-      return { lines: [`${name}: command not found. Напиши help.`, 'Проверь раскладку, регистр и пробелы.'] };
+      return { lines: [`${name}: command not found`] };
   }
 }

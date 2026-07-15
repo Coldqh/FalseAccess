@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { Check, Clipboard, CornerDownLeft, Keyboard, MapPin, MessageSquare, Play, Radio, TerminalSquare } from 'lucide-react';
+import { Check, CornerDownLeft, MapPin, Radio } from 'lucide-react';
 import { terminalObjectiveDefinitions } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 import { runShellCommand } from '../system/virtualShell';
@@ -28,11 +28,9 @@ export function TerminalApp() {
   const hostRef = useRef<HTMLDivElement>(null);
   const fillCommandRef = useRef<(command: string) => void>(() => undefined);
   const { progress, completeTerminalObjective } = useProgress();
-  const progressRef = useRef(progress);
   const completeRef = useRef(completeTerminalObjective);
   const [cwdState, setCwdState] = useState('/home/ilya');
 
-  useEffect(() => { progressRef.current = progress; }, [progress]);
   useEffect(() => { completeRef.current = completeTerminalObjective; }, [completeTerminalObjective]);
 
   const nextObjective = useMemo(() => terminalObjectiveDefinitions.find((item) => !progress.terminalObjectives.includes(item.id)), [progress.terminalObjectives]);
@@ -83,9 +81,9 @@ export function TerminalApp() {
       redraw();
     };
 
-    terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS // LIVE TRAINING SHELL\x1b[0m');
-    terminal.writeln('Максим подключён. Смотри реплики слева и вводи действие после знака $.');
-    terminal.writeln('Ошибки безопасны. Терминал не выполняет действия вне учебной системы.');
+    terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS // CLINIC-01\x1b[0m');
+    terminal.writeln('case mounted: /home/ilya/cases/clinic-01');
+    terminal.writeln('help — commands');
     prompt();
 
     const disposable = terminal.onData((data) => {
@@ -105,7 +103,7 @@ export function TerminalApp() {
         result.lines.forEach((line) => terminal.writeln(line));
         if (result.objective) {
           completeRef.current(result.objective);
-          terminal.writeln('\x1b[38;2;157;207;116m[МАКСИМ ПОЛУЧИЛ РЕЗУЛЬТАТ]\x1b[0m');
+          terminal.writeln('\x1b[38;2;157;207;116m[OK]\x1b[0m');
         }
         prompt();
         return;
@@ -166,48 +164,33 @@ export function TerminalApp() {
       <aside className="terminal-guide app-scroll mentor-console">
         <header className="mentor-console-header">
           <div className="mentor-avatar">МБ<span /></div>
-          <div><strong>Максим Белов</strong><small><Radio size={11} /> экран подключён</small></div>
+          <div><strong>Максим Белов</strong><small><Radio size={11} /> на связи</small></div>
           <b>{completed.length}/{terminalObjectiveDefinitions.length}</b>
         </header>
 
         <section className="location-card">
-          <header><MapPin size={15} /><span>ТЕКУЩАЯ ПАПКА</span></header>
+          <header><MapPin size={15} /><span>PATH</span></header>
           <div className="path-breadcrumb"><b>/</b>{parts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}</div>
         </section>
 
         <div className="mentor-chat-stream">
-          {completed.length === 0 && <div className="mentor-bubble"><span>МБ</span><p>Не буду грузить теорией заранее. Я даю одну задачу, ты сразу делаешь её справа. После результата разберём, что произошло.</p></div>}
+          {completed.length === 0 && <div className="mentor-bubble"><span>МБ</span><p>Архив уже на месте. Ничего не удаляй. Начнём с текущей папки.</p></div>}
           {lastCompleted && <div className="mentor-bubble result"><span>МБ</span><p>{lastCompleted.after}</p></div>}
           {nextObjective ? (
             <>
               <div className="mentor-bubble"><span>МБ</span><p>{nextObjective.mentor}</p></div>
               <div className="mentor-bubble"><span>МБ</span><p>{nextObjective.reply}</p></div>
             </>
-          ) : <div className="mentor-bubble result"><span>МБ</span><p>Готово. Ты сам нашёл журнал, отфильтровал события и заметил процесс. Открывай Code Editor — теперь автоматизируем подсчёт.</p></div>}
+          ) : <div className="mentor-bubble result"><span>МБ</span><p>Хватит терминала. Открой Code Editor. Посчитаем такие события скриптом.</p></div>}
         </div>
 
         {nextObjective ? (
           <section className="live-action-card">
-            <p className="eyebrow">ТВОЁ ДЕЙСТВИЕ / ШАГ {completed.length + 1}</p>
-            <div className="where-to-type"><Keyboard size={16} /><span>Печатай справа после знака <code>$</code></span></div>
-            <button className="command-to-run" onClick={() => fillCommandRef.current(suggestedCommand)}><code>{suggestedCommand}</code><Play size={15} /></button>
-            <div className="micro-theory"><strong>Зачем</strong><p>{nextObjective.why}</p></div>
-            <div className="expected-result"><span>ОЖИДАЕМЫЙ РЕЗУЛЬТАТ</span><strong>{nextObjective.result}</strong></div>
-            <div className="terminal-coach-actions">
-              <button onClick={() => navigator.clipboard?.writeText(suggestedCommand)}><Clipboard size={14} />Копировать</button>
-              <button onClick={() => fillCommandRef.current(suggestedCommand)}><CornerDownLeft size={14} />Вставить</button>
-            </div>
+            <p className="eyebrow">КОМАНДА</p>
+            <button className="command-to-run" onClick={() => fillCommandRef.current(suggestedCommand)}><code>{suggestedCommand}</code><CornerDownLeft size={15} /></button>
+            <small>{nextObjective.label}</small>
           </section>
-        ) : <section className="terminal-complete-card"><Check size={24} /><div><strong>Разговор продолжится в Code Editor</strong><span>Там ты напишешь первую программу по одной строке.</span></div></section>}
-
-        <section className="command-anatomy live-reference">
-          <header><TerminalSquare size={15} /><span>ШПАРГАЛКА, НЕ ЛЕКЦИЯ</span></header>
-          <p>Команда читается слева направо: программа → настройка → данные.</p>
-          <code>grep "Failed" auth.log</code>
-          <div><b>grep</b><span>что запустить</span></div>
-          <div><b>"Failed"</b><span>что искать</span></div>
-          <div><b>auth.log</b><span>в каком файле</span></div>
-        </section>
+        ) : <section className="terminal-complete-card"><Check size={24} /><div><strong>Осмотр закончен</strong><span>Следующий шаг: analyze_auth.py</span></div></section>}
       </aside>
       <div className="terminal-host" ref={hostRef} />
     </div>

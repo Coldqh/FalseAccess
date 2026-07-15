@@ -120,7 +120,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 003.1</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 003.2</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -179,7 +179,7 @@ export function Desktop() {
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
           <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
-          <footer><button onClick={resetProgress}><Power size={16} />Сбросить прогресс</button><span>FA//OS 0.3.1</span></footer>
+          <footer><button onClick={resetProgress}><Power size={16} />Сбросить прогресс</button><span>FA//OS 0.3.2</span></footer>
         </section>
       )}
 

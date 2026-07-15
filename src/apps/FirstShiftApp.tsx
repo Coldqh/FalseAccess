@@ -42,7 +42,7 @@ export function FirstShiftApp() {
   const mistakes = useMemo(() => checked.reduce((sum, done, index) => sum + (done && answers[index] !== checks[index].correct ? 1 : 0), 0), [answers, checked]);
 
   if (!available) {
-    return <div className="firstshift-locked"><ShieldCheck size={48} /><h2>Смена ещё не началась</h2><p>Пройди собеседование, открой предложение в Mail и нажми «Принять предложение».</p></div>;
+    return <div className="firstshift-locked"><ShieldCheck size={48} /><h2>Смена ещё не началась</h2><p>Сначала прими предложение в Mail.</p></div>;
   }
 
   if (progress.firstShiftComplete) {
@@ -71,7 +71,7 @@ export function FirstShiftApp() {
         <div className="shift-brand"><ShieldCheck size={21} /><div><strong>СФЕРА / SOC</strong><span>смена 01 · 09:42</span></div></div>
         <div className="shift-ticket"><span>TICKET</span><strong>PHISH-2026-0041</strong><i>MEDIUM</i></div>
         <nav>{checks.map((step, index) => <button key={step.title} className={`${active === index ? 'active' : ''} ${checked[index] ? (answers[index] === step.correct ? 'done' : 'mistake') : ''}`} onClick={() => setActive(index)}><span>{checked[index] ? (answers[index] === step.correct ? <Check size={13} /> : <XCircle size={13} />) : index + 1}</span><strong>{step.title}</strong></button>)}</nav>
-        <div className="shift-rule"><AlertTriangle size={17} /><p>Не открывай реальные подозрительные вложения. Здесь используется безопасная учебная карточка письма.</p></div>
+        <div className="shift-rule"><AlertTriangle size={17} /><p>Вложение не открывать. Сохранить письмо и заголовки.</p></div>
       </aside>
 
       <main className="shift-main">
@@ -93,7 +93,7 @@ export function FirstShiftApp() {
           <h3>{item.question}</h3>
           <div>{item.options.map((option, index) => <button key={option} className={`${selected === index ? 'selected' : ''} ${isChecked ? (index === item.correct ? 'correct' : selected === index ? 'wrong' : '') : ''}`} disabled={isChecked} onClick={() => setAnswers((current) => current.map((value, answerIndex) => answerIndex === active ? index : value))}><span>{String.fromCharCode(65 + index)}</span><strong>{option}</strong>{isChecked && index === item.correct && <Check size={17} />}</button>)}</div>
         </section>
-        {isChecked && <section className={`shift-feedback ${correct ? 'success' : 'error'}`}><strong>{correct ? 'Верно.' : 'Ошибка зафиксирована.'}</strong><p>{item.explanation}</p></section>}
+        {isChecked && <section className={`shift-feedback ${correct ? 'success' : 'error'}`}><strong>{correct ? 'Принято.' : 'Анна: «Перепроверь».'}</strong><p>{item.explanation}</p></section>}
         <footer>{!isChecked ? <button className="primary-action" disabled={selected === null} onClick={checkAnswer}>Проверить решение</button> : <button className="primary-action" onClick={next}>{active === checks.length - 1 ? 'Закрыть тикет' : 'Следующий шаг'}<ChevronRight size={17} /></button>}</footer>
       </main>
     </div>

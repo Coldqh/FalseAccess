@@ -241,7 +241,7 @@ export function ContractsApp() {
                 );
               })}
             </section>
-            <div className="contract-rule"><TerminalSquare size={18} /><p><strong>Опытный режим уже внутри.</strong> Не открывай подсказку, решай через shell и получай больше репутации за чистое выполнение.</p></div>
+            <div className="contract-rule"><TerminalSquare size={18} /><p><strong>CLEAN RESULT.</strong> Закрой заказ без подсказки — получишь больше репутации.</p></div>
           </>
         )}
 

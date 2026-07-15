@@ -7,7 +7,7 @@ export function SkillsApp() {
   const terminalRatio = progress.terminalObjectives.length / terminalObjectiveDefinitions.length;
   const contractSkills = (skill: string) => progress.completedContracts.filter((item) => item.skill === skill).length;
   const skills = [
-    { name: 'Foundations', icon: GraduationCap, progress: Math.min(100, Math.round(terminalRatio * 45) + Math.round(progress.pythonLessonStep / 8 * 35) + (progress.alertReviewed ? 20 : 0)), state: 'Осваиваются внутри миссий' },
+    { name: 'Foundations', icon: GraduationCap, progress: Math.min(100, Math.round(terminalRatio * 45) + Math.round(progress.pythonLessonStep / 8 * 35) + (progress.alertReviewed ? 20 : 0)), state: 'CLINIC-01' },
     { name: 'Linux', icon: TerminalSquare, progress: Math.min(100, Math.round(terminalRatio * 22) + contractSkills('linux') * 4), state: terminalRatio >= 1 ? `Навигация + ${contractSkills('linux')} заказов` : 'Пути и команды' },
     { name: 'Python', icon: Code2, progress: Math.min(100, (progress.pythonComplete ? 18 : Math.round(progress.pythonLessonStep / 8 * 14)) + contractSkills('python') * 5), state: progress.pythonComplete ? `Первая программа + ${contractSkills('python')} заказов` : `Шаг ${Math.min(8, progress.pythonLessonStep + 1)}/8` },
     { name: 'SOC', icon: Radar, progress: Math.min(100, (progress.alertReviewed ? 14 : 2) + (progress.firstShiftComplete ? 8 : 0) + contractSkills('soc') * 5), state: progress.firstShiftComplete ? 'Triage и фишинг' : progress.alertReviewed ? 'Первый triage' : 'Не начато' },
@@ -21,11 +21,11 @@ export function SkillsApp() {
   ];
 
   const milestones = [
-    ['Понять путь во время работы с терминалом', progress.terminalObjectives.includes('cd-case')],
+    ['Перейти в каталог CLINIC-01', progress.terminalObjectives.includes('cd-case')],
     ['Проверить путь в Linux', progress.terminalObjectives.includes('pwd')],
     ['Прочитать файл командой cat', progress.terminalObjectives.includes('read-brief')],
     ['Найти строки через grep', progress.terminalObjectives.includes('grep-failed')],
-    ['Собрать программу из восьми частей', progress.pythonComplete],
+    ['Запустить analyze_auth.py', progress.pythonComplete],
     ['Правильно разобрать алерт', progress.alertReviewed],
     ['Сдать технический отчёт', progress.reportSubmitted],
     ['Пройти первое собеседование', progress.interviewComplete],
@@ -35,9 +35,9 @@ export function SkillsApp() {
 
   return (
     <div className="skills-app app-scroll">
-      <header className="skills-header"><div><p className="eyebrow">ПРОФИЛЬ / ИЛЬЯ ВОРОНЦОВ</p><h2>Подтверждённые навыки</h2><p>Проценты не являются уровнем персонажа. Они показывают, какую часть текущей учебной программы ты реально выполнил.</p></div><div className="profile-badge"><span>18</span><small>лет</small></div></header>
+      <header className="skills-header"><div><p className="eyebrow">ПРОФИЛЬ / ИЛЬЯ ВОРОНЦОВ</p><h2>Навыки</h2><p>Завершённые дела, скрипты, отчёты и заказы.</p></div><div className="profile-badge"><span>18</span><small>лет</small></div></header>
       <section className="skill-grid">{skills.map((skill) => { const Icon = skill.icon; return <article key={skill.name} className={skill.progress === 0 ? 'locked' : ''}><header><span><Icon size={20} /></span><strong>{skill.name}</strong><b>{skill.progress}%</b></header><div className="skill-bar"><i style={{ width: `${skill.progress}%` }} /></div><small>{skill.state}</small></article>; })}</section>
-      <section className="milestone-panel"><div><p className="eyebrow">ПОДТВЕРЖДЁННЫЕ ДЕЙСТВИЯ</p><h3>Пролог 0.3</h3></div><div className="milestone-list">{milestones.map(([label, done]) => <div key={label as string} className={done ? 'done' : ''}><span>{done ? <Check size={14} /> : <Circle size={12} />}</span><strong>{label as string}</strong></div>)}</div></section>
+      <section className="milestone-panel"><div><p className="eyebrow">ПОДТВЕРЖДЁННЫЕ ДЕЙСТВИЯ</p><h3>Журнал действий</h3></div><div className="milestone-list">{milestones.map(([label, done]) => <div key={label as string} className={done ? 'done' : ''}><span>{done ? <Check size={14} /> : <Circle size={12} />}</span><strong>{label as string}</strong></div>)}</div></section>
     </div>
   );
 }
