@@ -16,17 +16,40 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+          node-version: 22.16.0
+          registry-url: https://registry.npmjs.org
+
+      - name: Validate package lock
+        shell: bash
+        run: |
+          if grep -q 'applied-caas-gateway' package-lock.json; then
+            echo 'package-lock.json contains an internal registry URL'
+            exit 1
+          fi
+
+      - name: Install dependencies
+        env:
+          npm_config_registry: https://registry.npmjs.org/
+          npm_config_audit: "false"
+          npm_config_fund: "false"
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
@@ -34,7 +57,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages
