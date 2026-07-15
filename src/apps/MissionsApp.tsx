@@ -16,6 +16,41 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   const totalStages = clinicStages.length + 3;
   const completeStages = clinicStages.filter((stage) => stage.done).length + Number(progress.interviewComplete) + Number(progress.jobAccepted) + Number(progress.firstShiftComplete);
 
+  const callStage: { target: AppId; kicker: string; quote: string; button: string } = !terminalDone
+    ? {
+      target: 'terminal',
+      kicker: 'ВХОДЯЩИЙ ВЫЗОВ / ЭТАП 1',
+      quote: 'Открой терминал. Сначала найдём материалы дела. Ничего не удаляй.',
+      button: 'Ответить',
+    }
+    : !progress.pythonComplete
+      ? {
+        target: 'code',
+        kicker: 'ВХОДЯЩИЙ ВЫЗОВ / ЭТАП 2',
+        quote: 'С терминалом закончили. Открой analyze_auth.py. Посчитаем события кодом.',
+        button: 'Продолжить звонок',
+      }
+      : !progress.alertReviewed
+        ? {
+          target: 'siem',
+          kicker: 'ВХОДЯЩИЙ ВЫЗОВ / ЭТАП 3',
+          quote: 'Скрипт отработал. Теперь открой алерт и отдели факты от догадок.',
+          button: 'Открыть SIEM',
+        }
+        : !progress.reportSubmitted
+          ? {
+            target: 'notes',
+            kicker: 'ВХОДЯЩИЙ ВЫЗОВ / ЭТАП 4',
+            quote: 'Остался отчёт. Я собрал черновик по найденным фактам. Проверь и отправь.',
+            button: 'Открыть отчёт',
+          }
+          : {
+            target: 'interview',
+            kicker: 'ЗВОНОК ЗАВЕРШЁН / ДЕЛО СОБРАНО',
+            quote: 'Материалы готовы. Дальше собеседование в «Сфере».',
+            button: 'К собеседованию',
+          };
+
   return (
     <div className="mission-app mission-app-v3 app-scroll">
       <section className="mission-hero">
@@ -36,8 +71,8 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
 
       <section className="mentor-call-card">
         <div className="mentor-call-avatar">МБ<span /></div>
-        <div><p className="eyebrow">ВХОДЯЩИЙ ВЫЗОВ / 21:20</p><h3>Максим Белов</h3><p>«Открой терминал. Сначала найдём материалы дела. Ничего не удаляй».</p></div>
-        <button className="primary-action compact" onClick={() => openApp('terminal')}><MessageSquare size={17} />Ответить</button>
+        <div><p className="eyebrow">{callStage.kicker}</p><h3>Максим Белов</h3><p>«{callStage.quote}»</p></div>
+        <button className="primary-action compact" onClick={() => openApp(callStage.target)}><MessageSquare size={17} />{callStage.button}</button>
       </section>
 
       <section className="chapter-block">

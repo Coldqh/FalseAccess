@@ -170,14 +170,17 @@ export function TerminalApp() {
         <div className="mobile-inline-speaker">
           <span>МБ</span>
           <div>
-            <strong>Максим</strong>
-            <p>{nextObjective ? `${nextObjective.mentor} ${nextObjective.reply}` : 'С терминалом закончили. Открой Code Editor.'}</p>
+            <strong>{nextObjective?.label ?? 'Терминал закончен'}</strong>
+            <p>{nextObjective ? nextObjective.why : 'Все команды выполнены. Следующий этап — analyze_auth.py.'}</p>
+            {nextObjective && <small>{nextObjective.reply}</small>}
           </div>
         </div>
-        {nextObjective && (
+        {nextObjective ? (
           <button className="mobile-inline-command" onClick={() => fillCommandRef.current(suggestedCommand)}>
-            <code>{suggestedCommand}</code><CornerDownLeft size={14} />
+            <span><b>Вставить команду</b><code>{suggestedCommand}</code></span><CornerDownLeft size={14} />
           </button>
+        ) : (
+          <div className="mobile-terminal-next"><Check size={15} /><span>Вернись в Missions и продолжи звонок.</span></div>
         )}
       </section>
       <aside className="terminal-guide app-scroll mentor-console">

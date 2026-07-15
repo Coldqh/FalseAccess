@@ -1408,3 +1408,81 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
   .mobile-code-snippet button { min-height:32px; }
   .code-app-v3 .code-inline-lesson { max-height:156px; }
 }
+
+/* 0.3.5 — mobile guided workspaces, staged calls and quick inserts */
+.report-autofill { width:100%;min-height:58px;margin:0 0 14px;padding:11px;display:grid;grid-template-columns:28px 1fr;align-items:center;gap:9px;border:1px solid rgba(239,196,107,.25);background:rgba(239,196,107,.055);color:#d9c18a;text-align:left;cursor:pointer; }
+.report-autofill > span { min-width:0;display:grid;gap:4px; }
+.report-autofill strong { font-size:9px; }
+.report-autofill small { color:#8e8777;font-size:8px;line-height:1.35; }
+.report-header-actions { display:flex!important;align-items:center;gap:8px!important; }
+.report-header-actions button { width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line);background:#0d1013;color:#858b94;cursor:pointer; }
+
+.contract-quick-commands { padding:8px 10px;border-top:1px solid var(--line);background:#0b0e11; }
+.contract-quick-commands > span { display:block;margin-bottom:6px;color:#626871;font:700 7px var(--mono);letter-spacing:.1em; }
+.contract-quick-commands > div { display:flex;gap:5px;overflow-x:auto;padding-bottom:2px; }
+.contract-quick-commands button { flex:0 0 auto;max-width:230px;padding:7px 9px;border:1px solid rgba(157,207,116,.18);background:rgba(157,207,116,.045);color:#abc999;cursor:pointer; }
+.contract-quick-commands code { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 8px var(--mono); }
+.contract-terminal { grid-template-rows:36px minmax(0,1fr) auto 42px; }
+.contract-python-help { padding:10px;border-bottom:1px solid var(--line);display:grid;gap:7px;background:#0e1114; }
+.contract-python-help p { margin:0;color:#9298a0;font-size:8px;line-height:1.45; }
+.contract-python-help > code { padding:6px 8px;border:1px solid var(--line);background:#080a0c;color:#cfd6dc;font:600 8px var(--mono);white-space:pre;overflow-x:auto; }
+.contract-python-help > div { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+.contract-python-help button { min-height:34px;border:1px solid rgba(112,165,216,.24);background:rgba(112,165,216,.065);color:#9fc0df;font:700 8px var(--mono);cursor:pointer; }
+.contract-python-help button.ready { border-color:rgba(157,207,116,.3);background:rgba(157,207,116,.08);color:var(--green); }
+.mobile-step-result { margin:0;padding:8px 9px;border:1px solid rgba(157,207,116,.18);background:rgba(157,207,116,.045);color:#a9c692;font-size:8px;line-height:1.4; }
+.mobile-code-actions { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+.mobile-code-actions button { min-height:34px;padding:0 8px;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid rgba(112,165,216,.25);background:rgba(112,165,216,.07);color:#9fc0df;font:700 8px var(--mono); }
+.mobile-code-actions button.ready { border-color:rgba(157,207,116,.28);background:rgba(157,207,116,.07);color:var(--green); }
+.mobile-inline-speaker small { display:block;margin-top:4px;color:#777e87;font-size:7px;line-height:1.4; }
+.mobile-inline-command > span { min-width:0;display:grid;gap:3px;text-align:left; }
+.mobile-inline-command b { color:#8e959d;font:700 7px var(--mono);letter-spacing:.08em;text-transform:uppercase; }
+.mobile-terminal-next { min-height:34px;padding:0 9px;display:flex;align-items:center;gap:7px;border:1px solid rgba(157,207,116,.18);background:rgba(157,207,116,.045);color:#a8c991;font-size:8px; }
+
+@media (max-width:720px) {
+  .code-app-v3.mobile-pane-code { overflow:hidden!important; }
+  .code-app-v3.mobile-pane-code .editor-shell {
+    display:flex!important;
+    flex-direction:column;
+    height:100%!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+  .code-app-v3 .editor-toolbar { position:sticky;top:0;z-index:12;flex:0 0 42px; }
+  .code-app-v3 .code-inline-lesson {
+    position:relative;
+    z-index:4;
+    flex:0 0 auto;
+    display:grid;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .code-app-v3 .mobile-code-snippet { grid-template-columns:1fr; }
+  .code-app-v3 .editor-area {
+    flex:0 0 min(54vh,520px);
+    min-height:360px!important;
+    height:min(54vh,520px);
+    overflow:hidden!important;
+  }
+  .code-app-v3 .code-output { flex:0 0 auto;max-height:none; }
+  .code-app-v3 .code-output.expanded { min-height:76px!important;max-height:150px; }
+  .code-app-v3 .code-output pre { max-height:118px; }
+  .code-app-v3 .source-preview { position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom);z-index:80;max-height:58vh; }
+
+  .terminal-inline-lesson { position:relative;z-index:6; }
+  .live-terminal.mobile-pane-shell { grid-template-rows:43px auto minmax(0,1fr)!important; }
+  .mobile-inline-lesson { padding:9px 10px;gap:8px; }
+  .mobile-inline-command { width:100%; }
+
+  .notes-app { display:flex!important;flex-direction:column;height:100%;overflow-y:auto; }
+  .notes-app .report-guide { flex:0 0 auto;border-right:0;border-bottom:1px solid var(--line);padding:14px; }
+  .notes-app .report-editor { flex:0 0 70vh;min-height:520px; }
+  .report-autofill { position:sticky;top:0;z-index:3;background:#17191d; }
+
+  .contract-terminal { height:auto!important;min-height:500px;grid-template-rows:36px minmax(260px,1fr) auto 48px; }
+  .contract-quick-commands > div { padding-bottom:5px; }
+  .contract-python-help > div { grid-template-columns:1fr; }
+  .contract-python textarea { height:250px; }
+}

@@ -1,4 +1,4 @@
-const VERSION = '0.3.4';
+const VERSION = '0.3.5';
 const CACHE = `false-access-${VERSION}`;
 const FALLBACK = './index.html';
 const CORE = [

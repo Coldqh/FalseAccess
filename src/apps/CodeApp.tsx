@@ -196,13 +196,18 @@ _result = _capture.getvalue()
               <span>МБ</span>
               <div>
                 <strong>{active.title}</strong>
-                <p>{active.why} {active.instruction}</p>
+                <p>{active.why}</p>
+                <small>{active.instruction}</small>
               </div>
             </div>
             <div className="mobile-code-snippet">
               <pre>{active.snippet}</pre>
-              <button onClick={() => updateCode(insertStep(code, active))}><FileText size={14} />Вставить</button>
+              <div className="mobile-code-actions">
+                <button onClick={() => updateCode(insertStep(code, active))}><FileText size={14} />Вставить строку</button>
+                <button className={currentPassed ? 'ready' : ''} onClick={checkStep}><Check size={14} />Проверить готово</button>
+              </div>
             </div>
+            {currentPassed && <p className="mobile-step-result">{active.read}</p>}
           </section>
         )}
         {showLog && <section className="source-preview"><header><FileText size={15} /><strong>auth.log</strong><button onClick={() => setShowLog(false)}>Закрыть</button></header><pre>{authLog}</pre></section>}

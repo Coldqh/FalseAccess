@@ -19,6 +19,25 @@ function answerMatches(value: string, accepted: string[]) {
   });
 }
 
+function contractQuickCommands(contract: GeneratedContract) {
+  const fileCommands = contract.files.slice(0, 2).map((item) => `cat ${item.name}`);
+  const analysis: Record<string, string[]> = {
+    AUTH_LOG: ['grep -c "Failed password" auth.log', 'grep "Failed password" auth.log'],
+    DNS_BEACON: ['cat dns.log', 'cat assets.txt'],
+    PROCESS_TRIAGE: ['cat processes.txt', 'cat connections.txt'],
+    PYTHON_JSONL: ['cat events.jsonl', 'wc -l events.jsonl'],
+    EXPOSED_SECRET: ['cat .env', 'cat .gitignore'],
+    WEB_AUTH: ['grep " 401 " access.log', 'grep " 302 " access.log'],
+  };
+  return Array.from(new Set([...(analysis[contract.type] ?? []), ...fileCommands])).slice(0, 4);
+}
+
+function insertContractPythonSolution(code: string) {
+  const block = '    if event["status"] == "failed":\n        failed += 1';
+  if (/if\s+event\[(?:"status"|'status')\]\s*==\s*(?:"failed"|'failed')\s*:/.test(code) && /failed\s*\+=\s*1/.test(code)) return code;
+  return code.replace('    # Добавь условие и увеличь failed.', block);
+}
+
 function runContractCommand(contract: GeneratedContract, raw: string): string[] {
   const command = raw.trim();
   if (!command) return [];
@@ -109,10 +128,18 @@ _contract_result = _contract_capture.getvalue()
     }
   };
 
+  const codeReady = /if\s+event\[(?:"status"|'status')\]\s*==\s*(?:"failed"|'failed')\s*:/.test(code) && /failed\s*\+=\s*1/.test(code);
+
   return (
     <section className="contract-python">
-      <header><div><Code2 size={16} /><span>PYTHON TASK</span></div><div><button onClick={() => { setCode(starter); setState('idle'); setOutput('Код сброшен.'); }}><RotateCcw size={14} /></button><button className="python-run" onClick={run} disabled={state === 'loading'}><Play size={13} />{state === 'loading' ? 'RUN...' : 'RUN'}</button></div></header>
-      <textarea value={code} onChange={(event) => setCode(event.target.value)} spellCheck={false} />
+      <header><div><Code2 size={16} /><span>PYTHON TASK</span></div><div><button onClick={() => { setCode(starter); setState('idle'); setOutput('Код сброшен.'); }}><RotateCcw size={14} /></button></div></header>
+      <div className="contract-python-help">
+        <p>Проверь status каждой записи. Если значение равно failed, увеличь счётчик.</p>
+        <code>if event["status"] == "failed":</code>
+        <code>    failed += 1</code>
+        <div><button onClick={() => setCode((current) => insertContractPythonSolution(current))}>Вставить строки</button><button className={codeReady ? 'ready' : ''} onClick={run} disabled={state === 'loading'}><Play size={13} />{state === 'loading' ? 'Проверка...' : 'Проверить готово'}</button></div>
+      </div>
+      <textarea value={code} onChange={(event) => { setCode(event.target.value); setState('idle'); }} spellCheck={false} />
       <pre className={state}>{output}</pre>
     </section>
   );
@@ -132,6 +159,7 @@ function ContractWorkspace({ contract }: { contract: GeneratedContract }) {
 
   const results = contract.questions.map((question) => answerMatches(answers[question.id] ?? '', question.answers));
   const passed = results.every(Boolean) && pythonPassed;
+  const quickCommands = contractQuickCommands(contract);
 
   const execute = () => {
     if (!command.trim()) return;
@@ -165,6 +193,10 @@ function ContractWorkspace({ contract }: { contract: GeneratedContract }) {
         <section className="contract-terminal">
           <header><TerminalSquare size={16} /><span>CONTRACT SHELL</span><i>LOCAL / NO NETWORK</i></header>
           <pre>{history.join('\n')}</pre>
+          <div className="contract-quick-commands">
+            <span>ВСТАВИТЬ КОМАНДУ</span>
+            <div>{quickCommands.map((item) => <button key={item} onClick={() => setCommand(item)}><code>{item}</code></button>)}</div>
+          </div>
           <div className="contract-command-line"><span>ilya@contract:$</span><input value={command} onChange={(event) => setCommand(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && execute()} autoComplete="off" spellCheck={false} /><button onClick={execute}>RUN</button></div>
         </section>
 
