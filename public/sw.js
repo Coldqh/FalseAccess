@@ -1,4 +1,4 @@
-const VERSION = '0.3.3';
+const VERSION = '0.3.4';
 const CACHE = `false-access-${VERSION}`;
 const FALLBACK = './index.html';
 const CORE = [
@@ -7,6 +7,10 @@ const CORE = [
   './manifest.webmanifest',
   './assets/icon.svg',
   './assets/icon-maskable.svg',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/icon-maskable-512.png',
+  './assets/apple-touch-icon.png',
   './sites/site.css',
   './sites/clinic/index.html',
   './sites/ostrogorsk-news/index.html',

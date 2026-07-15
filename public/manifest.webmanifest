@@ -1,22 +1,78 @@
 {
   "name": "FALSE ACCESS",
-  "short_name": "FA//OS",
+  "short_name": "FALSE ACCESS",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "any",
   "background_color": "#08090b",
   "theme_color": "#0a0b0d",
   "description": "Сюжетная RPG и практический тренажёр по информационной безопасности.",
-  "categories": ["games", "education"],
+  "categories": [
+    "games",
+    "education"
+  ],
   "icons": [
-    { "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "./assets/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Продолжить дело", "short_name": "Missions", "url": "./?open=missions", "icons": [{ "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
-    { "name": "Терминал", "short_name": "Terminal", "url": "./?open=terminal", "icons": [{ "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+    {
+      "name": "Продолжить дело",
+      "short_name": "Missions",
+      "url": "./?open=missions",
+      "icons": [
+        {
+          "src": "./assets/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Терминал",
+      "short_name": "Terminal",
+      "url": "./?open=terminal",
+      "icons": [
+        {
+          "src": "./assets/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
   ]
 }

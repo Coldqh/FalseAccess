@@ -3,7 +3,6 @@ import {
   Check, CloudDownload, Database, Download, HardDrive, Import, RefreshCw,
   Save, Settings, ShieldCheck, Smartphone, Trash2, Wifi, WifiOff,
 } from 'lucide-react';
-import { GameLogo } from '../components/GameLogo';
 import { useProgress } from '../system/ProgressContext';
 
 function formatBytes(value: number) {
@@ -41,7 +40,7 @@ export function SettingsApp() {
   const exportSave = () => {
     const payload = JSON.stringify({
       game: 'FALSE ACCESS',
-      version: '0.3.3',
+      version: '0.3.4',
       exportedAt: new Date().toISOString(),
       progress,
     }, null, 2);
@@ -108,7 +107,6 @@ export function SettingsApp() {
   return (
     <div className="settings-app app-scroll">
       <header className="settings-hero">
-        <div className="settings-logo-wrap"><GameLogo /></div>
         <div>
           <p className="eyebrow">FALSE ACCESS / DEVICE</p>
           <h2>Настройки</h2>
@@ -149,7 +147,7 @@ export function SettingsApp() {
         </article>
 
         <article className="settings-card app-card">
-          <header><span><Smartphone size={19} /></span><div><strong>Приложение</strong><small>BUILD 0.3.3</small></div></header>
+          <header><span><Smartphone size={19} /></span><div><strong>Приложение</strong><small>BUILD 0.3.4</small></div></header>
           <dl>
             <div><dt>Режим</dt><dd>{standalone ? 'Установлено на устройство' : 'Браузер'}</dd></div>
             <div><dt>Хранилище</dt><dd>LocalStorage + Cache Storage</dd></div>
@@ -165,7 +163,7 @@ export function SettingsApp() {
         </article>
       </section>
 
-      <footer className="settings-footer"><GameLogo compact /><span>FALSE ACCESS</span><i>LOCAL-FIRST PWA</i></footer>
+      <footer className="settings-footer"><span>FALSE ACCESS</span><i>LOCAL-FIRST PWA</i></footer>
     </div>
   );
 }

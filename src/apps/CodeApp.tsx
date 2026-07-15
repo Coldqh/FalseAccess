@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Code2, Copy, Eye, FileText, Play, Radio, RotateCcw, TerminalSquare, UserRound, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Code2, Copy, Eye, FileText, Play, Radio, RotateCcw, TerminalSquare, UserRound, XCircle } from 'lucide-react';
 import { authLog, pythonGuideSteps, pythonSolution, pythonStarter } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 
@@ -33,6 +33,7 @@ export function CodeApp() {
   const [showLog, setShowLog] = useState(false);
   const [mode, setMode] = useState<'guided' | 'free'>('guided');
   const [mobilePane, setMobilePane] = useState<'brief' | 'code'>('brief');
+  const [outputOpen, setOutputOpen] = useState(false);
   const pyodideRef = useRef<any>(null);
   const active = pythonGuideSteps[Math.min(activeStep, pythonGuideSteps.length - 1)];
   const lineNumbers = useMemo(() => code.split('\n').map((_, index) => index + 1), [code]);
@@ -45,12 +46,14 @@ export function CodeApp() {
     setCode(value);
     setRunState('idle');
     setOutput('');
+    setOutputOpen(false);
   };
 
   const checkStep = () => {
     if (!currentPassed) {
       setRunState('error');
       setOutput(`Строка не найдена. Нужна запись:\n${active.snippet}`);
+      setOutputOpen(true);
       return;
     }
     const next = Math.min(pythonGuideSteps.length - 1, activeStep + 1);
@@ -58,6 +61,7 @@ export function CodeApp() {
     setActiveStep(next);
     setRunState('idle');
     setOutput(activeStep === pythonGuideSteps.length - 1 ? 'Код собран. Запускай.' : '');
+    setOutputOpen(activeStep === pythonGuideSteps.length - 1);
   };
 
   const runCode = async () => {
@@ -67,10 +71,12 @@ export function CodeApp() {
       setActiveStep(index);
       setRunState('error');
       setOutput(`Не хватает: ${missing.snippet}`);
+      setOutputOpen(true);
       return;
     }
     setRunState('loading');
     setOutput('running...');
+    setOutputOpen(true);
     try {
       if (!pyodideRef.current) {
         const base = new URL('.', window.location.href).href;
@@ -184,14 +190,33 @@ _result = _capture.getvalue()
             <button className="run-button" onClick={runCode} disabled={runState === 'loading'}><Play size={15} fill="currentColor" /> {runState === 'loading' ? 'RUNNING' : 'RUN'}</button>
           </div>
         </header>
+        {mode === 'guided' && (
+          <section className="mobile-inline-lesson code-inline-lesson">
+            <div className="mobile-inline-speaker">
+              <span>МБ</span>
+              <div>
+                <strong>{active.title}</strong>
+                <p>{active.why} {active.instruction}</p>
+              </div>
+            </div>
+            <div className="mobile-code-snippet">
+              <pre>{active.snippet}</pre>
+              <button onClick={() => updateCode(insertStep(code, active))}><FileText size={14} />Вставить</button>
+            </div>
+          </section>
+        )}
         {showLog && <section className="source-preview"><header><FileText size={15} /><strong>auth.log</strong><button onClick={() => setShowLog(false)}>Закрыть</button></header><pre>{authLog}</pre></section>}
         <div className="editor-area">
           <div className="line-numbers" aria-hidden="true">{lineNumbers.map((line) => <span key={line} className={line === markerLine + 1 ? 'target-line' : ''}>{line}</span>)}</div>
           <textarea value={code} onChange={(event) => updateCode(event.target.value)} onKeyDown={handleTab} spellCheck={false} aria-label="Редактор Python" />
         </div>
-        <div className={`code-output ${runState}`}>
-          <header><TerminalSquare size={15} /><span>OUTPUT</span><i>{runState === 'success' ? <CheckCircle2 size={15} /> : runState === 'error' ? <XCircle size={15} /> : null}</i></header>
-          <pre>{output}</pre>
+        <div className={`code-output ${runState} ${output ? 'has-output' : 'empty'} ${outputOpen ? 'expanded' : 'collapsed'}`}>
+          <header onClick={() => output && setOutputOpen((value) => !value)}>
+            <TerminalSquare size={15} /><span>OUTPUT</span>
+            <i>{runState === 'success' ? <CheckCircle2 size={15} /> : runState === 'error' ? <XCircle size={15} /> : null}</i>
+            {output && <button aria-label={outputOpen ? 'Свернуть вывод' : 'Развернуть вывод'}>{outputOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}</button>}
+          </header>
+          {outputOpen && <pre>{output}</pre>}
         </div>
       </section>
 

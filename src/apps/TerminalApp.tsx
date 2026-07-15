@@ -166,6 +166,20 @@ export function TerminalApp() {
         <button className={mobilePane === 'brief' ? 'active' : ''} onClick={() => setMobilePane('brief')}><UserRound size={15} />Максим</button>
         <button className={mobilePane === 'shell' ? 'active' : ''} onClick={() => setMobilePane('shell')}><TerminalSquare size={15} />Терминал</button>
       </nav>
+      <section className="mobile-inline-lesson terminal-inline-lesson">
+        <div className="mobile-inline-speaker">
+          <span>МБ</span>
+          <div>
+            <strong>Максим</strong>
+            <p>{nextObjective ? `${nextObjective.mentor} ${nextObjective.reply}` : 'С терминалом закончили. Открой Code Editor.'}</p>
+          </div>
+        </div>
+        {nextObjective && (
+          <button className="mobile-inline-command" onClick={() => fillCommandRef.current(suggestedCommand)}>
+            <code>{suggestedCommand}</code><CornerDownLeft size={14} />
+          </button>
+        )}
+      </section>
       <aside className="terminal-guide app-scroll mentor-console">
         <header className="mentor-console-header">
           <div className="mentor-avatar">МБ<span /></div>
