@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -227,6 +227,20 @@ export interface ProgressState {
   darknetChoice: 'accept' | 'ignore' | '';
   darknetReputation: number;
   darknetComplete: boolean;
+  forensicsCaseStage: number;
+  forensicsCaseFoundationAnswers: Record<string, string>;
+  forensicsCaseDiskObjectives: string[];
+  forensicsCaseDiskAnswers: Record<string, string>;
+  forensicsCaseArtifactObjectives: string[];
+  forensicsCaseMemoryObjectives: string[];
+  forensicsCaseMemoryAnswers: Record<string, string>;
+  forensicsCaseContainmentSelections: Record<string, string>;
+  forensicsCaseIndependentObjectives: string[];
+  forensicsCaseIndependentAnswers: Record<string, string>;
+  forensicsCaseFindingSelections: Record<string, string>;
+  forensicsCaseReportSelections: Record<string, string>;
+  forensicsCaseHintUses: number;
+  forensicsCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

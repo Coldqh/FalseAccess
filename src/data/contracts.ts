@@ -690,7 +690,75 @@ function mailOauthContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract] as const;
+
+function forensicTimelineContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const host = pick(random, ['LOCKER-02', 'VAULT-11', 'NODE-07', 'CACHE-19']);
+  const user = pick(random, ['roman', 'operator7', 'mira', 'dispatch4']);
+  const payload = pick(random, ['invoice_viewer.exe', 'archive_pack.exe', 'preview_sync.exe']);
+  const remote = ip(random);
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `forensics-timeline-${seed}`,
+    seed,
+    type: 'FORENSIC_TIMELINE',
+    title: 'Временная линия диска и памяти',
+    client: pick(random, ['закрытый узел', 'расчётная точка', 'складской ноутбук']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'forensics',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `Для ${host} есть файловая timeline и снимок памяти. Свяжи загрузку, запуск процесса и внешний адрес.`,
+    constraint: 'Работай только с копиями. Не изменяй исходные образы.',
+    files: [
+      { name: 'timeline.csv', content: `02:14:17,Created,C:/Users/${user}/Downloads/${payload}\n02:14:20,Prefetch,${payload}\n02:14:23,Created,C:/Users/${user}/AppData/Local/Temp/worker.ps1` },
+      { name: 'pstree.txt', content: `explorer.exe(2212)\n  ${payload}(4212)\n    powershell.exe(4376)\n      syncsvc.exe(4488)` },
+      { name: 'netscan.txt', content: `TCP 10.44.8.17:51322 ${remote}:443 ESTABLISHED PID=4488 process=syncsvc.exe` },
+    ],
+    questions: [
+      { id: 'payload', label: 'Первый подозрительный файл', placeholder: 'filename.exe', answers: [payload] },
+      { id: 'process', label: 'Процесс внешнего соединения', placeholder: 'process', answers: ['syncsvc.exe'] },
+      { id: 'remote', label: 'Внешний адрес', placeholder: 'IP', answers: [remote] },
+    ],
+    hint: 'Сначала timeline.csv, затем pstree.txt. PID дочернего процесса свяжи с netscan.txt.',
+  };
+}
+
+function forensicDeletedArtifactContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const inode = Math.floor(random() * 90000) + 10000;
+  const token = `sid_${Math.floor(random() * 9000) + 1000}`;
+  const remote = ip(random);
+  const difficulty: ContractDifficulty = index % 2 === 0 ? 'STANDARD' : 'HARD';
+  return {
+    id: `forensics-deleted-${seed}`,
+    seed,
+    type: 'FORENSIC_DELETED_ARTIFACT',
+    title: 'Удалённый журнал из образа',
+    client: pick(random, ['закрытый обменник', 'серый архив', 'узел доставки']),
+    factionId: pick(random, ['line', 'north']),
+    factionName: '',
+    skill: 'forensics',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'В образе отмечен удалённый журнал. Определи inode, восстанови содержимое и свяжи с внешним соединением.',
+    constraint: 'Извлекай артефакт в отдельную рабочую папку. Исходный образ read-only.',
+    files: [
+      { name: 'fls-deleted.txt', content: `r/r * ${inode}-128-4: Users/operator/AppData/Local/Temp/sync.log` },
+      { name: 'recovered-sync.log', content: `02:15:01 token_loaded ${token}\n02:15:07 upload_started dst=${remote}:443\n02:15:39 upload_complete bytes=1847712` },
+      { name: 'memory-handles.txt', content: `PID 4488 syncsvc.exe File sync.log\nPID 4488 syncsvc.exe Token ${token}` },
+    ],
+    questions: [
+      { id: 'inode', label: 'Идентификатор удалённого файла', placeholder: 'inode', answers: [String(inode), `${inode}-128-4`] },
+      { id: 'token', label: 'Идентификатор сессии', placeholder: 'token', answers: [token] },
+      { id: 'remote', label: 'Адрес выгрузки', placeholder: 'IP', answers: [remote] },
+    ],
+    hint: 'fls-deleted.txt даёт inode. recovered-sync.log и memory-handles.txt связывают токен, процесс и сеть.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract, forensicTimelineContract, forensicDeletedArtifactContract] as const;
 
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
@@ -705,7 +773,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.webCaseComplete || !['API_AUTHORIZATION', 'SQL_QUERY_REVIEW'].includes(contract.type))
     .filter((contract) => progress.mobileCaseComplete || !['MOBILE_PROFILE', 'MOBILE_TOKEN_BACKUP'].includes(contract.type))
     .filter((contract) => progress.adCaseComplete || !['AD_STALE_ACCOUNT', 'AD_GPO_ACL'].includes(contract.type))
-    .filter((contract) => progress.mailCaseComplete || !['EMAIL_HEADER', 'EMAIL_OAUTH'].includes(contract.type));
+    .filter((contract) => progress.mailCaseComplete || !['EMAIL_HEADER', 'EMAIL_OAUTH'].includes(contract.type))
+    .filter((contract) => progress.forensicsCaseComplete || !['FORENSIC_TIMELINE', 'FORENSIC_DELETED_ARTIFACT'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

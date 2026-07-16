@@ -1,4 +1,4 @@
-const VERSION = '0.7.2';
+const VERSION = '0.8.0';
 const CACHE = `false-access-${VERSION}`;
 const FALLBACK = './index.html';
 const CORE = [
@@ -19,11 +19,6 @@ const CORE = [
   './sites/sfera/index.html',
   './sites/marshrut/index.html',
   './sites/vanta/index.html',
-  './pyodide/pyodide.mjs',
-  './pyodide/pyodide.asm.js',
-  './pyodide/pyodide.asm.wasm',
-  './pyodide/python_stdlib.zip',
-  './pyodide/pyodide-lock.json',
 ];
 
 async function safePut(cache, url) {

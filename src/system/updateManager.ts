@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.7.2';
+export const APP_VERSION = '0.8.0';
 
 export type UpdatePhase = 'idle' | 'checking' | 'latest' | 'available' | 'updating' | 'offline' | 'error';
 
@@ -18,6 +18,8 @@ interface VersionPayload {
 const listeners = new Set<(state: AppUpdateState) => void>();
 let initialized = false;
 let reloadStarted = false;
+let lastCheckAt = 0;
+let activeCheck: Promise<boolean> | null = null;
 let state: AppUpdateState = {
   phase: navigator.onLine ? 'idle' : 'offline',
   online: navigator.onLine,
@@ -31,6 +33,19 @@ function publish(patch: Partial<AppUpdateState>) {
   listeners.forEach((listener) => listener(state));
 }
 
+function timeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(`${label} timeout`)), ms);
+    promise.then((value) => {
+      window.clearTimeout(timer);
+      resolve(value);
+    }, (error) => {
+      window.clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
 export function getUpdateState() {
   return state;
 }
@@ -42,19 +57,29 @@ export function subscribeUpdateState(listener: (next: AppUpdateState) => void) {
 }
 
 async function fetchLatestVersion(): Promise<string> {
-  const url = new URL('./version.json', window.location.href);
-  url.searchParams.set('t', String(Date.now()));
-  const response = await fetch(url, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
-  if (!response.ok) throw new Error(`version request failed: ${response.status}`);
-  const payload = await response.json() as VersionPayload;
-  if (!payload.version) throw new Error('version is missing');
-  return payload.version;
+  const controller = new AbortController();
+  const abortTimer = window.setTimeout(() => controller.abort(), 2400);
+  try {
+    const url = new URL('./version.json', window.location.href);
+    url.searchParams.set('t', String(Date.now()));
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache' },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`version request failed: ${response.status}`);
+    const payload = await response.json() as VersionPayload;
+    if (!payload.version) throw new Error('version is missing');
+    return payload.version;
+  } finally {
+    window.clearTimeout(abortTimer);
+  }
 }
 
 async function clearGameCaches() {
   if (!('caches' in window)) return;
   const keys = await caches.keys();
-  await Promise.all(keys.filter((key) => key.startsWith('false-access-')).map((key) => caches.delete(key)));
+  await Promise.allSettled(keys.filter((key) => key.startsWith('false-access-')).map((key) => caches.delete(key)));
 }
 
 function buildFreshUrl(version: string) {
@@ -72,66 +97,82 @@ export async function forceRefreshToLatest(version = state.latestVersion || APP_
   if (reloadStarted) return;
   reloadStarted = true;
   publish({ phase: 'updating', online: true, message: 'Обновление игры...' });
+
   try {
+    const tasks: Promise<unknown>[] = [timeout(clearGameCaches(), 1800, 'cache cleanup')];
     if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map(async (registration) => {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-        await registration.unregister();
-      }));
+      tasks.push(timeout(navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+        await Promise.allSettled(registrations.map(async (registration) => {
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+          await registration.unregister();
+        }));
+      }), 1800, 'service worker cleanup'));
     }
-    await clearGameCaches();
+    await Promise.allSettled(tasks);
+  } finally {
     window.location.replace(buildFreshUrl(version));
-  } catch {
-    reloadStarted = false;
-    publish({ phase: 'error', message: 'Не удалось обновить игру' });
   }
 }
 
-export async function checkForUpdates(autoApply = true) {
-  if (!navigator.onLine) {
-    publish({ phase: 'offline', online: false, message: 'Нет подключения к интернету' });
-    return false;
-  }
+export function checkForUpdates(autoApply = true, announce = true): Promise<boolean> {
+  if (activeCheck) return activeCheck;
 
-  publish({ phase: 'checking', online: true, message: 'Проверка обновлений...' });
-  try {
-    const latestVersion = await fetchLatestVersion();
-    const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined;
-    await registration?.update();
-    const hasWaitingWorker = Boolean(registration?.waiting);
-    const updateAvailable = latestVersion !== APP_VERSION || hasWaitingWorker;
-
-    if (updateAvailable) {
-      publish({
-        phase: 'available',
-        latestVersion,
-        message: `Доступна версия ${latestVersion}`,
-      });
-      if (autoApply) await forceRefreshToLatest(latestVersion);
-      return true;
+  activeCheck = (async () => {
+    if (!navigator.onLine) {
+      if (announce) publish({ phase: 'offline', online: false, message: 'Нет подключения к интернету' });
+      return false;
     }
 
-    publish({
-      phase: 'latest',
-      latestVersion,
-      message: `Установлена версия ${APP_VERSION}`,
-    });
-    return false;
-  } catch {
-    publish({ phase: 'error', message: 'Не удалось проверить обновления' });
-    return false;
-  }
+    if (announce) publish({ phase: 'checking', online: true, message: 'Проверка обновлений...' });
+    else publish({ online: true });
+
+    try {
+      const latestVersion = await fetchLatestVersion();
+      let registration: ServiceWorkerRegistration | undefined;
+      if ('serviceWorker' in navigator) {
+        registration = await timeout(navigator.serviceWorker.getRegistration(), 1200, 'service worker lookup').catch(() => undefined);
+        if (registration) await timeout(registration.update(), 1800, 'service worker update').catch(() => undefined);
+      }
+      const hasWaitingWorker = Boolean(registration?.waiting);
+      const updateAvailable = latestVersion !== APP_VERSION || hasWaitingWorker;
+      lastCheckAt = Date.now();
+
+      if (updateAvailable) {
+        publish({ phase: 'available', latestVersion, message: `Доступна версия ${latestVersion}` });
+        if (autoApply) void forceRefreshToLatest(latestVersion);
+        return true;
+      }
+
+      publish({
+        phase: announce ? 'latest' : 'idle',
+        latestVersion,
+        message: announce ? `Установлена версия ${APP_VERSION}` : '',
+      });
+      return false;
+    } catch {
+      publish({
+        phase: announce ? 'error' : 'idle',
+        online: navigator.onLine,
+        message: announce ? 'Проверка заняла слишком долго. Игра продолжает работать.' : '',
+      });
+      return false;
+    } finally {
+      activeCheck = null;
+    }
+  })();
+
+  return activeCheck;
 }
 
 async function registerWorker() {
   if (!('serviceWorker' in navigator)) return;
-  const registration = await navigator.serviceWorker.register(`./sw.js?v=${APP_VERSION}`, { updateViaCache: 'none' });
+  const registration = await timeout(
+    navigator.serviceWorker.register(`./sw.js?v=${APP_VERSION}`, { updateViaCache: 'none' }),
+    2500,
+    'service worker registration',
+  );
 
-  if (registration.waiting) {
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-  }
-
+  registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
   registration.addEventListener('updatefound', () => {
     const worker = registration.installing;
     if (!worker) return;
@@ -148,20 +189,24 @@ export function initializeUpdateManager() {
   if (initialized) return;
   initialized = true;
 
+  const backgroundCheck = () => {
+    if (!navigator.onLine || document.visibilityState !== 'visible') return;
+    if (Date.now() - lastCheckAt < 60_000) return;
+    void checkForUpdates(true, false);
+  };
+
   const syncOnlineState = () => {
     publish({
       online: navigator.onLine,
       phase: navigator.onLine ? 'idle' : 'offline',
       message: navigator.onLine ? '' : 'Нет подключения к интернету',
     });
-    if (navigator.onLine) void checkForUpdates(true);
+    if (navigator.onLine) window.setTimeout(backgroundCheck, 150);
   };
 
   window.addEventListener('online', syncOnlineState);
   window.addEventListener('offline', syncOnlineState);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && navigator.onLine) void checkForUpdates(true);
-  });
+  document.addEventListener('visibilitychange', backgroundCheck);
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -171,11 +216,8 @@ export function initializeUpdateManager() {
     });
   }
 
-  void registerWorker()
-    .then(() => checkForUpdates(true))
-    .catch(() => publish({ phase: 'error', message: 'Service Worker не запустился' }));
+  void registerWorker().catch(() => undefined);
+  window.setTimeout(backgroundCheck, 250);
 
-  window.setInterval(() => {
-    if (navigator.onLine && document.visibilityState === 'visible') void checkForUpdates(true);
-  }, 5 * 60 * 1000);
+  window.setInterval(backgroundCheck, 5 * 60 * 1000);
 }

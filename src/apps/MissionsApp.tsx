@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, HardDrive, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -209,13 +209,31 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: 'Не открывай ссылку в обычном браузере. Сверь полный адрес и подпись.', speaker: '?',
       target: 'tor', button: 'Открыть Tor Browser', icon: Network,
     };
+  } else if (!progress.forensicsCaseComplete) {
+    const objectives = [
+      'Прочитать условия и зафиксировать источники.',
+      'Разобрать образ, хэши, volatile data и временные метки.',
+      'Собрать файловую временную линию.',
+      'Связать browser, Prefetch, registry и удалённый лог.',
+      'Разобрать процессы, команды, handles и сеть в памяти.',
+      'Выбрать безопасную локализацию и сохранить chain of custody.',
+      'Самостоятельно разобрать второй образ и составить отчёт.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'DEADFRAME-08', time: `ДЕНЬ ${progress.simulation.clock.day} / НОЧЬ`, title: 'Форензика диска и памяти',
+      context: 'Включённый ноутбук остался после сорванной сделки. Есть E01, снимок RAM и второй образ без готового порядка действий.',
+      objective: objectives[Math.min(progress.forensicsCaseStage, objectives.length - 1)],
+      dialogue: progress.forensicsCaseStage === 0 ? 'Оригиналы не трогай. Сначала хэши и рабочие копии.' : 'Нужны загрузка, исполнение, файлы, сеть и границы доказанного.', speaker: '?',
+      target: 'forensicscase', button: 'Открыть DEADFRAME-08', icon: HardDrive,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'НОЧЬ', title: 'Закрытая сеть',
-      context: progress.darknetChoice === 'accept' ? 'Первый контакт принят. Детали операции придут через Dead Letter.' : 'Первое сообщение оставлено без ответа. Каталоги и форумы остаются доступны.',
-      objective: 'Изучить площадки или выбрать повторяемый заказ.',
-      dialogue: 'Следующая глава — SIEM, EDR и активный противник внутри закрытой инфраструктуры.', speaker: '?',
-      target: 'tor', button: 'Открыть Tor Browser', icon: Network,
+      context: 'DEADFRAME-08 закрыт. Дисковая и memory-forensics база пройдена.',
+      objective: 'Выбрать повторяемый DFIR-заказ или дождаться следующей технической главы.',
+      dialogue: 'Следующая глава — Incident Response и управление активным инцидентом.', speaker: '?',
+      target: 'contracts', button: 'Открыть Work Queue', icon: Network,
     };
   }
 

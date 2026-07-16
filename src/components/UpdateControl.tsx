@@ -40,7 +40,7 @@ export function UpdateButton({ mode = 'check', compact = false }: { mode?: 'chec
 
 export function UpdateBanner() {
   const state = useAppUpdateState();
-  if (!['checking', 'available', 'updating', 'error'].includes(state.phase)) return null;
+  if (!['available', 'updating', 'error'].includes(state.phase)) return null;
   return (
     <div className={`fa-update-banner ${state.phase}`} role="status">
       <RefreshCw size={15} className={state.phase === 'checking' || state.phase === 'updating' ? 'spin' : ''} />

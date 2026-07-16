@@ -50,6 +50,7 @@ interface ProgressContextValue {
   completeAdCase: () => void;
   completeMailCase: () => void;
   completeDarknetCore: (choice: 'accept' | 'ignore') => void;
+  completeForensicsCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -57,7 +58,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v16';
+const STORAGE_KEY = 'false-access-progress-v17';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -227,6 +228,20 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     darknetChoice: parsed.darknetChoice === 'accept' || parsed.darknetChoice === 'ignore' ? parsed.darknetChoice : '',
     darknetReputation: Number.isFinite(Number(parsed.darknetReputation)) ? Math.max(0, Math.min(100, Number(parsed.darknetReputation))) : 0,
     darknetComplete: Boolean(parsed.darknetComplete),
+    forensicsCaseStage: Number.isFinite(Number(parsed.forensicsCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.forensicsCaseStage))) : 0,
+    forensicsCaseFoundationAnswers: parsed.forensicsCaseFoundationAnswers && typeof parsed.forensicsCaseFoundationAnswers === 'object' ? parsed.forensicsCaseFoundationAnswers as Record<string, string> : {},
+    forensicsCaseDiskObjectives: Array.isArray(parsed.forensicsCaseDiskObjectives) ? parsed.forensicsCaseDiskObjectives.filter((item): item is string => typeof item === 'string') : [],
+    forensicsCaseDiskAnswers: parsed.forensicsCaseDiskAnswers && typeof parsed.forensicsCaseDiskAnswers === 'object' ? parsed.forensicsCaseDiskAnswers as Record<string, string> : {},
+    forensicsCaseArtifactObjectives: Array.isArray(parsed.forensicsCaseArtifactObjectives) ? parsed.forensicsCaseArtifactObjectives.filter((item): item is string => typeof item === 'string') : [],
+    forensicsCaseMemoryObjectives: Array.isArray(parsed.forensicsCaseMemoryObjectives) ? parsed.forensicsCaseMemoryObjectives.filter((item): item is string => typeof item === 'string') : [],
+    forensicsCaseMemoryAnswers: parsed.forensicsCaseMemoryAnswers && typeof parsed.forensicsCaseMemoryAnswers === 'object' ? parsed.forensicsCaseMemoryAnswers as Record<string, string> : {},
+    forensicsCaseContainmentSelections: parsed.forensicsCaseContainmentSelections && typeof parsed.forensicsCaseContainmentSelections === 'object' ? parsed.forensicsCaseContainmentSelections as Record<string, string> : {},
+    forensicsCaseIndependentObjectives: Array.isArray(parsed.forensicsCaseIndependentObjectives) ? parsed.forensicsCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    forensicsCaseIndependentAnswers: parsed.forensicsCaseIndependentAnswers && typeof parsed.forensicsCaseIndependentAnswers === 'object' ? parsed.forensicsCaseIndependentAnswers as Record<string, string> : {},
+    forensicsCaseFindingSelections: parsed.forensicsCaseFindingSelections && typeof parsed.forensicsCaseFindingSelections === 'object' ? parsed.forensicsCaseFindingSelections as Record<string, string> : {},
+    forensicsCaseReportSelections: parsed.forensicsCaseReportSelections && typeof parsed.forensicsCaseReportSelections === 'object' ? parsed.forensicsCaseReportSelections as Record<string, string> : {},
+    forensicsCaseHintUses: Number.isFinite(Number(parsed.forensicsCaseHintUses)) ? Math.max(0, Number(parsed.forensicsCaseHintUses)) : 0,
+    forensicsCaseComplete: Boolean(parsed.forensicsCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -250,6 +265,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v16Raw = localStorage.getItem('false-access-progress-v16');
     const v15Raw = localStorage.getItem('false-access-progress-v15');
     const v14Raw = localStorage.getItem('false-access-progress-v14');
     const v13Raw = localStorage.getItem('false-access-progress-v13');
@@ -264,6 +280,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v16Raw
       ?? v15Raw
       ?? v14Raw
       ?? v13Raw
@@ -280,7 +297,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -1183,6 +1200,79 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         darknetComplete: true,
         darknetReputation: choice === 'accept' ? 5 : 2,
         factionRep: { ...current.factionRep, line: (current.factionRep.line ?? 0) + (choice === 'accept' ? 3 : 1) },
+        simulation,
+      };
+    }),
+    completeForensicsCase: () => setProgress((current) => {
+      if (current.forensicsCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 3, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      ['disk-memory-forensics', 'stage-4-dfir'].forEach((id) => { if (!passedExamIds.includes(id)) passedExamIds.push(id); });
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 4),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 6),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 8),
+          reliability: bump(advanced.simulation.reputation.reliability, current.forensicsCaseHintUses > 10 ? 3 : 9),
+          underground: bump(advanced.simulation.reputation.underground, 11),
+        },
+        progression: { ...advanced.simulation.progression, passedExamIds },
+        skills: {
+          ...advanced.simulation.skills,
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 46),
+            guided: bump(advanced.simulation.skills.forensics.guided, 44),
+            independent: bump(advanced.simulation.skills.forensics.independent, 32),
+            production: bump(advanced.simulation.skills.forensics.production, 15),
+          },
+          windows: {
+            ...advanced.simulation.skills.windows,
+            theory: bump(advanced.simulation.skills.windows.theory, 14),
+            guided: bump(advanced.simulation.skills.windows.guided, 16),
+            independent: bump(advanced.simulation.skills.windows.independent, 12),
+            production: bump(advanced.simulation.skills.windows.production, 6),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 18),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 20),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 17),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 9),
+          },
+          threatHunting: {
+            ...advanced.simulation.skills.threatHunting,
+            theory: bump(advanced.simulation.skills.threatHunting.theory, 12),
+            guided: bump(advanced.simulation.skills.threatHunting.guided, 14),
+            independent: bump(advanced.simulation.skills.threatHunting.independent, 11),
+            production: bump(advanced.simulation.skills.threatHunting.production, 5),
+          },
+          communication: {
+            ...advanced.simulation.skills.communication,
+            theory: bump(advanced.simulation.skills.communication.theory, 8),
+            guided: bump(advanced.simulation.skills.communication.guided, 10),
+            independent: bump(advanced.simulation.skills.communication.independent, 10),
+            production: bump(advanced.simulation.skills.communication.production, 6),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'DEADFRAME-08 закрыт', `Диск, память и временная линия разобраны. Подсказок: ${current.forensicsCaseHintUses}.`, 19000);
+      return {
+        ...current,
+        forensicsCaseComplete: true,
+        forensicsCaseStage: 7,
+        balance: advanced.balance + 19000,
+        darknetReputation: bump(current.darknetReputation, 12),
+        factionRep: { ...current.factionRep, line: (current.factionRep.line ?? 0) + 12 },
+        contractOffers: [],
         simulation,
       };
     }),

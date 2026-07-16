@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
-  FileSearch, Globe2, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
+  FileSearch, Globe2, HardDrive, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
   Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, Smartphone, Network, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
@@ -31,6 +31,7 @@ import { WebCaseApp } from '../apps/WebCaseApp';
 import { MobileCaseApp } from '../apps/MobileCaseApp';
 import { AdCaseApp } from '../apps/AdCaseApp';
 import { MailCaseApp } from '../apps/MailCaseApp';
+import { ForensicsCaseApp } from '../apps/ForensicsCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -109,6 +110,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1320, height: 840, accent: '#f0b06a', kind: 'temporary',
     visible: (progress) => progress.adCaseComplete && !progress.mailCaseComplete,
   },
+  {
+    id: 'forensicscase', title: 'DEADFRAME-08', shortTitle: 'DFIR-08', icon: HardDrive,
+    width: 1340, height: 850, accent: '#86b8d8', kind: 'temporary',
+    visible: (progress) => progress.darknetComplete && !progress.forensicsCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -135,6 +141,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'mobilecase': return <MobileCaseApp />;
     case 'adcase': return <AdCaseApp />;
     case 'mailcase': return <MailCaseApp />;
+    case 'forensicscase': return <ForensicsCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;
@@ -292,7 +299,7 @@ export function Desktop() {
       )}
 
       <section className="mobile-os">
-        <header className="mobile-status"><span>{clock}</span><strong>FALSE ACCESS</strong><div><Signal size={13} /><Wifi size={13} /><Shield size={13} /></div></header>
+        <header className="mobile-status"><span>{clock}</span><strong>FALSE ACCESS</strong><span className="mobile-balance">{progress.balance.toLocaleString('ru-RU')} ₽</span><div><Signal size={13} /><Wifi size={13} /><Shield size={13} /></div></header>
         {mobileApp ? (
           <div className="mobile-app-view">
             <header><button onClick={() => setMobileApp(null)}><ChevronUp size={18} /></button><strong>{visibleApps.find((app) => app.id === mobileApp)?.title}</strong><button onClick={() => setMobileApp(null)}><Minus size={18} /></button></header>
