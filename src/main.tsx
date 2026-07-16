@@ -4,12 +4,9 @@ import { ProgressProvider } from './system/ProgressContext';
 import App from './App';
 import '@xterm/xterm/css/xterm.css';
 import './styles.css';
+import { initializeUpdateManager } from './system/updateManager';
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => undefined);
-  });
-}
+initializeUpdateManager();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

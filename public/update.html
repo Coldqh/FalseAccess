@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0b0d" />
+  <title>FALSE ACCESS — обновление</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#08090b;color:#ecece5;font-family:Arial,sans-serif}body{display:grid;place-items:center;padding:20px}.card{width:min(460px,100%);padding:24px;border:1px solid #30343b;background:#111318}.mark{font:700 12px monospace;color:#ff5a38;letter-spacing:.15em}.card h1{margin:14px 0 8px;font-size:28px}.card p{color:#979ca5;line-height:1.5}.bar{height:4px;margin:20px 0;background:#262a31;overflow:hidden}.bar i{display:block;width:35%;height:100%;background:#ff5a38;animation:move 1s linear infinite}@keyframes move{to{transform:translateX(300%)}}button{width:100%;min-height:48px;border:0;background:#ff5a38;color:#090b0d;font-weight:800;cursor:pointer}small{display:block;margin-top:12px;color:#626872;text-align:center}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark">FALSE ACCESS / UPDATE</div>
+    <h1>Обновление игры</h1>
+    <p id="status">Удаляю старый кэш и загружаю свежую сборку.</p>
+    <div class="bar"><i></i></div>
+    <button id="retry" hidden>Повторить</button>
+    <small>Сохранение и прогресс не удаляются.</small>
+  </main>
+  <script>
+    async function update() {
+      const status = document.getElementById('status');
+      const retry = document.getElementById('retry');
+      retry.hidden = true;
+      try {
+        if (!navigator.onLine) throw new Error('Нет подключения к интернету');
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(registration => registration.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter(key => key.startsWith('false-access-')).map(key => caches.delete(key)));
+        }
+        status.textContent = 'Готово. Перезапускаю игру.';
+        const target = new URL('./', location.href);
+        target.searchParams.set('fa_update', '0.4.2');
+        target.searchParams.set('t', Date.now());
+        location.replace(target.href);
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : 'Не удалось обновить игру';
+        retry.hidden = false;
+      }
+    }
+    document.getElementById('retry').addEventListener('click', update);
+    update();
+  </script>
+</body>
+</html>

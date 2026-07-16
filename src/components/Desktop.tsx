@@ -20,6 +20,8 @@ import { InterviewApp } from '../apps/InterviewApp';
 import { FirstShiftApp } from '../apps/FirstShiftApp';
 import { SettingsApp } from '../apps/SettingsApp';
 import { useProgress } from '../system/ProgressContext';
+import { APP_VERSION } from '../system/updateManager';
+import { UpdateButton } from './UpdateControl';
 
 const apps: AppDefinition[] = [
   { id: 'missions', title: 'Missions', shortTitle: 'Missions', icon: BookOpenCheck, width: 920, height: 670, accent: '#ff5a38' },
@@ -124,13 +126,13 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 004.0</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / {APP_VERSION}</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
       <header className="system-bar">
         <div className="system-left"><b>FALSE ACCESS</b><i>/</i><span>PROFILE: ILYA.V</span></div>
-        <div className="system-right"><span className="system-balance">{progress.balance.toLocaleString('ru-RU')} ₽</span><span><Signal size={13} />LOCAL NET</span><span><Shield size={13} />SAFE LAB</span><button onClick={() => setNotificationOpen((value) => !value)}><Bell size={14} />{unread > 0 && <b>{unread}</b>}</button><span>{clock}</span></div>
+        <div className="system-right"><span className="system-balance">{progress.balance.toLocaleString('ru-RU')} ₽</span><span><Signal size={13} />LOCAL NET</span><span><Shield size={13} />SAFE LAB</span><UpdateButton compact /><button onClick={() => setNotificationOpen((value) => !value)}><Bell size={14} />{unread > 0 && <b>{unread}</b>}</button><span>{clock}</span></div>
       </header>
 
       <section className="desktop-icons">
@@ -183,7 +185,7 @@ export function Desktop() {
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
           <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
-          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS 0.4.1</span></footer>
+          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS {APP_VERSION}</span></footer>
         </section>
       )}
 
@@ -207,6 +209,7 @@ export function Desktop() {
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
             <div className="mobile-alert" onClick={() => openApp(progress.firstShiftComplete ? 'contracts' : 'missions')}><BookOpenCheck size={20} /><div><strong>{progress.firstShiftComplete ? 'WORK//QUEUE' : 'СЮЖЕТ'}</strong><span>{progress.firstShiftComplete ? 'Новые заказы доступны' : 'Продолжить текущую миссию'}</span></div><ChevronUp size={17} /></div>
+            <UpdateButton />
             <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={locked ? 'locked' : ''} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
           </>

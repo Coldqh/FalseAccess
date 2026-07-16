@@ -1,9 +1,11 @@
-const VERSION = '0.4.1';
+const VERSION = '0.4.2';
 const CACHE = `false-access-${VERSION}`;
 const FALLBACK = './index.html';
 const CORE = [
   './',
   './index.html',
+  './version.json',
+  './update.html',
   './manifest.webmanifest',
   './assets/icon.svg',
   './assets/icon-maskable.svg',
@@ -27,7 +29,7 @@ async function safePut(cache, url) {
     const response = await fetch(url, { cache: 'reload' });
     if (response.ok) await cache.put(url, response);
   } catch {
-    // One optional file must not break the whole offline install.
+    // Optional files may be cached during the next online launch.
   }
 }
 
@@ -42,7 +44,7 @@ async function cacheBuiltAssets(cache) {
       .filter((url) => !url.startsWith('data:') && !url.startsWith('http'));
     await Promise.allSettled(matches.map((url) => safePut(cache, new URL(url, self.registration.scope).href)));
   } catch {
-    // Runtime caching will fill missing files on the next online launch.
+    // Runtime caching fills the rest.
   }
 }
 
@@ -60,6 +62,15 @@ self.addEventListener('activate', (event) => {
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key.startsWith('false-access-') && key !== CACHE).map((key) => caches.delete(key)));
     await self.clients.claim();
+
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    await Promise.allSettled(windows.map((client) => {
+      const url = new URL(client.url);
+      if (url.searchParams.get('sw_build') === VERSION) return undefined;
+      url.searchParams.set('sw_build', VERSION);
+      url.searchParams.set('t', String(Date.now()));
+      return client.navigate(url.toString());
+    }));
   })());
 });
 
@@ -75,10 +86,15 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
 
+  if (requestUrl.pathname.endsWith('/version.json') || requestUrl.pathname.endsWith('/sw.js')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
-        const fresh = await fetch(event.request);
+        const fresh = await fetch(event.request, { cache: 'no-store' });
         const cache = await caches.open(CACHE);
         await cache.put(event.request, fresh.clone());
         return fresh;

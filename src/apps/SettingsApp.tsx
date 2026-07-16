@@ -4,6 +4,7 @@ import {
   Save, Settings, ShieldCheck, Smartphone, Trash2, Wifi, WifiOff,
 } from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
+import { APP_VERSION, checkForUpdates, forceRefreshToLatest, subscribeUpdateState } from '../system/updateManager';
 
 function formatBytes(value: number) {
   if (!Number.isFinite(value) || value <= 0) return '0 MB';
@@ -40,7 +41,7 @@ export function SettingsApp() {
   const exportSave = () => {
     const payload = JSON.stringify({
       game: 'FALSE ACCESS',
-      version: '0.4.1',
+      version: APP_VERSION,
       exportedAt: new Date().toISOString(),
       progress,
     }, null, 2);
@@ -68,27 +69,14 @@ export function SettingsApp() {
     }
   };
 
-  const forceUpdate = async () => {
-    if (!online) {
-      setStatus('Для обновления нужен интернет');
-      return;
-    }
-    setBusy(true);
-    setStatus('Проверка новой версии...');
-    try {
-      const registrations = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistrations() : [];
-      await Promise.all(registrations.map((registration) => registration.update()));
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.filter((key) => key.startsWith('false-access-')).map((key) => caches.delete(key)));
-      }
-      setStatus('Обновление найдено. Перезапуск...');
-      window.setTimeout(() => window.location.reload(), 350);
-    } catch {
-      setBusy(false);
-      setStatus('Не удалось проверить обновление');
-    }
-  };
+  useEffect(() => subscribeUpdateState((update) => {
+    setOnline(update.online);
+    setBusy(update.phase === 'checking' || update.phase === 'updating');
+    if (update.message) setStatus(update.message);
+  }), []);
+
+  const checkUpdate = () => void checkForUpdates(true);
+  const forceUpdate = () => void forceRefreshToLatest();
 
   const reset = () => {
     if (!window.confirm('Стереть весь прогресс, деньги, репутацию и историю заказов?')) return;
@@ -147,13 +135,16 @@ export function SettingsApp() {
         </article>
 
         <article className="settings-card app-card">
-          <header><span><Smartphone size={19} /></span><div><strong>Приложение</strong><small>BUILD 0.4.1</small></div></header>
+          <header><span><Smartphone size={19} /></span><div><strong>Приложение</strong><small>BUILD {APP_VERSION}</small></div></header>
           <dl>
             <div><dt>Режим</dt><dd>{standalone ? 'Установлено на устройство' : 'Браузер'}</dd></div>
             <div><dt>Хранилище</dt><dd>LocalStorage + Cache Storage</dd></div>
             <div><dt>Сеть</dt><dd>{online ? 'Доступна' : 'Отключена'}</dd></div>
           </dl>
-          <button className="secondary-action full" disabled={busy} onClick={forceUpdate}><RefreshCw size={16} className={busy ? 'spin' : ''} />{busy ? 'Проверка...' : 'Принудительно обновить'}</button>
+          <div className="settings-actions two">
+            <button className="secondary-action" disabled={busy || !online} onClick={checkUpdate}><RefreshCw size={16} className={busy ? 'spin' : ''} />Проверить</button>
+            <button className="primary-action" disabled={busy || !online} onClick={forceUpdate}><CloudDownload size={16} />Принудительно обновить</button>
+          </div>
         </article>
 
         <article className="settings-card danger-card">

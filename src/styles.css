@@ -1863,3 +1863,40 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
     font-size:16px!important;
   }
 }
+
+
+/* 0.4.2 — automatic update delivery */
+.fa-update-button {
+  min-height:40px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid rgba(112,165,216,.28);background:rgba(112,165,216,.055);color:#b9cfe3;
+  font:700 9px var(--mono);cursor:pointer;
+}
+.fa-update-button:hover:not(:disabled) { border-color:rgba(112,165,216,.5);background:rgba(112,165,216,.1); }
+.fa-update-button:disabled { opacity:.6;cursor:default; }
+.fa-update-button small { margin-left:auto;color:#697582;font:600 7px var(--mono); }
+.fa-update-button.latest { color:var(--green);border-color:rgba(157,207,116,.24);background:rgba(157,207,116,.045); }
+.fa-update-button.offline { color:#858b94;border-color:var(--line);background:rgba(255,255,255,.025); }
+.fa-update-button.compact { width:30px;min-width:30px;height:28px;min-height:28px;padding:0;border-color:var(--line);background:transparent;color:#9ba1aa; }
+.system-right .fa-update-button.compact { display:grid;place-items:center; }
+
+.fa-update-banner {
+  position:fixed;z-index:20000;left:50%;bottom:22px;transform:translateX(-50%);
+  min-width:min(440px,calc(100% - 28px));min-height:44px;padding:9px 12px;
+  display:flex;align-items:center;gap:9px;border:1px solid rgba(112,165,216,.3);
+  background:rgba(13,16,20,.96);box-shadow:0 18px 55px rgba(0,0,0,.5);backdrop-filter:blur(18px);
+  color:#cbd1d8;font:700 9px var(--mono);
+}
+.fa-update-banner svg { color:var(--blue); }
+.fa-update-banner button { margin-left:auto;min-height:30px;padding:0 10px;border:0;background:var(--blue);color:#091014;font:700 8px var(--mono);cursor:pointer; }
+.fa-update-banner.error { border-color:rgba(255,77,73,.35);color:#ff8f8b; }
+.fa-update-banner.error svg { color:var(--red); }
+
+@media (max-width:720px) {
+  .mobile-os > .fa-update-button {
+    flex:0 0 auto;width:calc(100% - 28px);margin:0 14px 8px;min-height:40px;
+    justify-content:flex-start;border-radius:0;background:rgba(112,165,216,.05);
+  }
+  .mobile-os > .fa-update-button small { margin-left:auto; }
+  .mobile-grid { padding-top:0; }
+  .fa-update-banner { bottom:calc(12px + env(safe-area-inset-bottom));font-size:10px; }
+}
