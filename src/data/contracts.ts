@@ -385,7 +385,45 @@ function timelineContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract] as const;
+
+function networkSegmentContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const vlan = pick(random, [10, 20, 30, 40]);
+  const subnet = `10.${Math.floor(random() * 30) + 40}.${vlan}.0/24`;
+  const host = `10.${Math.floor(random() * 30) + 40}.${vlan}.${Math.floor(random() * 180) + 20}`;
+  const trustedGateway = host.split('.').slice(0, 3).concat('1').join('.');
+  const rogueGateway = host.split('.').slice(0, 3).concat('254').join('.');
+  const remote = ip(random);
+  const mac = `02:42:${Math.floor(random() * 255).toString(16).padStart(2, '0')}:${Math.floor(random() * 255).toString(16).padStart(2, '0')}:${Math.floor(random() * 255).toString(16).padStart(2, '0')}:${Math.floor(random() * 255).toString(16).padStart(2, '0')}`;
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `network-segment-${seed}`,
+    seed,
+    type: 'NETWORK_SEGMENT',
+    title: 'Чужой gateway в сегменте',
+    client: pick(random, ['закрытый склад', 'диспетчерская', 'серый расчётный офис', 'частный дата-узел']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'networking',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `В ${subnet} один клиент получил сетевые параметры от второго DHCP-сервера. Найди rogue gateway, MAC и внешний адрес соединения.`,
+    constraint: 'Не отключай весь VLAN. Работай по копии DHCP, ARP и flow-журналов.',
+    files: [
+      { name: 'dhcp.log', content: `ACK host=${host} server=${trustedGateway} router=${trustedGateway} dns=10.44.0.53\nOFFER host=${host} server=${rogueGateway} router=${rogueGateway} dns=${rogueGateway}` },
+      { name: 'neighbors.txt', content: `${rogueGateway} dev vlan${vlan} lladdr ${mac} REACHABLE` },
+      { name: 'flows.txt', content: `${host}:53188 -> ${remote}:443 tcp packets=91 bytes=138442` },
+    ],
+    questions: [
+      { id: 'gateway', label: 'Подозрительный gateway', placeholder: 'IP-адрес', answers: [rogueGateway] },
+      { id: 'mac', label: 'MAC устройства', placeholder: 'aa:bb:cc:dd:ee:ff', answers: [mac] },
+      { id: 'remote', label: 'Внешний адрес', placeholder: 'IP-адрес', answers: [remote] },
+    ],
+    hint: 'Сначала сравни server/router в dhcp.log. Затем найди этот IP в neighbors.txt и свяжи клиента с flows.txt.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract] as const;
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
   const daySeed = Number(progress.simulation.clock.dateIso.replaceAll('-', ''));
@@ -394,7 +432,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex))
     .filter((contract) => progress.routeCaseComplete || contract.type !== 'WEB_TIMELINE')
     .filter((contract) => progress.windowsCaseComplete || contract.type !== 'WINDOWS_TRIAGE')
-    .filter((contract) => progress.linuxCaseComplete || contract.type !== 'LINUX_PERSISTENCE');
+    .filter((contract) => progress.linuxCaseComplete || contract.type !== 'LINUX_PERSISTENCE')
+    .filter((contract) => progress.networkCaseComplete || contract.type !== 'NETWORK_SEGMENT');
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

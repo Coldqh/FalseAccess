@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
   FileSearch, Globe2, HeartPulse, Mail, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, ServerCog, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
+  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -25,6 +25,7 @@ import { CityApp } from '../apps/CityApp';
 import { RouteCaseApp } from '../apps/RouteCaseApp';
 import { WindowsCaseApp } from '../apps/WindowsCaseApp';
 import { LinuxCaseApp } from '../apps/LinuxCaseApp';
+import { NetworkCaseApp } from '../apps/NetworkCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -77,6 +78,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1260, height: 780, accent: '#9dcf74', kind: 'temporary',
     visible: (progress) => progress.windowsCaseComplete && !progress.linuxCaseComplete,
   },
+  {
+    id: 'networkcase', title: 'BLACKWIRE-03', shortTitle: 'Net-03', icon: Router,
+    width: 1280, height: 800, accent: '#67c7c4', kind: 'temporary',
+    visible: (progress) => progress.linuxCaseComplete && !progress.networkCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -97,6 +103,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'routecase': return <RouteCaseApp />;
     case 'windowscase': return <WindowsCaseApp />;
     case 'linuxcase': return <LinuxCaseApp />;
+    case 'networkcase': return <NetworkCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

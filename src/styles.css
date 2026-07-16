@@ -2757,3 +2757,52 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
   .linux-wrap > div { grid-template-columns:1fr; }
   .linux-case-main { padding-bottom:100px; }
 }
+
+/* 0.6.3 — Office network campaign */
+.network-case-sidebar nav button.active { border-color:rgba(103,199,196,.36);background:rgba(103,199,196,.07); }
+.network-case-sidebar nav button.active > span,.network-case-sidebar > footer svg,.network-case-main > section > header > svg { border-color:var(--cyan);color:var(--cyan); }
+.network-case-main { overflow-y:auto; }
+.network-topology-grid { margin:14px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px; }
+.network-topology-grid article { min-height:128px;padding:13px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto auto;gap:6px 9px;border:1px solid var(--line);background:#10151a; }
+.network-topology-grid article.warning { border-color:rgba(239,196,107,.32);background:rgba(239,196,107,.045); }
+.network-topology-grid article > span { justify-self:start;padding:4px 6px;border:1px solid var(--line);color:#77828b;font:700 7px var(--mono); }
+.network-topology-grid article > svg { justify-self:end;color:var(--cyan); }
+.network-topology-grid article strong { grid-column:1/-1;color:#d4d8d4;font-size:11px; }
+.network-topology-grid article p { grid-column:1/-1;margin:0;color:#7f8991;font-size:9px; }
+.network-topology-grid article code { grid-column:1/-1;color:#9dcfca;font:600 9px var(--mono); }
+.network-theory-strip { margin:0 0 14px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px; }
+.network-theory-strip article { min-height:112px;padding:12px;border:1px solid var(--line);background:#10151a; }
+.network-theory-strip strong { color:var(--cyan);font:700 8px var(--mono); }
+.network-theory-strip p { margin:8px 0 0;color:#8b949b;font-size:9px;line-height:1.5; }
+.network-question-stack { grid-template-columns:1fr 1fr; }
+.network-guide { margin-bottom:10px; }
+.network-terminal-console,.network-packet-console { min-height:450px;border-color:rgba(103,199,196,.22); }
+.network-terminal-console .route-terminal-history > p,.network-terminal-console .route-terminal-history b,.network-terminal-console .route-terminal-input > span,
+.network-packet-console .route-terminal-history > p,.network-packet-console .route-terminal-history b,.network-packet-console .route-terminal-input > span { color:var(--cyan); }
+.network-packet-console .route-terminal-history pre { color:#9fcfca; }
+.network-command-bank button:hover { border-color:rgba(103,199,196,.38); }
+.network-command-bank strong { color:var(--cyan); }
+.network-evidence-row span { background:#0f1617; }
+.network-evidence-row svg { color:var(--cyan); }
+.network-containment-stage .windows-question-card button.correct,.network-report-stage .windows-question-card button.correct { border-color:rgba(103,199,196,.4);background:rgba(103,199,196,.055); }
+.network-wrap > div { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.network-wrap > svg { color:var(--cyan); }
+
+@media (max-width:960px) {
+  .network-topology-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .network-theory-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width:720px) {
+  .network-case-app { height:100%;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch; }
+  .network-case-sidebar { flex:0 0 auto; }
+  .network-case-main { flex:0 0 auto;overflow:visible;padding-bottom:110px; }
+  .network-topology-grid,.network-theory-strip,.network-question-stack { grid-template-columns:1fr; }
+  .network-topology-grid article { min-height:110px; }
+  .network-terminal-console,.network-packet-console { min-height:540px; }
+  .network-guide { grid-template-columns:30px minmax(0,1fr); }
+  .network-guide > code,.network-guide .mission-guide-actions { grid-column:1/-1; }
+  .network-guide .mission-guide-actions { display:block; }
+  .network-guide .mission-guide-actions button { width:100%;min-height:44px;justify-content:center; }
+  .network-wrap > div { grid-template-columns:1fr; }
+}

@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -144,6 +144,18 @@ export interface ProgressState {
   linuxCaseReportSelections: Record<string, string>;
   linuxCaseHintUses: number;
   linuxCaseComplete: boolean;
+  networkCaseStage: number;
+  networkCaseObjectives: string[];
+  networkCaseFoundationAnswers: Record<string, string>;
+  networkCaseCaptureObjectives: string[];
+  networkCaseProtocolAnswers: Record<string, string>;
+  networkCaseContainmentSelections: Record<string, string>;
+  networkCaseIndependentObjectives: string[];
+  networkCaseIndependentAnswers: Record<string, string>;
+  networkCaseFindingSelections: Record<string, string>;
+  networkCaseReportSelections: Record<string, string>;
+  networkCaseHintUses: number;
+  networkCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, ServerCog, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -111,12 +111,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.linuxCaseStage === 0 ? 'Основной трафик уже на резерве. Не ломай то, что осталось.' : 'Нужны вход, sudo, закрепление и точный масштаб.', speaker: 'И',
       target: 'linuxcase', button: 'Открыть REDTABLE-02', icon: ServerCog,
     };
+  } else if (!progress.networkCaseComplete) {
+    const networkObjectives = [
+      'Прочитать условия и схему BLACKWIRE-03.',
+      'Разобрать IP, gateway, DHCP, DNS и NAT.',
+      'Проверить интерфейсы, маршруты и сетевые параметры.',
+      'Разобрать DHCP, DNS и TCP в захвате трафика.',
+      'Выбрать безопасный план изоляции.',
+      'Самостоятельно проверить сегмент камер.',
+      'Собрать вывод и отчёт по двум сегментам.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'BLACKWIRE-03', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Офисная сеть',
+      context: 'В диспетчерском офисе часть компьютеров получила чужой gateway и DNS. Отдельно зафиксирован внешний трафик камер.',
+      objective: networkObjectives[Math.min(progress.networkCaseStage, networkObjectives.length - 1)],
+      dialogue: progress.networkCaseStage === 0 ? 'Платёжный сегмент на резерве. Не выключай всё подряд.' : 'Нужны DHCP, DNS, маршрут, MAC и точный масштаб.', speaker: 'И',
+      target: 'networkcase', button: 'Открыть BLACKWIRE-03', icon: Router,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: 'REDTABLE-02 закрыт. Открылись задания по SSH, systemd, cron и Bash.',
+      context: 'BLACKWIRE-03 закрыт. Открылись задания по DHCP, DNS, VLAN, NAT и анализу трафика.',
       objective: 'Выбрать заказ или продолжить следующую главу.',
-      dialogue: 'Следующая крупная работа — сеть офиса.', speaker: 'И',
+      dialogue: 'Следующая крупная работа — Web, API и SQL.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

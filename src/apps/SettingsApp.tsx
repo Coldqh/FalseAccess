@@ -91,7 +91,10 @@ export function SettingsApp() {
     + Number(progress.reportSubmitted)
     + Number(progress.interviewComplete)
     + Number(progress.firstShiftComplete)
-    + Number(progress.routeCaseComplete);
+    + Number(progress.routeCaseComplete)
+    + Number(progress.windowsCaseComplete)
+    + Number(progress.linuxCaseComplete)
+    + Number(progress.networkCaseComplete);
 
   return (
     <div className="settings-app app-scroll">

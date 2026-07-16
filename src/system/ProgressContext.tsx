@@ -44,6 +44,7 @@ interface ProgressContextValue {
   completeRouteCase: (choice: RouteCaseChoice) => void;
   completeWindowsCase: () => void;
   completeLinuxCase: () => void;
+  completeNetworkCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -51,7 +52,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v10';
+const STORAGE_KEY = 'false-access-progress-v11';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -138,6 +139,18 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     linuxCaseReportSelections: parsed.linuxCaseReportSelections && typeof parsed.linuxCaseReportSelections === 'object' ? parsed.linuxCaseReportSelections as Record<string, string> : {},
     linuxCaseHintUses: Number.isFinite(Number(parsed.linuxCaseHintUses)) ? Math.max(0, Number(parsed.linuxCaseHintUses)) : 0,
     linuxCaseComplete: Boolean(parsed.linuxCaseComplete),
+    networkCaseStage: Number.isFinite(Number(parsed.networkCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.networkCaseStage))) : 0,
+    networkCaseObjectives: Array.isArray(parsed.networkCaseObjectives) ? parsed.networkCaseObjectives.filter((item): item is string => typeof item === 'string') : [],
+    networkCaseFoundationAnswers: parsed.networkCaseFoundationAnswers && typeof parsed.networkCaseFoundationAnswers === 'object' ? parsed.networkCaseFoundationAnswers as Record<string, string> : {},
+    networkCaseCaptureObjectives: Array.isArray(parsed.networkCaseCaptureObjectives) ? parsed.networkCaseCaptureObjectives.filter((item): item is string => typeof item === 'string') : [],
+    networkCaseProtocolAnswers: parsed.networkCaseProtocolAnswers && typeof parsed.networkCaseProtocolAnswers === 'object' ? parsed.networkCaseProtocolAnswers as Record<string, string> : {},
+    networkCaseContainmentSelections: parsed.networkCaseContainmentSelections && typeof parsed.networkCaseContainmentSelections === 'object' ? parsed.networkCaseContainmentSelections as Record<string, string> : {},
+    networkCaseIndependentObjectives: Array.isArray(parsed.networkCaseIndependentObjectives) ? parsed.networkCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    networkCaseIndependentAnswers: parsed.networkCaseIndependentAnswers && typeof parsed.networkCaseIndependentAnswers === 'object' ? parsed.networkCaseIndependentAnswers as Record<string, string> : {},
+    networkCaseFindingSelections: parsed.networkCaseFindingSelections && typeof parsed.networkCaseFindingSelections === 'object' ? parsed.networkCaseFindingSelections as Record<string, string> : {},
+    networkCaseReportSelections: parsed.networkCaseReportSelections && typeof parsed.networkCaseReportSelections === 'object' ? parsed.networkCaseReportSelections as Record<string, string> : {},
+    networkCaseHintUses: Number.isFinite(Number(parsed.networkCaseHintUses)) ? Math.max(0, Number(parsed.networkCaseHintUses)) : 0,
+    networkCaseComplete: Boolean(parsed.networkCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -161,6 +174,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v10Raw = localStorage.getItem('false-access-progress-v10');
     const v9Raw = localStorage.getItem('false-access-progress-v9');
     const v8Raw = localStorage.getItem('false-access-progress-v8');
     const v7Raw = localStorage.getItem('false-access-progress-v7');
@@ -169,6 +183,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v10Raw
       ?? v9Raw
       ?? v8Raw
       ?? v7Raw
@@ -179,7 +194,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -618,6 +633,79 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         linuxCaseStage: 7,
         balance: advanced.balance + 8000,
         factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 4 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeNetworkCase: () => setProgress((current) => {
+      if (current.networkCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 2, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 3),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 4),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 3),
+          reliability: bump(advanced.simulation.reputation.reliability, current.networkCaseHintUses > 10 ? 1 : 5),
+          underground: bump(advanced.simulation.reputation.underground, 5),
+        },
+        progression: {
+          ...advanced.simulation.progression,
+          passedExamIds: advanced.simulation.progression.passedExamIds.includes('network-foundations')
+            ? advanced.simulation.progression.passedExamIds
+            : [...advanced.simulation.progression.passedExamIds, 'network-foundations'],
+        },
+        skills: {
+          ...advanced.simulation.skills,
+          networking: {
+            ...advanced.simulation.skills.networking,
+            theory: bump(advanced.simulation.skills.networking.theory, 26),
+            guided: bump(advanced.simulation.skills.networking.guided, 28),
+            independent: bump(advanced.simulation.skills.networking.independent, 18),
+            production: bump(advanced.simulation.skills.networking.production, 8),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 10),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 12),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 9),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 5),
+          },
+          securityEngineering: {
+            ...advanced.simulation.skills.securityEngineering,
+            theory: bump(advanced.simulation.skills.securityEngineering.theory, 14),
+            guided: bump(advanced.simulation.skills.securityEngineering.guided, 14),
+            independent: bump(advanced.simulation.skills.securityEngineering.independent, 9),
+            production: bump(advanced.simulation.skills.securityEngineering.production, 4),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 6),
+            guided: bump(advanced.simulation.skills.forensics.guided, 8),
+            independent: bump(advanced.simulation.skills.forensics.independent, 6),
+          },
+          operationalPlanning: {
+            ...advanced.simulation.skills.operationalPlanning,
+            theory: bump(advanced.simulation.skills.operationalPlanning.theory, 7),
+            guided: bump(advanced.simulation.skills.operationalPlanning.guided, 8),
+            independent: bump(advanced.simulation.skills.operationalPlanning.independent, 7),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'BLACKWIRE-03 закрыт', `Rogue DHCP/DNS удалён, сегментация камер восстановлена. Подсказок: ${current.networkCaseHintUses}.`, 9000);
+      return {
+        ...current,
+        networkCaseComplete: true,
+        networkCaseStage: 7,
+        balance: advanced.balance + 9000,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 5 },
         contractOffers: [],
         simulation,
       };
