@@ -42,8 +42,8 @@ const baseMessages: Record<ChatId, ChatMessage[]> = {
 export function MessengerApp({ openApp }: { openApp: (id: AppId) => void }) {
   const { progress, markMessageRead, setFlag } = useProgress();
   const chats = useMemo<ChatInfo[]>(() => progress.criminalContactUnlocked
-    ? [...baseChats, { id: 'igor', name: 'Игорь', role: 'номер не сохранён', preview: 'Есть подработка по логам.', initials: 'И' }]
-    : baseChats, [progress.criminalContactUnlocked]);
+    ? [...baseChats, { id: 'igor', name: 'Игорь', role: 'номер не сохранён', preview: progress.routeCaseComplete ? 'Если будет ещё — напишу.' : progress.routeCaseAccepted ? 'Архив route-01.' : 'Есть подработка по логам.', initials: 'И' }]
+    : baseChats, [progress.criminalContactUnlocked, progress.routeCaseAccepted, progress.routeCaseComplete]);
   const [activeId, setActiveId] = useState<ChatId>('maxim');
   const [mobileScreen, setMobileScreen] = useState<'list' | 'chat'>('list');
   const [callOpen, setCallOpen] = useState(false);
@@ -78,8 +78,22 @@ export function MessengerApp({ openApp }: { openApp: (id: AppId) => void }) {
       if (progress.criminalContactResponse === 'interested') {
         result.push(
           { mine: true, text: 'Что за логи?', time: '19:28' },
-          { mine: false, text: 'Веб-сервер и авторизация. Ничего наружу сканировать не надо. Скину копию, когда будешь дома.', time: '19:29' },
+          { mine: false, text: 'Веб-сервер и авторизация. Встретимся в «Сигнале». Столик у стены.', time: '19:29' },
         );
+      }
+      if (progress.routeCaseAccepted) {
+        result.push(
+          { mine: false, text: 'Архив route-01 у тебя. Два дня. На живой сервер не лезь.', time: '20:14' },
+        );
+      }
+      if (progress.routeCaseComplete) {
+        const reply = progress.routeCaseChoice === 'full' ? 'Получил. Оплату отправил.'
+          : progress.routeCaseChoice === 'safe' ? 'Cookie нет. Ладно, за остальное перевёл.'
+            : progress.routeCaseChoice === 'lie' ? 'Странно. Проверю сам.'
+              : progress.routeCaseChoice === 'owner' ? 'Ты им тоже написал? Понял.'
+                : progress.routeCaseChoice === 'anna' ? 'Больше сюда не пиши.'
+                  : 'Понял.';
+        result.push({ mine: false, text: reply, time: 'сейчас' });
       }
       if (progress.criminalContactResponse === 'declined') {
         result.push(
@@ -194,6 +208,9 @@ export function MessengerApp({ openApp }: { openApp: (id: AppId) => void }) {
               <button onClick={() => respondToIgor('interested')}>Что за логи?</button>
               <button onClick={() => respondToIgor('declined')}>Неинтересно</button>
             </section>
+          )}
+          {activeId === 'igor' && progress.routeCaseAccepted && !progress.routeCaseComplete && (
+            <section className="quick-replies"><button onClick={() => openApp('routecase')}>Открыть route-01</button></section>
           )}
         </div>
 

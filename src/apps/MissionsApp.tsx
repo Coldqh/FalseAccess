@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, Mail, MessageSquare, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MessageSquare, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -58,12 +58,29 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: 'Есть подработка по логам. 8 тысяч после результата.', speaker: '?',
       target: 'messenger', button: 'Открыть Messenger', icon: MessageSquare,
     };
+  } else if (progress.criminalContactResponse === 'interested' && !progress.routeCaseAccepted) {
+    current = {
+      caseId: 'MARSHRUT-01', time: 'ВЕЧЕР', title: 'Встреча с Игорем',
+      context: 'Игорь ждёт в кафе «Сигнал». Он не прислал архив в переписке.',
+      objective: 'Приехать в кафе и забрать копию журналов.',
+      dialogue: 'Столик у стены. Не опаздывай.', speaker: 'И',
+      target: 'city', button: 'Открыть карту', icon: MapPinned,
+    };
+  } else if (progress.routeCaseAccepted && !progress.routeCaseComplete) {
+    const routeObjectives = ['Прочитать условия работы.', 'Разобраться с HTTP-запросами.', 'Осмотреть журналы в терминале.', 'Собрать временную линию в Python.', 'Выбрать подтверждённые факты.', 'Составить отчёт.', 'Решить, что отправить Игорю.', 'Закрыть дело.'];
+    current = {
+      caseId: 'MARSHRUT-01', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Ночная сессия',
+      context: 'Архив службы доставки «Маршрут» открыт в отдельном рабочем пространстве.',
+      objective: routeObjectives[Math.min(progress.routeCaseStage, routeObjectives.length - 1)],
+      dialogue: progress.routeCaseStage < 6 ? 'Нужны IP, время и учётка. Остальное потом.' : 'Скинь IP, время, учётку и cookie.', speaker: 'И',
+      target: 'routecase', button: 'Продолжить дело', icon: FileSearch,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: progress.criminalContactResponse === 'interested' ? 'Игорь обещал прислать копию логов. Пока доступны обычные заказы.' : 'Первая смена закончена. Можно взять подработку.',
+      context: progress.routeCaseComplete ? 'MARSHRUT-01 закрыт. Открылись новые веб-заказы.' : progress.criminalContactResponse === 'interested' ? 'Игорь ждёт встречи в кафе.' : 'Первая смена закончена. Можно взять подработку.',
       objective: 'Выбрать заказ или закрыть компьютер.',
-      dialogue: progress.criminalContactResponse === 'interested' ? 'Скину копию, когда будешь дома.' : 'Завтра будет очередь побольше.', speaker: progress.criminalContactResponse === 'interested' ? 'И' : 'КЗ',
+      dialogue: progress.routeCaseComplete ? 'Если будет ещё работа — напишу.' : progress.criminalContactResponse === 'interested' ? 'Столик у стены.' : 'Завтра будет очередь побольше.', speaker: progress.criminalContactResponse === 'interested' ? 'И' : 'КЗ',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

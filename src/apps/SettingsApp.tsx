@@ -90,7 +90,8 @@ export function SettingsApp() {
     + Number(progress.alertReviewed)
     + Number(progress.reportSubmitted)
     + Number(progress.interviewComplete)
-    + Number(progress.firstShiftComplete);
+    + Number(progress.firstShiftComplete)
+    + Number(progress.routeCaseComplete);
 
   return (
     <div className="settings-app app-scroll">

@@ -1,15 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CompletedContract, GeneratedContract, ProgressState } from '../types';
-import type { DailyActivityId, DayPeriod, FoodPlanId, SimulationSkillId, SpecializationId } from '../simulation/types';
+import type { DailyActivityId, DayPeriod, FoodPlanId, SimulationSkillId, SpecializationId, TravelModeId } from '../simulation/types';
+import type { RouteCaseChoice } from '../missions/route01';
 import { createInitialProgress } from '../data/content';
 import { generateContractOffers } from '../data/contracts';
 import { jobsCatalog, storeItems } from '../simulation/catalog';
 import { getContractAccess, getJobAccess } from '../simulation/progression';
 import {
-  advanceSlots, buyStoreItem, calculateWantedLevel, markContractBoardDay, moveToHousing,
+  advanceSlots, buyStoreItem, calculateWantedLevel, completeCityScene as completeCitySceneState, markContractBoardDay, moveToHousing,
   normalizeSimulation, performDailyActivity, quitCurrentJob, recordSimulationEvent,
   reduceDigitalRisk, resolveDailyEvent, restUntilMorning, setPlannedActivity,
-  syncStoryProgress, takeJob, workCompanyShift,
+  syncStoryProgress, takeJob, travelToCityLocation, workCompanyShift,
 } from '../simulation/engine';
 
 interface ProgressContextValue {
@@ -38,6 +39,9 @@ interface ProgressContextValue {
   setDayPlan: (period: DayPeriod, activityId: DailyActivityId) => void;
   performActivity: (activityId: DailyActivityId) => void;
   resolveDayEvent: (choiceId: string) => void;
+  travelTo: (locationId: string, modeId: TravelModeId) => void;
+  completeCityScene: (sceneId: string) => void;
+  completeRouteCase: (choice: RouteCaseChoice) => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -45,7 +49,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v7';
+const STORAGE_KEY = 'false-access-progress-v8';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -99,6 +103,16 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     shiftReportChoice: legacyShortShift ? '' : (parsed.shiftReportChoice === 'full' || parsed.shiftReportChoice === 'soft' ? parsed.shiftReportChoice : ''),
     criminalContactUnlocked: legacy || legacyShortShift ? false : (Boolean(parsed.criminalContactUnlocked) || firstShiftComplete),
     criminalContactResponse: legacyShortShift ? '' : (parsed.criminalContactResponse === 'interested' || parsed.criminalContactResponse === 'declined' ? parsed.criminalContactResponse : ''),
+    routeCaseAccepted: Boolean(parsed.routeCaseAccepted) || simulation.world.citySceneIds.includes('igor-cafe'),
+    routeCaseStage: Number.isFinite(Number(parsed.routeCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.routeCaseStage))) : 0,
+    routeCaseTerminalObjectives: Array.isArray(parsed.routeCaseTerminalObjectives) ? parsed.routeCaseTerminalObjectives.filter((item): item is string => typeof item === 'string') : [],
+    routeCaseCode: typeof parsed.routeCaseCode === 'string' ? parsed.routeCaseCode : '',
+    routeCaseCodeStep: Number.isFinite(Number(parsed.routeCaseCodeStep)) ? Math.max(0, Number(parsed.routeCaseCodeStep)) : 0,
+    routeCaseBrowserAnswers: parsed.routeCaseBrowserAnswers && typeof parsed.routeCaseBrowserAnswers === 'object' ? parsed.routeCaseBrowserAnswers as Record<string, string> : {},
+    routeCaseFindingSelections: parsed.routeCaseFindingSelections && typeof parsed.routeCaseFindingSelections === 'object' ? parsed.routeCaseFindingSelections as Record<string, string> : {},
+    routeCaseReportSelections: parsed.routeCaseReportSelections && typeof parsed.routeCaseReportSelections === 'object' ? parsed.routeCaseReportSelections as Record<string, string> : {},
+    routeCaseChoice: ['full', 'safe', 'lie', 'refuse', 'owner', 'anna'].includes(String(parsed.routeCaseChoice)) ? parsed.routeCaseChoice as ProgressState['routeCaseChoice'] : '',
+    routeCaseComplete: Boolean(parsed.routeCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -122,11 +136,13 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v7Raw = localStorage.getItem('false-access-progress-v7');
     const v6Raw = localStorage.getItem('false-access-progress-v6');
     const v5Raw = localStorage.getItem('false-access-progress-v5');
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v7Raw
       ?? v6Raw
       ?? v5Raw
       ?? v4Raw
@@ -134,7 +150,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -359,6 +375,67 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     resolveDayEvent: (choiceId) => setProgress((current) => {
       const result = resolveDailyEvent(current.simulation, current.balance, choiceId);
       return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    travelTo: (locationId, modeId) => setProgress((current) => {
+      const result = travelToCityLocation(current.simulation, current.balance, locationId, modeId);
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    completeCityScene: (sceneId) => setProgress((current) => ({
+      ...current,
+      ...(sceneId === 'igor-cafe' ? { routeCaseAccepted: true, routeCaseStage: Math.max(0, current.routeCaseStage) } : {}),
+      simulation: completeCitySceneState(current.simulation, sceneId),
+    })),
+    completeRouteCase: (choice) => setProgress((current) => {
+      if (current.routeCaseComplete) return current;
+      const config = {
+        full: { pay: 8000, igor: 4, sfera: 0, professional: 0, reliability: 2, underground: 5, digital: 8, corporate: 0, criminal: 10 },
+        safe: { pay: 5000, igor: 2, sfera: 0, professional: 1, reliability: 2, underground: 2, digital: 2, corporate: 0, criminal: 3 },
+        lie: { pay: 3500, igor: 1, sfera: 0, professional: 0, reliability: -1, underground: 2, digital: 2, corporate: 0, criminal: 4 },
+        refuse: { pay: 0, igor: -2, sfera: 0, professional: 1, reliability: 1, underground: 0, digital: 0, corporate: 0, criminal: 0 },
+        owner: { pay: 2500, igor: -3, sfera: 0, professional: 4, reliability: 3, underground: 0, digital: 1, corporate: 0, criminal: 1 },
+        anna: { pay: 0, igor: -3, sfera: 4, professional: 4, reliability: 2, underground: 0, digital: 1, corporate: 5, criminal: 1 },
+      }[choice];
+      const advanced = advanceSlots(current.simulation, current.balance, 2, 'contract');
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: Math.min(100, advanced.simulation.heat.digitalTrace + config.digital),
+        corporateSuspicion: Math.min(100, advanced.simulation.heat.corporateSuspicion + config.corporate),
+        criminalExposure: Math.min(100, advanced.simulation.heat.criminalExposure + config.criminal),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, config.professional),
+          reliability: bump(advanced.simulation.reputation.reliability, config.reliability),
+          underground: bump(advanced.simulation.reputation.underground, config.underground),
+        },
+        skills: {
+          ...advanced.simulation.skills,
+          web: { ...advanced.simulation.skills.web, theory: bump(advanced.simulation.skills.web.theory, 10), guided: bump(advanced.simulation.skills.web.guided, 12), independent: bump(advanced.simulation.skills.web.independent, 7) },
+          python: { ...advanced.simulation.skills.python, theory: bump(advanced.simulation.skills.python.theory, 9), guided: bump(advanced.simulation.skills.python.guided, 12), independent: bump(advanced.simulation.skills.python.independent, 6) },
+          networking: { ...advanced.simulation.skills.networking, theory: bump(advanced.simulation.skills.networking.theory, 6), guided: bump(advanced.simulation.skills.networking.guided, 5) },
+          soc: { ...advanced.simulation.skills.soc, independent: bump(advanced.simulation.skills.soc.independent, 5), production: bump(advanced.simulation.skills.soc.production, 2) },
+          communication: { ...advanced.simulation.skills.communication, production: bump(advanced.simulation.skills.communication.production, 3) },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'MARSHRUT-01 закрыт', `Решение: ${choice}. Получено ${config.pay.toLocaleString('ru-RU')} ₽.`, config.pay);
+      return {
+        ...current,
+        routeCaseComplete: true,
+        routeCaseChoice: choice,
+        balance: advanced.balance + config.pay,
+        factionRep: {
+          ...current.factionRep,
+          north: Math.max(0, (current.factionRep.north ?? 0) + config.igor),
+          sfera: Math.max(0, (current.factionRep.sfera ?? 0) + config.sfera),
+        },
+        contractOffers: [],
+        simulation,
+      };
     }),
     toggleSpecialization: (id) => setProgress((current) => {
       const selected = current.simulation.progression.selectedSpecializations;

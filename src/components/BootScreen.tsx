@@ -35,7 +35,7 @@ export function BootScreen() {
       <div className="boot-grid" />
       <section className="boot-panel">
         <div className="boot-title-row">
-          <div><p className="eyebrow">LOCAL BUILD 0.5.2</p><h1>FALSE<br />ACCESS</h1></div>
+          <div><p className="eyebrow">LOCAL BUILD 0.6.0</p><h1>FALSE<br />ACCESS</h1></div>
         </div>
         <div className="boot-log">{bootLines.slice(0, visible).map((line, index) => <div key={line} className={index === visible - 1 ? 'boot-line active' : 'boot-line'}>{line}</div>)}</div>
         <div className="boot-meta"><span>OSTROGORSK</span><span>14.03.2026 / 21:20</span><span>LOCAL SESSION</span></div>

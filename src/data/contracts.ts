@@ -271,12 +271,49 @@ function pythonContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, processContract, pythonContract, secretContract, webContract] as const;
+function timelineContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const session = `sid_${Math.floor(random() * 9000) + 1000}`;
+  const internal = localIp(random);
+  const external = ip(random);
+  const user = pick(random, ['operator', 'dispatcher', 'manager', 'support']);
+  const rows = [
+    JSON.stringify({ time: '18:22:11', event: 'session_created', user, ip: internal, session }),
+    JSON.stringify({ time: '02:08:44', event: 'session_used', user, ip: external, session }),
+    JSON.stringify({ time: '02:09:02', event: 'admin_opened', user, ip: external, session, path: '/admin' }),
+  ];
+  const difficulty = difficultyFor('web', index + 2);
+  return {
+    id: `timeline-${seed}`,
+    seed,
+    type: 'WEB_TIMELINE',
+    title: 'Повторное использование сессии',
+    client: pick(random, ['служба доставки', 'панель склада', 'сервис заявок', 'личный кабинет дилеров']),
+    factionId: pick(random, ['line', 'sfera']),
+    factionName: '',
+    skill: 'web',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'В JSONL смешаны создание сессии и поздние запросы. Восстанови временную линию и найди внешний адрес.',
+    constraint: 'Работай только с копией. Не проверяй действительность cookie.',
+    files: [{ name: 'timeline.jsonl', content: rows.join('\n') }],
+    questions: [
+      { id: 'session', label: 'Идентификатор сессии', placeholder: 'session id', answers: [session] },
+      { id: 'external', label: 'Внешний адрес', placeholder: 'IP', answers: [external] },
+      { id: 'verdict', label: 'Что произошло?', placeholder: 'краткий вывод', answers: ['повторное использование сессии', 'использование сессии', 'session reuse'] },
+    ],
+    hint: 'Сначала отсортируй строки по time, затем сравни одинаковое поле session у разных IP.',
+    starterCode: `from pathlib import Path\nimport json\n\nevents = [json.loads(line) for line in Path("/home/pyodide/timeline.jsonl").read_text().splitlines()]\nevents.sort(key=lambda event: event["time"])\nfor event in events:\n    print(event["time"], event["event"], event["ip"], event["session"])\n`,
+    expectedOutput: external,
+  };
+}
+
+const builders = [authContract, dnsContract, processContract, pythonContract, secretContract, webContract, timelineContract] as const;
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
   const daySeed = Number(progress.simulation.clock.dateIso.replaceAll('-', ''));
   const baseSeed = daySeed + refreshIndex * 997 + progress.completedContracts.length * 131;
-  const candidates = builders.map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex));
+  const candidates = builders.map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex)).filter((contract) => progress.routeCaseComplete || contract.type !== 'WEB_TIMELINE');
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

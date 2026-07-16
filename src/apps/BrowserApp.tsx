@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ExternalLink, Home, Lock, MoreVertical, RefreshCw } from 'lucide-react';
+import { useProgress } from '../system/ProgressContext';
 
-const sites = [
+const baseSites = [
   { id: 'sfera', label: 'Сфера-Интеграция', path: 'sites/sfera/index.html', display: 'sfera-integration.local/careers' },
   { id: 'news', label: 'Острогорск Сегодня', path: 'sites/ostrogorsk-news/index.html', display: 'ostrogorsk-news.local' },
   { id: 'clinic', label: 'Городская клиника №4', path: 'sites/clinic/index.html', display: 'clinic-4.local' },
 ];
 
 export function BrowserApp() {
+  const { progress } = useProgress();
+  const sites = useMemo(() => progress.routeCaseAccepted ? [...baseSites, { id: 'marshrut', label: 'Маршрут', path: 'sites/marshrut/index.html', display: 'marshrut.local' }] : baseSites, [progress.routeCaseAccepted]);
   const [activeId, setActiveId] = useState('sfera');
   const [reloadKey, setReloadKey] = useState(0);
   const active = useMemo(() => sites.find((site) => site.id === activeId)!, [activeId]);

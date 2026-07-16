@@ -8,6 +8,7 @@ import {
 import { useProgress } from '../system/ProgressContext';
 import { cities, foodPlans, housingCatalog, jobsCatalog, periodLabels, storeItems } from '../simulation/catalog';
 import { getCurrentStage, getJobAccess } from '../simulation/progression';
+import { getCityLocation, isLocationOpen } from '../simulation/city';
 import { activityById, dailyActivities, dayPeriods, getDailyEvent, isScheduledWorkPeriod, periodKey } from '../simulation/daily';
 import type { AppId } from '../types';
 import type { DailyActivityId, FoodPlanId } from '../simulation/types';
@@ -62,6 +63,7 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
   const sim = progress.simulation;
   const city = cities.find((entry) => entry.id === sim.world.currentCityId) ?? cities[0];
   const housing = housingCatalog.find((entry) => entry.id === sim.housing.currentHousingId) ?? housingCatalog[0];
+  const currentLocation = getCityLocation(sim.world.currentLocationId);
   const foodPlan = foodPlans.find((entry) => entry.id === sim.foodPlanId) ?? foodPlans[1];
   const owned = new Set(sim.inventory.map((entry) => entry.itemId));
   const equipment = useMemo(() => ({
@@ -71,8 +73,10 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
     resilience: Number(owned.has('ups')) + Number(owned.has('backup-drive')) + Number(owned.has('used-laptop')),
   }), [sim.inventory]);
 
-  const canWork = isScheduledWorkPeriod(sim) && sim.needs.energy >= 25 && sim.needs.focus >= 20;
   const currentJob = jobsCatalog.find((entry) => entry.id === sim.career.jobId);
+  const workplace = currentJob?.locationId ? getCityLocation(currentJob.locationId) : undefined;
+  const atWorkplace = Boolean(currentJob?.remote || (currentJob?.locationId && currentJob.locationId === sim.world.currentLocationId));
+  const canWork = isScheduledWorkPeriod(sim) && atWorkplace && (!workplace || isLocationOpen(workplace, sim.clock.period)) && sim.needs.energy >= 25 && sim.needs.focus >= 20;
   const stage = getCurrentStage(progress);
   const periodIndex = dayPeriods.indexOf(sim.clock.period);
   const storyTarget: AppId = !progress.clinicWrapupComplete
@@ -119,10 +123,11 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
     return true;
   });
 
-  const currentActionBlocked = (currentActivityId === 'work' && !canWork) || (currentActivityId === 'maintenance' && progress.balance < 600);
+  const currentActionBlocked = (currentActivityId === 'work' && (!atWorkplace ? false : !canWork)) || (currentActivityId === 'maintenance' && progress.balance < 600);
 
   const runCurrentActivity = () => {
     if (currentActivityId === 'contract') { openApp('contracts'); return; }
+    if (currentActivityId === 'work' && !atWorkplace) { openApp('city'); return; }
     if (currentActivityId === 'story') { openApp(storyTarget); return; }
     performActivity(currentActivityId);
   };
@@ -146,7 +151,7 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
       <main className="life-main app-scroll">
         <header className="life-topbar">
           <div><p className="eyebrow">КАЛЕНДАРЬ / ОСТРОГОРСК</p><h2>{tabs.find((item) => item.id === tab)?.label}</h2></div>
-          <div className="life-clock"><CalendarDays size={17} /><div><strong>{formatDate(sim.clock.dateIso)}</strong><span>{periodLabels[sim.clock.period]}</span></div></div>
+          <div className="life-clock"><CalendarDays size={17} /><div><strong>{formatDate(sim.clock.dateIso)}</strong><span>{periodLabels[sim.clock.period]}</span></div></div><button className="life-location-chip" onClick={() => openApp('city')}><MapPin size={16} /><div><strong>{currentLocation?.shortName ?? 'Острогорск'}</strong><span>Открыть карту</span></div></button>
         </header>
 
         {tab === 'today' && (
@@ -154,7 +159,7 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
             <section className="daily-summary-grid">
               <article><span>Текущий период</span><strong>{periodLabels[sim.clock.period]}</strong><small>День {sim.clock.day}</small></article>
               <article><span>Свободные деньги</span><strong>{progress.balance.toLocaleString('ru-RU')} ₽</strong><small>Еда утром: −{foodPlan.dailyCost.toLocaleString('ru-RU')} ₽</small></article>
-              <article><span>Работа</span><strong>{sim.career.status === 'employed' ? sim.career.title : 'Нет'}</strong><small>{isScheduledWorkPeriod(sim) ? 'Смена должна быть закрыта сейчас' : `Следующая зарплата: день ${sim.career.nextPayDay}`}</small></article>
+              <article><span>Работа</span><strong>{sim.career.status === 'employed' ? sim.career.title : 'Нет'}</strong><small>{isScheduledWorkPeriod(sim) ? (atWorkplace ? 'Смена должна быть закрыта сейчас' : `Нужно приехать: ${workplace?.shortName ?? 'офис'}`) : `Следующая зарплата: день ${sim.career.nextPayDay}`}</small></article>
               <article className={daysToDeadline !== null && daysToDeadline <= 0 ? 'danger' : ''}><span>Контракт</span><strong>{progress.activeContract ? `до дня ${activeDeadline}` : 'Не принят'}</strong><small>{progress.activeContract ? `${progress.activeContract.durationSlots ?? 1} период · ${daysToDeadline! < 0 ? 'просрочен' : `осталось ${daysToDeadline} дн.`}` : 'Новые заказы приходят утром'}</small></article>
             </section>
 
@@ -287,7 +292,7 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
         {tab === 'market' && (
           <>
             <section className="life-section-head"><div><h3>Техника</h3><p>Покупки остаются в инвентаре и будут ограничивать будущие лаборатории и операции.</p></div><ShoppingBag size={24} /></section>
-            <section className="store-grid">{storeItems.map((item) => { const Icon = itemIcon(item.category); const has = owned.has(item.id); return <article key={item.id} className={has ? 'owned' : ''}><header><span><Icon size={22} /></span><b>{item.category.toUpperCase()}</b></header><h3>{item.name}</h3><p>{item.description}</p><div>{item.bonuses.map((bonus) => <small key={bonus}><Check size={12} />{bonus}</small>)}</div><footer><strong>{item.price.toLocaleString('ru-RU')} ₽</strong><button disabled={has || progress.balance < item.price} onClick={() => buyItem(item.id)}>{has ? 'Куплено' : 'Купить'}</button></footer></article>; })}</section>
+            <section className="store-grid">{storeItems.map((item) => { const Icon = itemIcon(item.category); const has = owned.has(item.id); return <article key={item.id} className={has ? 'owned' : ''}><header><span><Icon size={22} /></span><b>{item.category.toUpperCase()}</b></header><h3>{item.name}</h3><p>{item.description}</p><div>{item.bonuses.map((bonus) => <small key={bonus}><Check size={12} />{bonus}</small>)}</div><small className="store-location-note"><MapPin size={11} />{item.sellerLocationIds.includes(sim.world.currentLocationId) ? (currentLocation && isLocationOpen(currentLocation, sim.clock.period) ? 'Доступно здесь' : 'Магазин закрыт') : 'Нужно приехать в магазин'}</small><footer><strong>{item.price.toLocaleString('ru-RU')} ₽</strong><button disabled={has || progress.balance < item.price || (item.sellerLocationIds.includes(sim.world.currentLocationId) && (!currentLocation || !isLocationOpen(currentLocation, sim.clock.period)))} onClick={() => item.sellerLocationIds.includes(sim.world.currentLocationId) ? buyItem(item.id) : openApp('city')}>{has ? 'Куплено' : item.sellerLocationIds.includes(sim.world.currentLocationId) ? 'Купить' : 'Открыть City'}</button></footer></article>; })}</section>
             <section className="life-panel inventory-panel"><header><PackageCheck size={18} /><span>Инвентарь</span></header><div>{sim.inventory.map((entry) => { const item = storeItems.find((candidate) => candidate.id === entry.itemId); return <span key={entry.itemId}>{item?.name ?? (entry.itemId === 'old-pc' ? 'Старый системный блок' : 'Основной телефон')} · {entry.condition}%</span>; })}</div></section>
           </>
         )}
@@ -300,7 +305,7 @@ export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
             </section>
 
             {sim.career.status === 'employed' && <section className="career-controls"><article><span>Смены</span><strong>{sim.career.shiftsWorked}</strong></article><article><span>Результат</span><strong>{sim.career.performance}/100</strong></article><article><span>Предупреждения</span><strong>{sim.career.warnings}</strong></article><button className="primary-action" disabled={!canWork} onClick={workShift}><BriefcaseBusiness size={17} />Отработать смену</button><button className="secondary-action" onClick={() => setConfirmQuit(true)}>Уволиться</button></section>}
-            {!canWork && sim.career.status === 'employed' && <div className="career-warning"><AlertTriangle size={17} />Перед сменой нужно восстановить энергию и концентрацию.</div>}
+            {!canWork && sim.career.status === 'employed' && <div className="career-warning"><AlertTriangle size={17} />{!atWorkplace ? `Сначала доберись до точки работы: ${workplace?.name ?? 'офис'}.` : 'Перед сменой нужно восстановить энергию и концентрацию.'}</div>}
 
             <section className="life-section-head"><div><h3>Вакансии</h3><p>Навыки и репутация проверяются по фактически выполненным задачам.</p></div><BriefcaseBusiness size={24} /></section>
             <section className="job-grid">{jobsCatalog.map((job) => {

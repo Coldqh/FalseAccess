@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -111,6 +111,16 @@ export interface ProgressState {
   shiftReportChoice: 'full' | 'soft' | '';
   criminalContactUnlocked: boolean;
   criminalContactResponse: 'interested' | 'declined' | '';
+  routeCaseAccepted: boolean;
+  routeCaseStage: number;
+  routeCaseTerminalObjectives: string[];
+  routeCaseCode: string;
+  routeCaseCodeStep: number;
+  routeCaseBrowserAnswers: Record<string, string>;
+  routeCaseFindingSelections: Record<string, string>;
+  routeCaseReportSelections: Record<string, string>;
+  routeCaseChoice: 'full' | 'safe' | 'lie' | 'refuse' | 'owner' | 'anna' | '';
+  routeCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

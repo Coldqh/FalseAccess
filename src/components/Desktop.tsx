@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
-  Globe2, HeartPulse, Mail, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
+  FileSearch, Globe2, HeartPulse, Mail, MapPinned, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
   Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
@@ -21,6 +21,8 @@ import { FirstShiftApp } from '../apps/FirstShiftApp';
 import { SettingsApp } from '../apps/SettingsApp';
 import { LifeApp } from '../apps/LifeApp';
 import { CareerApp } from '../apps/CareerApp';
+import { CityApp } from '../apps/CityApp';
+import { RouteCaseApp } from '../apps/RouteCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -35,6 +37,7 @@ const always = () => true;
 
 const apps: RuntimeAppDefinition[] = [
   { id: 'life', title: 'Life', shortTitle: 'Life', icon: HeartPulse, width: 1180, height: 740, accent: '#67c7c4', kind: 'core', visible: always },
+  { id: 'city', title: 'City', shortTitle: 'City', icon: MapPinned, width: 1240, height: 760, accent: '#70a5d8', kind: 'core', visible: always },
   { id: 'career', title: 'Career', shortTitle: 'Career', icon: ChartNoAxesCombined, width: 1180, height: 740, accent: '#9dcf74', kind: 'core', visible: always },
   { id: 'missions', title: 'Missions', shortTitle: 'Missions', icon: BookOpenCheck, width: 920, height: 670, accent: '#ff5a38', kind: 'core', visible: always },
   { id: 'contracts', title: 'Work Queue', shortTitle: 'Contracts', icon: BriefcaseBusiness, width: 1180, height: 720, accent: '#efc46b', kind: 'core', visible: always },
@@ -57,11 +60,17 @@ const apps: RuntimeAppDefinition[] = [
     width: 1120, height: 720, accent: '#67c7c4', kind: 'temporary',
     visible: (progress) => progress.jobAccepted && !progress.firstShiftComplete,
   },
+  {
+    id: 'routecase', title: 'MARSHRUT-01', shortTitle: 'Route-01', icon: FileSearch,
+    width: 1240, height: 760, accent: '#67c7c4', kind: 'temporary',
+    visible: (progress) => progress.routeCaseAccepted && !progress.routeCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
   switch (id) {
     case 'life': return <LifeApp openApp={openApp} />;
+    case 'city': return <CityApp openApp={openApp} />;
     case 'career': return <CareerApp />;
     case 'missions': return <MissionsApp openApp={openApp} />;
     case 'contracts': return <ContractsApp />;
@@ -73,6 +82,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'siem': return <SiemApp openApp={openApp} />;
     case 'interview': return <InterviewApp />;
     case 'firstshift': return <FirstShiftApp />;
+    case 'routecase': return <RouteCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;
@@ -154,7 +164,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>DAILY LOOP BUILD / {APP_VERSION}</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>CITY BUILD / {APP_VERSION}</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -239,10 +249,10 @@ export function Desktop() {
         ) : (
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
-            <div className="mobile-alert" onClick={() => openApp('life')}><CalendarClock size={20} /><div><strong>ПРОГРЕСС</strong><span>План дня, смены и дедлайны</span></div><ChevronUp size={17} /></div>
+            <div className="mobile-alert" onClick={() => openApp('city')}><CalendarClock size={20} /><div><strong>ОСТРОГОРСК</strong><span>{progress.simulation.world.currentLocationId === 'family-home' ? 'Ты дома' : 'Открыть карту города'}</span></div><ChevronUp size={17} /></div>
             <UpdateButton />
             <div className="mobile-grid">{visibleApps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={`${locked ? 'locked' : ''} ${app.kind === 'temporary' ? 'temporary-app' : ''}`} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong>{app.kind === 'temporary' && <i>STORY</i>}</button>; })}</div>
-            <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
+            <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('city')}><MapPinned size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
           </>
         )}
       </section>

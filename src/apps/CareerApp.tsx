@@ -52,7 +52,7 @@ export function CareerApp() {
 
       <main className="career-main app-scroll">
         <header className="career-topbar">
-          <div><p className="eyebrow">PROGRESSION / 0.5.2</p><h2>{tabs.find((item) => item.id === tab)?.label}</h2></div>
+          <div><p className="eyebrow">PROGRESSION / 0.6.0</p><h2>{tabs.find((item) => item.id === tab)?.label}</h2></div>
           <div className="career-current-chip"><Shield size={17} /><div><strong>Этап {stage}</strong><span>{stageDefinition.title}</span></div></div>
         </header>
 

@@ -1,4 +1,5 @@
 export type DayPeriod = 'morning' | 'workday' | 'evening' | 'night';
+export type TravelModeId = 'walk' | 'bus' | 'taxi';
 export type FoodPlanId = 'economy' | 'normal' | 'balanced';
 export type CareerStatus = 'unemployed' | 'employed';
 export type SimulationEventType = 'time' | 'expense' | 'income' | 'housing' | 'career' | 'risk' | 'purchase' | 'progression' | 'daily' | 'contract';
@@ -137,6 +138,11 @@ export interface SimulationEvent {
 export interface WorldState {
   currentCityId: string;
   unlockedCityIds: string[];
+  currentLocationId: string;
+  visitedLocationIds: string[];
+  travelMinutesToday: number;
+  travelDay: number;
+  citySceneIds: string[];
 }
 
 export interface SimulationState {

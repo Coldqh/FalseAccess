@@ -1,7 +1,8 @@
-import { foodPlans, housingCatalog, jobsCatalog } from './catalog';
+import { foodPlans, housingCatalog, jobsCatalog, storeItems } from './catalog';
 import { activityById, createDailyEvent, getDailyEvent, isScheduledWorkPeriod, periodKey } from './daily';
+import { calculateTravelRoute, getCityLocation, isLocationOpen } from './city';
 import type {
-  DailyActivityId, DayPeriod, HeatState, SimulationEvent, SimulationSkillId, SimulationState, SkillTrackState,
+  DailyActivityId, DayPeriod, HeatState, SimulationEvent, SimulationSkillId, SimulationState, SkillTrackState, TravelModeId,
 } from './types';
 
 const PERIODS: DayPeriod[] = ['morning', 'workday', 'evening', 'night'];
@@ -63,7 +64,7 @@ function normalizeHeat(heat: HeatState): HeatState {
 
 export function createInitialSimulation(storyJob = false, firstShiftComplete = false): SimulationState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     clock: { day: 1, dateIso: '2026-03-17', period: 'evening', elapsedSlots: 0 },
     needs: { energy: 78, stress: 16, health: 94, focus: 76 },
     foodPlanId: 'normal',
@@ -95,7 +96,15 @@ export function createInitialSimulation(storyJob = false, firstShiftComplete = f
       event: null,
       resolvedEventIds: [],
     },
-    world: { currentCityId: 'ostrogorsk', unlockedCityIds: ['ostrogorsk'] },
+    world: {
+      currentCityId: 'ostrogorsk',
+      unlockedCityIds: ['ostrogorsk'],
+      currentLocationId: 'family-home',
+      visitedLocationIds: ['family-home'],
+      travelMinutesToday: 0,
+      travelDay: 1,
+      citySceneIds: [],
+    },
     events: [{ id: 'sim-start', day: 1, period: 'evening', type: 'time', title: 'Система жизни запущена', text: 'Расходы, время, жильё и работа теперь считаются отдельно от сюжета.' }],
     settledThroughDay: 1,
   };
@@ -113,7 +122,7 @@ export function normalizeSimulation(value: unknown, storyJob: boolean, firstShif
   return {
     ...fallback,
     ...parsed,
-    schemaVersion: 3,
+    schemaVersion: 4,
     clock: { ...fallback.clock, ...(parsed.clock ?? {}) },
     needs: {
       energy: clamp(parsed.needs?.energy ?? fallback.needs.energy),
@@ -144,7 +153,16 @@ export function normalizeSimulation(value: unknown, storyJob: boolean, firstShif
       event: parsed.daily?.event && typeof parsed.daily.event === 'object' ? parsed.daily.event : null,
       resolvedEventIds: Array.isArray(parsed.daily?.resolvedEventIds) ? parsed.daily!.resolvedEventIds.filter((item): item is string => typeof item === 'string').slice(-30) : [],
     },
-    world: { ...fallback.world, ...(parsed.world ?? {}), unlockedCityIds: Array.isArray(parsed.world?.unlockedCityIds) ? parsed.world!.unlockedCityIds : fallback.world.unlockedCityIds },
+    world: {
+      ...fallback.world,
+      ...(parsed.world ?? {}),
+      unlockedCityIds: Array.isArray(parsed.world?.unlockedCityIds) ? parsed.world!.unlockedCityIds : fallback.world.unlockedCityIds,
+      currentLocationId: typeof parsed.world?.currentLocationId === 'string' ? parsed.world.currentLocationId : (housingCatalog.find((item) => item.id === (parsed.housing?.currentHousingId ?? fallback.housing.currentHousingId))?.locationId ?? fallback.world.currentLocationId),
+      visitedLocationIds: Array.isArray(parsed.world?.visitedLocationIds) ? parsed.world!.visitedLocationIds.filter((item): item is string => typeof item === 'string') : fallback.world.visitedLocationIds,
+      travelMinutesToday: Number.isFinite(Number(parsed.world?.travelMinutesToday)) ? Math.max(0, Number(parsed.world?.travelMinutesToday)) : 0,
+      travelDay: Number.isFinite(Number(parsed.world?.travelDay)) ? Number(parsed.world?.travelDay) : (parsed.clock?.day ?? fallback.clock.day),
+      citySceneIds: Array.isArray(parsed.world?.citySceneIds) ? parsed.world!.citySceneIds.filter((item): item is string => typeof item === 'string') : [],
+    },
     events: Array.isArray(parsed.events) ? parsed.events.slice(0, 60) : fallback.events,
     settledThroughDay: Number.isFinite(Number(parsed.settledThroughDay)) ? Number(parsed.settledThroughDay) : fallback.settledThroughDay,
   };
@@ -216,6 +234,11 @@ function settleNewDay(simulation: SimulationState, balance: number) {
       planDay: sim.clock.day,
       plan: {},
       event: null,
+    },
+    world: {
+      ...sim.world,
+      travelMinutesToday: 0,
+      travelDay: sim.clock.day,
     },
   };
   sim = { ...sim, daily: { ...sim.daily, event: createDailyEvent(sim, nextBalance) } };
@@ -306,7 +329,10 @@ export function restUntilMorning(simulation: SimulationState, balance: number) {
 }
 
 export function workCompanyShift(simulation: SimulationState, balance: number) {
-  if (!isScheduledWorkPeriod(simulation)) return { simulation, balance };
+  const job = jobsCatalog.find((item) => item.id === simulation.career.jobId);
+  const atWork = Boolean(job?.remote || (job?.locationId && simulation.world.currentLocationId === job.locationId));
+  const workplace = job?.locationId ? getCityLocation(job.locationId) : undefined;
+  if (!isScheduledWorkPeriod(simulation) || !atWork || (workplace && !isLocationOpen(workplace, simulation.clock.period))) return { simulation, balance };
   const result = advanceSlots(simulation, balance, 1, 'work');
   let sim = result.simulation;
   const badState = simulation.needs.energy < 30 || simulation.needs.focus < 25;
@@ -385,6 +411,11 @@ export function moveToHousing(simulation: SimulationState, balance: number, hous
   let sim = {
     ...simulation,
     housing: { currentHousingId: target.id, nextRentDay: simulation.clock.day + 30, movedAtDay: simulation.clock.day },
+    world: {
+      ...simulation.world,
+      currentLocationId: target.locationId,
+      visitedLocationIds: simulation.world.visitedLocationIds.includes(target.locationId) ? simulation.world.visitedLocationIds : [...simulation.world.visitedLocationIds, target.locationId],
+    },
     needs: { ...simulation.needs, stress: clamp(simulation.needs.stress + 5), energy: clamp(simulation.needs.energy - 8) },
   };
   sim = recordSimulationEvent(sim, 'housing', 'Переезд', `${target.name}. Оплачены первый месяц и залог.`, -cost);
@@ -392,13 +423,82 @@ export function moveToHousing(simulation: SimulationState, balance: number, hous
 }
 
 export function buyStoreItem(simulation: SimulationState, balance: number, itemId: string, price: number) {
-  if (balance < price || simulation.inventory.some((entry) => entry.itemId === itemId)) return { simulation, balance };
+  const item = storeItems.find((entry) => entry.id === itemId);
+  const location = getCityLocation(simulation.world.currentLocationId);
+  const canBuyHere = Boolean(item?.sellerLocationIds.includes(simulation.world.currentLocationId) && location && isLocationOpen(location, simulation.clock.period));
+  if (!canBuyHere || balance < price || simulation.inventory.some((entry) => entry.itemId === itemId)) return { simulation, balance };
   let sim = {
     ...simulation,
     inventory: [...simulation.inventory, { itemId, quantity: 1, condition: 100 }],
   };
   sim = recordSimulationEvent(sim, 'purchase', 'Покупка', `Оборудование добавлено в инвентарь.`, -price);
   return { simulation: sim, balance: balance - price };
+}
+
+
+export function travelToCityLocation(simulation: SimulationState, balance: number, locationId: string, modeId: TravelModeId) {
+  const route = calculateTravelRoute(simulation.world.currentLocationId, locationId, modeId);
+  if (!route || balance < route.cost) return { simulation, balance };
+
+  const dayMinutes = simulation.world.travelDay === simulation.clock.day ? simulation.world.travelMinutesToday : 0;
+  const totalMinutes = dayMinutes + route.minutes;
+  const consumedSlots = Math.floor(totalMinutes / 120);
+  const remainingMinutes = totalMinutes % 120;
+  let result = consumedSlots > 0
+    ? advanceSlots(simulation, balance - route.cost, consumedSlots, 'free')
+    : { simulation, balance: balance - route.cost };
+
+  const visited = result.simulation.world.visitedLocationIds.includes(locationId)
+    ? result.simulation.world.visitedLocationIds
+    : [...result.simulation.world.visitedLocationIds, locationId];
+  let sim: SimulationState = {
+    ...result.simulation,
+    needs: {
+      ...result.simulation.needs,
+      energy: clamp(result.simulation.needs.energy - route.energyCost),
+      stress: clamp(result.simulation.needs.stress + (modeId === 'walk' ? 0 : modeId === 'bus' ? 1 : -1)),
+    },
+    world: {
+      ...result.simulation.world,
+      currentLocationId: locationId,
+      visitedLocationIds: visited,
+      travelMinutesToday: remainingMinutes,
+      travelDay: result.simulation.clock.day,
+    },
+  };
+  const target = getCityLocation(locationId);
+  sim = recordSimulationEvent(
+    sim,
+    'time',
+    `Поездка: ${target?.shortName ?? locationId}`,
+    `${route.minutes} мин. · ${route.cost.toLocaleString('ru-RU')} ₽${consumedSlots ? ` · прошёл ${consumedSlots} период` : ''}.`,
+    route.cost ? -route.cost : undefined,
+  );
+  return { simulation: sim, balance: result.balance };
+}
+
+export function completeCityScene(simulation: SimulationState, sceneId: string) {
+  if (simulation.world.citySceneIds.includes(sceneId)) return simulation;
+  let sim: SimulationState = {
+    ...simulation,
+    world: { ...simulation.world, citySceneIds: [...simulation.world.citySceneIds, sceneId] },
+  };
+  if (sceneId === 'clinic-maxim') {
+    sim = {
+      ...sim,
+      reputation: { ...sim.reputation, professional: clamp(sim.reputation.professional + 1) },
+      needs: { ...sim.needs, stress: clamp(sim.needs.stress - 2) },
+    };
+  }
+  if (sceneId === 'igor-cafe') {
+    const heat = normalizeHeat({ ...sim.heat, criminalExposure: sim.heat.criminalExposure + 2 });
+    sim = {
+      ...sim,
+      heat,
+      reputation: { ...sim.reputation, underground: clamp(sim.reputation.underground + 2) },
+    };
+  }
+  return recordSimulationEvent(sim, 'daily', 'Городская встреча', sceneId === 'igor-cafe' ? 'Игорь подтвердил первый серый заказ.' : 'Максим показал рабочее место регистратуры.');
 }
 
 
