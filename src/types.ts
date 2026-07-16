@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -184,6 +184,22 @@ export interface ProgressState {
   mobileCaseReportSelections: Record<string, string>;
   mobileCaseHintUses: number;
   mobileCaseComplete: boolean;
+  adCaseStage: number;
+  adCaseFoundationAnswers: Record<string, string>;
+  adCaseIdentityObjectives: string[];
+  adCaseIdentityAnswers: Record<string, string>;
+  adCaseKerberosObjectives: string[];
+  adCaseKerberosAnswers: Record<string, string>;
+  adCaseGpoObjectives: string[];
+  adCasePatch: string;
+  adCaseCodeAnswers: Record<string, string>;
+  adCaseContainmentSelections: Record<string, string>;
+  adCaseIndependentObjectives: string[];
+  adCaseIndependentAnswers: Record<string, string>;
+  adCaseFindingSelections: Record<string, string>;
+  adCaseReportSelections: Record<string, string>;
+  adCaseHintUses: number;
+  adCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

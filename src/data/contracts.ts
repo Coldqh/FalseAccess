@@ -555,7 +555,75 @@ function mobileTokenContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract] as const;
+
+function adStaleAccountContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const account = pick(random, ['ctr_smirnov', 'vendor.karpov', 'helpdesk.temp', 'ext_operator']);
+  const group = pick(random, ['File Operators', 'Backup Operators', 'Remote Desktop Users']);
+  const host = pick(random, ['JUMP-02', 'FILE-04', 'APP-08']);
+  const source = localIp(random);
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `ad-stale-${seed}`,
+    seed,
+    type: 'AD_STALE_ACCOUNT',
+    title: 'Старая учётка в домене',
+    client: pick(random, ['логистический домен', 'финансовый контур', 'закрытая складская сеть']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'activeDirectory',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'В копии Active Directory найдена давно неиспользуемая внешняя учётка. Проверь членство в группах и последнее подтверждённое использование.',
+    constraint: 'Работай только с выгрузкой каталога и журналов. Не подключайся к реальному домену.',
+    files: [
+      { name: 'users.csv', content: `samAccountName,enabled,lastLogonDate\n${account},true,2025-10-17 19:04:11\noperator.12,true,2026-05-08 09:13:42` },
+      { name: 'groups.txt', content: `${group}: operator.12, ${account}\nDomain Admins: admin.main` },
+      { name: 'security.log', content: `2026-05-08 03:17:08 event=4624 account=${account} source=${source} target=${host}\n2026-05-08 03:18:14 event=4769 account=${account} service=cifs/${host}` },
+    ],
+    questions: [
+      { id: 'account', label: 'Подозрительная учётка', placeholder: 'samAccountName', answers: [account] },
+      { id: 'group', label: 'Лишняя группа', placeholder: 'group', answers: [group] },
+      { id: 'action', label: 'Первое действие', placeholder: 'что сделать', answers: ['отключить учётку', 'disable account', 'отключить', 'завершить сессии'] },
+    ],
+    hint: 'Сопоставь enabled и lastLogonDate из users.csv с членством в groups.txt, затем найди тот же аккаунт в security.log.',
+  };
+}
+
+function adGpoAclContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const gpo = pick(random, ['Legacy Printer Map', 'Workstation Sync', 'Branch Startup']);
+  const editor = pick(random, ['helpdesk.temp', 'vendor.ops', 'file.operator']);
+  const script = pick(random, ['printer-map.ps1', 'sync-agent.ps1', 'branch-start.ps1']);
+  const difficulty: ContractDifficulty = index % 2 === 0 ? 'STANDARD' : 'HARD';
+  return {
+    id: `ad-gpo-${seed}`,
+    seed,
+    type: 'AD_GPO_ACL',
+    title: 'Изменённый GPO-скрипт',
+    client: pick(random, ['офисный домен', 'сеть складов', 'закрытый сервисный контур']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'activeDirectory',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `Политика «${gpo}» была изменена ночью. Определи редактора, опасное право и безопасное исправление.`,
+    constraint: 'Не запускай скрипт. Анализируй только отчёт GPO, копию SYSVOL и ACL.',
+    files: [
+      { name: 'gpo-report.txt', content: `name=${gpo}\nlinked_to=OU=Workstations\nstartup_script=${script}\nmodified=2026-05-09 02:41:17\neditor=${editor}` },
+      { name: script, content: `$share = "\\\\FILE-01\\tools"\nStart-Process "$share\\agent.exe" -ArgumentList "--silent"` },
+      { name: 'acl.txt', content: `Domain Admins: FullControl\nFile Operators: Modify\nAuthenticated Users: ReadAndExecute` },
+    ],
+    questions: [
+      { id: 'editor', label: 'Кто изменил GPO', placeholder: 'account', answers: [editor] },
+      { id: 'permission', label: 'Опасное право', placeholder: 'group + right', answers: ['File Operators Modify', 'file operators', 'modify'] },
+      { id: 'fix', label: 'Безопасное исправление', placeholder: 'кратко', answers: ['убрать запуск', 'удалить start-process', 'сузить acl', 'восстановить скрипт', 'remove start-process'] },
+    ],
+    hint: 'GPO report показывает редактора и ссылку на startup script. ACL объясняет, почему непривилегированная группа могла менять SYSVOL-файл.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract] as const;
 
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
@@ -568,7 +636,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.linuxCaseComplete || contract.type !== 'LINUX_PERSISTENCE')
     .filter((contract) => progress.networkCaseComplete || contract.type !== 'NETWORK_SEGMENT')
     .filter((contract) => progress.webCaseComplete || !['API_AUTHORIZATION', 'SQL_QUERY_REVIEW'].includes(contract.type))
-    .filter((contract) => progress.mobileCaseComplete || !['MOBILE_PROFILE', 'MOBILE_TOKEN_BACKUP'].includes(contract.type));
+    .filter((contract) => progress.mobileCaseComplete || !['MOBILE_PROFILE', 'MOBILE_TOKEN_BACKUP'].includes(contract.type))
+    .filter((contract) => progress.adCaseComplete || !['AD_STALE_ACCOUNT', 'AD_GPO_ACL'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
   FileSearch, Globe2, HeartPulse, Mail, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, Smartphone, TerminalSquare, UserRoundCheck, Wifi, X,
+  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, Smartphone, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -28,6 +28,7 @@ import { LinuxCaseApp } from '../apps/LinuxCaseApp';
 import { NetworkCaseApp } from '../apps/NetworkCaseApp';
 import { WebCaseApp } from '../apps/WebCaseApp';
 import { MobileCaseApp } from '../apps/MobileCaseApp';
+import { AdCaseApp } from '../apps/AdCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -95,6 +96,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1300, height: 820, accent: '#ff7f6e', kind: 'temporary',
     visible: (progress) => progress.webCaseComplete && !progress.mobileCaseComplete,
   },
+  {
+    id: 'adcase', title: 'IRONROOT-06', shortTitle: 'AD-06', icon: Waypoints,
+    width: 1320, height: 840, accent: '#e0b86a', kind: 'temporary',
+    visible: (progress) => progress.mobileCaseComplete && !progress.adCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -118,6 +124,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'networkcase': return <NetworkCaseApp />;
     case 'webcase': return <WebCaseApp />;
     case 'mobilecase': return <MobileCaseApp />;
+    case 'adcase': return <AdCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

@@ -47,6 +47,7 @@ interface ProgressContextValue {
   completeNetworkCase: () => void;
   completeWebCase: () => void;
   completeMobileCase: () => void;
+  completeAdCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -54,7 +55,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v13';
+const STORAGE_KEY = 'false-access-progress-v14';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -181,6 +182,22 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     mobileCaseReportSelections: parsed.mobileCaseReportSelections && typeof parsed.mobileCaseReportSelections === 'object' ? parsed.mobileCaseReportSelections as Record<string, string> : {},
     mobileCaseHintUses: Number.isFinite(Number(parsed.mobileCaseHintUses)) ? Math.max(0, Number(parsed.mobileCaseHintUses)) : 0,
     mobileCaseComplete: Boolean(parsed.mobileCaseComplete),
+    adCaseStage: Number.isFinite(Number(parsed.adCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.adCaseStage))) : 0,
+    adCaseFoundationAnswers: parsed.adCaseFoundationAnswers && typeof parsed.adCaseFoundationAnswers === 'object' ? parsed.adCaseFoundationAnswers as Record<string, string> : {},
+    adCaseIdentityObjectives: Array.isArray(parsed.adCaseIdentityObjectives) ? parsed.adCaseIdentityObjectives.filter((item): item is string => typeof item === 'string') : [],
+    adCaseIdentityAnswers: parsed.adCaseIdentityAnswers && typeof parsed.adCaseIdentityAnswers === 'object' ? parsed.adCaseIdentityAnswers as Record<string, string> : {},
+    adCaseKerberosObjectives: Array.isArray(parsed.adCaseKerberosObjectives) ? parsed.adCaseKerberosObjectives.filter((item): item is string => typeof item === 'string') : [],
+    adCaseKerberosAnswers: parsed.adCaseKerberosAnswers && typeof parsed.adCaseKerberosAnswers === 'object' ? parsed.adCaseKerberosAnswers as Record<string, string> : {},
+    adCaseGpoObjectives: Array.isArray(parsed.adCaseGpoObjectives) ? parsed.adCaseGpoObjectives.filter((item): item is string => typeof item === 'string') : [],
+    adCasePatch: typeof parsed.adCasePatch === 'string' ? parsed.adCasePatch : '',
+    adCaseCodeAnswers: parsed.adCaseCodeAnswers && typeof parsed.adCaseCodeAnswers === 'object' ? parsed.adCaseCodeAnswers as Record<string, string> : {},
+    adCaseContainmentSelections: parsed.adCaseContainmentSelections && typeof parsed.adCaseContainmentSelections === 'object' ? parsed.adCaseContainmentSelections as Record<string, string> : {},
+    adCaseIndependentObjectives: Array.isArray(parsed.adCaseIndependentObjectives) ? parsed.adCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    adCaseIndependentAnswers: parsed.adCaseIndependentAnswers && typeof parsed.adCaseIndependentAnswers === 'object' ? parsed.adCaseIndependentAnswers as Record<string, string> : {},
+    adCaseFindingSelections: parsed.adCaseFindingSelections && typeof parsed.adCaseFindingSelections === 'object' ? parsed.adCaseFindingSelections as Record<string, string> : {},
+    adCaseReportSelections: parsed.adCaseReportSelections && typeof parsed.adCaseReportSelections === 'object' ? parsed.adCaseReportSelections as Record<string, string> : {},
+    adCaseHintUses: Number.isFinite(Number(parsed.adCaseHintUses)) ? Math.max(0, Number(parsed.adCaseHintUses)) : 0,
+    adCaseComplete: Boolean(parsed.adCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -204,6 +221,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v13Raw = localStorage.getItem('false-access-progress-v13');
     const v12Raw = localStorage.getItem('false-access-progress-v12');
     const v11Raw = localStorage.getItem('false-access-progress-v11');
     const v10Raw = localStorage.getItem('false-access-progress-v10');
@@ -215,6 +233,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v13Raw
       ?? v12Raw
       ?? v11Raw
       ?? v10Raw
@@ -228,7 +247,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -892,6 +911,107 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         mobileCaseStage: 7,
         balance: advanced.balance + 12000,
         factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 7 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeAdCase: () => setProgress((current) => {
+      if (current.adCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 3, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 6),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 8),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      const examIds = ['active-directory', 'stage-3-capstone'];
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      examIds.forEach((id) => { if (!passedExamIds.includes(id)) passedExamIds.push(id); });
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 6),
+          reliability: bump(advanced.simulation.reputation.reliability, current.adCaseHintUses > 12 ? 2 : 7),
+          underground: bump(advanced.simulation.reputation.underground, 9),
+        },
+        progression: { ...advanced.simulation.progression, passedExamIds },
+        skills: {
+          ...advanced.simulation.skills,
+          activeDirectory: {
+            ...advanced.simulation.skills.activeDirectory,
+            theory: bump(advanced.simulation.skills.activeDirectory.theory, 38),
+            guided: bump(advanced.simulation.skills.activeDirectory.guided, 36),
+            independent: bump(advanced.simulation.skills.activeDirectory.independent, 24),
+            production: bump(advanced.simulation.skills.activeDirectory.production, 10),
+          },
+          windows: {
+            ...advanced.simulation.skills.windows,
+            theory: bump(advanced.simulation.skills.windows.theory, 14),
+            guided: bump(advanced.simulation.skills.windows.guided, 16),
+            independent: bump(advanced.simulation.skills.windows.independent, 12),
+            production: bump(advanced.simulation.skills.windows.production, 6),
+          },
+          powershell: {
+            ...advanced.simulation.skills.powershell,
+            theory: bump(advanced.simulation.skills.powershell.theory, 12),
+            guided: bump(advanced.simulation.skills.powershell.guided, 14),
+            independent: bump(advanced.simulation.skills.powershell.independent, 10),
+            production: bump(advanced.simulation.skills.powershell.production, 5),
+          },
+          networking: {
+            ...advanced.simulation.skills.networking,
+            theory: bump(advanced.simulation.skills.networking.theory, 8),
+            guided: bump(advanced.simulation.skills.networking.guided, 10),
+            independent: bump(advanced.simulation.skills.networking.independent, 8),
+            production: bump(advanced.simulation.skills.networking.production, 4),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 14),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 16),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 13),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 7),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 10),
+            guided: bump(advanced.simulation.skills.forensics.guided, 12),
+            independent: bump(advanced.simulation.skills.forensics.independent, 10),
+            production: bump(advanced.simulation.skills.forensics.production, 5),
+          },
+          siem: {
+            ...advanced.simulation.skills.siem,
+            theory: bump(advanced.simulation.skills.siem.theory, 14),
+            guided: bump(advanced.simulation.skills.siem.guided, 16),
+            independent: bump(advanced.simulation.skills.siem.independent, 11),
+            production: bump(advanced.simulation.skills.siem.production, 7),
+          },
+          securityEngineering: {
+            ...advanced.simulation.skills.securityEngineering,
+            theory: bump(advanced.simulation.skills.securityEngineering.theory, 16),
+            guided: bump(advanced.simulation.skills.securityEngineering.guided, 16),
+            independent: bump(advanced.simulation.skills.securityEngineering.independent, 12),
+            production: bump(advanced.simulation.skills.securityEngineering.production, 6),
+          },
+          operationalPlanning: {
+            ...advanced.simulation.skills.operationalPlanning,
+            theory: bump(advanced.simulation.skills.operationalPlanning.theory, 10),
+            guided: bump(advanced.simulation.skills.operationalPlanning.guided, 12),
+            independent: bump(advanced.simulation.skills.operationalPlanning.independent, 10),
+            production: bump(advanced.simulation.skills.operationalPlanning.production, 5),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'IRONROOT-06 закрыт', `Старая учётка, GPO и опасные права устранены. Подсказок: ${current.adCaseHintUses}.`, 15000);
+      return {
+        ...current,
+        adCaseComplete: true,
+        adCaseStage: 7,
+        balance: advanced.balance + 15000,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 9 },
         contractOffers: [],
         simulation,
       };

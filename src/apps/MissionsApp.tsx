@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck, Waypoints } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -165,12 +165,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.mobileCaseStage === 0 ? 'Есть образ Android, MDM и OAuth. Сначала докажи цепочку.' : 'Нужны пакет, полномочия, backup, токен и второй телефон.', speaker: 'И',
       target: 'mobilecase', button: 'Открыть MIRRORCELL-05', icon: Smartphone,
     };
+  } else if (!progress.adCaseComplete) {
+    const adObjectives = [
+      'Прочитать условия и схему IRONROOT-06.',
+      'Разобрать объекты, группы, Kerberos и GPO.',
+      'Найти старую учётку и лишние права.',
+      'Восстановить путь между несколькими машинами.',
+      'Исправить GPO, SYSVOL ACL и сервисную учётку.',
+      'Выбрать безопасную локализацию домена.',
+      'Самостоятельно проверить второй сегмент и отчёт.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'IRONROOT-06', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Корпоративный домен',
+      context: 'Старая учётка подрядчика прошла через jump-host к файловому серверу и приложению. В домене изменена GPO.',
+      objective: adObjectives[Math.min(progress.adCaseStage, adObjectives.length - 1)],
+      dialogue: progress.adCaseStage === 0 ? 'Домен уже клонирован. Нужны путь, закрепление и масштаб.' : 'Проверь учётки, билеты, GPO, SYSVOL и второй сегмент.', speaker: 'И',
+      target: 'adcase', button: 'Открыть IRONROOT-06', icon: Waypoints,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: 'MIRRORCELL-05 закрыт. Открылись задания по мобильным профилям, backup и токенам.',
+      context: 'IRONROOT-06 закрыт. Открылись задания по Active Directory, GPO и делегированным правам.',
       objective: 'Выбрать заказ или продолжить следующую главу.',
-      dialogue: 'Следующая крупная работа — корпоративный домен и Active Directory.', speaker: 'И',
+      dialogue: 'Дальше — почта, фишинг и цепочка заражения через несколько систем.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

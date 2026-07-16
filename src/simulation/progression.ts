@@ -287,6 +287,7 @@ const contractRequirements: Record<ContractSkill, { stage: ProgressionStageId; t
   soc: { stage: 1, tracks: { soc: { guided: 8 } } },
   web: { stage: 2, tracks: { web: { theory: 5 }, python: { guided: 12 } } },
   mobile: { stage: 2, tracks: { mobileSecurity: { theory: 8, guided: 8 }, networking: { guided: 10 } } },
+  activeDirectory: { stage: 3, tracks: { activeDirectory: { theory: 15, guided: 15 }, windows: { guided: 25 }, powershell: { guided: 18 } } },
 };
 
 const difficultyStage: Record<ContractDifficulty, number> = { STARTER: 0, STANDARD: 1, HARD: 2 };

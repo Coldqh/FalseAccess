@@ -29,6 +29,8 @@ function contractQuickCommands(contract: GeneratedContract) {
     PYTHON_JSONL: ['cat events.jsonl', 'wc -l events.jsonl'],
     EXPOSED_SECRET: ['cat .env', 'cat .gitignore'],
     WEB_AUTH: ['grep " 401 " access.log', 'grep " 302 " access.log'],
+    AD_STALE_ACCOUNT: ['cat users.csv', 'cat groups.txt', 'cat security.log'],
+    AD_GPO_ACL: ['cat gpo-report.txt', 'cat acl.txt'],
   };
   return Array.from(new Set([...(analysis[contract.type] ?? []), ...fileCommands])).slice(0, 4);
 }
