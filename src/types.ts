@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -132,6 +132,18 @@ export interface ProgressState {
   windowsCaseReportSelections: Record<string, string>;
   windowsCaseHintUses: number;
   windowsCaseComplete: boolean;
+  linuxCaseStage: number;
+  linuxCaseObjectives: string[];
+  linuxCaseArchitectureAnswers: Record<string, string>;
+  linuxCaseScript: string;
+  linuxCaseScriptStep: number;
+  linuxCaseContainmentSelections: Record<string, string>;
+  linuxCaseIndependentObjectives: string[];
+  linuxCaseIndependentAnswers: Record<string, string>;
+  linuxCaseFindingSelections: Record<string, string>;
+  linuxCaseReportSelections: Record<string, string>;
+  linuxCaseHintUses: number;
+  linuxCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

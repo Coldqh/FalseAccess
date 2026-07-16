@@ -43,6 +43,7 @@ interface ProgressContextValue {
   completeCityScene: (sceneId: string) => void;
   completeRouteCase: (choice: RouteCaseChoice) => void;
   completeWindowsCase: () => void;
+  completeLinuxCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -50,7 +51,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v9';
+const STORAGE_KEY = 'false-access-progress-v10';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -125,6 +126,18 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     windowsCaseReportSelections: parsed.windowsCaseReportSelections && typeof parsed.windowsCaseReportSelections === 'object' ? parsed.windowsCaseReportSelections as Record<string, string> : {},
     windowsCaseHintUses: Number.isFinite(Number(parsed.windowsCaseHintUses)) ? Math.max(0, Number(parsed.windowsCaseHintUses)) : 0,
     windowsCaseComplete: Boolean(parsed.windowsCaseComplete),
+    linuxCaseStage: Number.isFinite(Number(parsed.linuxCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.linuxCaseStage))) : 0,
+    linuxCaseObjectives: Array.isArray(parsed.linuxCaseObjectives) ? parsed.linuxCaseObjectives.filter((item): item is string => typeof item === 'string') : [],
+    linuxCaseArchitectureAnswers: parsed.linuxCaseArchitectureAnswers && typeof parsed.linuxCaseArchitectureAnswers === 'object' ? parsed.linuxCaseArchitectureAnswers as Record<string, string> : {},
+    linuxCaseScript: typeof parsed.linuxCaseScript === 'string' ? parsed.linuxCaseScript : '',
+    linuxCaseScriptStep: Number.isFinite(Number(parsed.linuxCaseScriptStep)) ? Math.max(0, Number(parsed.linuxCaseScriptStep)) : 0,
+    linuxCaseContainmentSelections: parsed.linuxCaseContainmentSelections && typeof parsed.linuxCaseContainmentSelections === 'object' ? parsed.linuxCaseContainmentSelections as Record<string, string> : {},
+    linuxCaseIndependentObjectives: Array.isArray(parsed.linuxCaseIndependentObjectives) ? parsed.linuxCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    linuxCaseIndependentAnswers: parsed.linuxCaseIndependentAnswers && typeof parsed.linuxCaseIndependentAnswers === 'object' ? parsed.linuxCaseIndependentAnswers as Record<string, string> : {},
+    linuxCaseFindingSelections: parsed.linuxCaseFindingSelections && typeof parsed.linuxCaseFindingSelections === 'object' ? parsed.linuxCaseFindingSelections as Record<string, string> : {},
+    linuxCaseReportSelections: parsed.linuxCaseReportSelections && typeof parsed.linuxCaseReportSelections === 'object' ? parsed.linuxCaseReportSelections as Record<string, string> : {},
+    linuxCaseHintUses: Number.isFinite(Number(parsed.linuxCaseHintUses)) ? Math.max(0, Number(parsed.linuxCaseHintUses)) : 0,
+    linuxCaseComplete: Boolean(parsed.linuxCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -148,6 +161,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v9Raw = localStorage.getItem('false-access-progress-v9');
     const v8Raw = localStorage.getItem('false-access-progress-v8');
     const v7Raw = localStorage.getItem('false-access-progress-v7');
     const v6Raw = localStorage.getItem('false-access-progress-v6');
@@ -155,6 +169,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v9Raw
       ?? v8Raw
       ?? v7Raw
       ?? v6Raw
@@ -164,7 +179,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -525,6 +540,84 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         windowsCaseStage: 7,
         balance: advanced.balance + 6500,
         factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 3 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeLinuxCase: () => setProgress((current) => {
+      if (current.linuxCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 2, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 2),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 3),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 2),
+          reliability: bump(advanced.simulation.reputation.reliability, current.linuxCaseHintUses > 9 ? 1 : 4),
+          underground: bump(advanced.simulation.reputation.underground, 4),
+        },
+        progression: {
+          ...advanced.simulation.progression,
+          passedExamIds: advanced.simulation.progression.passedExamIds.includes('linux-server')
+            ? advanced.simulation.progression.passedExamIds
+            : [...advanced.simulation.progression.passedExamIds, 'linux-server'],
+        },
+        skills: {
+          ...advanced.simulation.skills,
+          linux: {
+            ...advanced.simulation.skills.linux,
+            theory: bump(advanced.simulation.skills.linux.theory, 22),
+            guided: bump(advanced.simulation.skills.linux.guided, 24),
+            independent: bump(advanced.simulation.skills.linux.independent, 15),
+            production: bump(advanced.simulation.skills.linux.production, 7),
+          },
+          bash: {
+            ...advanced.simulation.skills.bash,
+            theory: bump(advanced.simulation.skills.bash.theory, 18),
+            guided: bump(advanced.simulation.skills.bash.guided, 20),
+            independent: bump(advanced.simulation.skills.bash.independent, 12),
+            production: bump(advanced.simulation.skills.bash.production, 5),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 12),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 14),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 10),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 5),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 8),
+            guided: bump(advanced.simulation.skills.forensics.guided, 10),
+            independent: bump(advanced.simulation.skills.forensics.independent, 7),
+          },
+          networking: {
+            ...advanced.simulation.skills.networking,
+            theory: bump(advanced.simulation.skills.networking.theory, 7),
+            guided: bump(advanced.simulation.skills.networking.guided, 7),
+            independent: bump(advanced.simulation.skills.networking.independent, 5),
+          },
+          operationalPlanning: {
+            ...advanced.simulation.skills.operationalPlanning,
+            guided: bump(advanced.simulation.skills.operationalPlanning.guided, 6),
+            independent: bump(advanced.simulation.skills.operationalPlanning.independent, 5),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'REDTABLE-02 закрыт', `Два Linux-сервера очищены и восстановлены. Подсказок: ${current.linuxCaseHintUses}.`, 8000);
+      return {
+        ...current,
+        linuxCaseComplete: true,
+        linuxCaseStage: 7,
+        balance: advanced.balance + 8000,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 4 },
         contractOffers: [],
         simulation,
       };

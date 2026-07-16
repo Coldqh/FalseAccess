@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
   FileSearch, Globe2, HeartPulse, Mail, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
+  Settings as SettingsIcon, ServerCog, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -24,6 +24,7 @@ import { CareerApp } from '../apps/CareerApp';
 import { CityApp } from '../apps/CityApp';
 import { RouteCaseApp } from '../apps/RouteCaseApp';
 import { WindowsCaseApp } from '../apps/WindowsCaseApp';
+import { LinuxCaseApp } from '../apps/LinuxCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -71,6 +72,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1260, height: 780, accent: '#70a5d8', kind: 'temporary',
     visible: (progress) => progress.routeCaseComplete && !progress.windowsCaseComplete,
   },
+  {
+    id: 'linuxcase', title: 'REDTABLE-02', shortTitle: 'Linux-02', icon: ServerCog,
+    width: 1260, height: 780, accent: '#9dcf74', kind: 'temporary',
+    visible: (progress) => progress.windowsCaseComplete && !progress.linuxCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -90,6 +96,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'firstshift': return <FirstShiftApp />;
     case 'routecase': return <RouteCaseApp />;
     case 'windowscase': return <WindowsCaseApp />;
+    case 'linuxcase': return <LinuxCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

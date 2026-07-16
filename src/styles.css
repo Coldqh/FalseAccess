@@ -2728,3 +2728,32 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
   .windows-wrap > div { grid-template-columns:1fr; }
   .windows-case-main { padding-bottom:100px; }
 }
+
+/* 0.6.2 — Linux server campaign */
+.linux-case-sidebar nav button.active { border-color:rgba(157,207,116,.34);background:rgba(157,207,116,.065); }
+.linux-case-sidebar nav button.active > span,.linux-case-sidebar > footer svg,.linux-case-main > section > header > svg { border-color:var(--green);color:var(--green); }
+.linux-server-card { background:linear-gradient(145deg,rgba(157,207,116,.065),rgba(255,255,255,.008)),#11151a; }
+.linux-server-card > div { color:var(--green); }
+.linux-server-card dl { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.linux-snapshot { margin:0 0 14px;padding:15px;border:1px solid var(--line);background:#070a08;color:#a8c998;font:600 10px/1.65 var(--mono);white-space:pre-wrap;overflow:auto; }
+.linux-terminal-console { border-color:rgba(157,207,116,.18); }
+.linux-terminal-console .route-terminal-history > p,.linux-terminal-console .route-terminal-history b,.linux-terminal-console .route-terminal-input > span { color:var(--green); }
+.linux-script-editor textarea { color:#bed6ae;caret-color:var(--green); }
+.linux-code-stage .route-code-guide { border-left-color:var(--green); }
+.linux-code-stage .route-run { color:var(--green); }
+.linux-command-bank button:hover { border-color:rgba(157,207,116,.35); }
+.linux-command-bank strong { color:var(--green); }
+.linux-evidence-row { margin:0 0 18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px; }
+.linux-evidence-row span { min-height:52px;padding:8px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);background:#101510;color:#8e998b;font:700 8px var(--mono);text-align:center; }
+.linux-evidence-row svg { color:var(--green); }
+.linux-section-title { margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line);font-size:15px; }
+.linux-wrap > div { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.linux-containment-stage .windows-option-list button.correct,.linux-report-stage .windows-option-list button.correct { border-color:rgba(157,207,116,.4);background:rgba(157,207,116,.055); }
+
+@media (max-width:720px) {
+  .linux-server-card dl { grid-template-columns:1fr; }
+  .linux-snapshot { font-size:12px; }
+  .linux-evidence-row { grid-template-columns:1fr 1fr; }
+  .linux-wrap > div { grid-template-columns:1fr; }
+  .linux-case-main { padding-bottom:100px; }
+}

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, ServerCog, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -93,12 +93,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.windowsCaseStage === 0 ? 'Машина уже без сети. Сначала пойми, что запустилось.' : 'Нужны цепочка, файл, закрепление и соседние узлы.', speaker: 'И',
       target: 'windowscase', button: 'Открыть NORTHLINE-07', icon: MonitorCog,
     };
+  } else if (!progress.linuxCaseComplete) {
+    const linuxObjectives = [
+      'Прочитать условия по BET-CORE-02.',
+      'Разобрать пользователей и права.',
+      'Восстановить SSH, sudo, systemd и сетевую цепочку.',
+      'Написать Bash-сборщик артефактов.',
+      'Выбрать безопасный план изоляции и восстановления.',
+      'Самостоятельно разобрать EDGE-BET-04.',
+      'Собрать вывод и отчёт по двум серверам.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'REDTABLE-02', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Linux-сервер',
+      context: 'На сервере подпольной букмекерской сети пропала очередь расчётов. Администратор отрицает изменения.',
+      objective: linuxObjectives[Math.min(progress.linuxCaseStage, linuxObjectives.length - 1)],
+      dialogue: progress.linuxCaseStage === 0 ? 'Основной трафик уже на резерве. Не ломай то, что осталось.' : 'Нужны вход, sudo, закрепление и точный масштаб.', speaker: 'И',
+      target: 'linuxcase', button: 'Открыть REDTABLE-02', icon: ServerCog,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: 'NORTHLINE-07 закрыт. Открылись повторяемые задания по Windows и PowerShell.',
-      objective: 'Выбрать заказ или продолжить обучение.',
-      dialogue: 'Следующая большая работа будет на Linux-сервере.', speaker: 'И',
+      context: 'REDTABLE-02 закрыт. Открылись задания по SSH, systemd, cron и Bash.',
+      objective: 'Выбрать заказ или продолжить следующую главу.',
+      dialogue: 'Следующая крупная работа — сеть офиса.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

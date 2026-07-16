@@ -238,6 +238,44 @@ function processContract(seed: number, index: number): GeneratedContract {
 
 
 
+function linuxPersistenceContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const host = pick(random, ['edge-node-03', 'settlement-02', 'gateway-bet-05', 'mirror-api-01']);
+  const user = pick(random, ['cache-agent', 'metrics-node', 'sync-worker', 'backup-watch']);
+  const remote = ip(random);
+  const mechanism = pick(random, ['cron', 'systemd']);
+  const unit = `${user}.service`;
+  const command = `/usr/local/lib/.${user} --push`;
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `linux-persistence-${seed}`,
+    seed,
+    type: 'LINUX_PERSISTENCE',
+    title: mechanism === 'cron' ? 'Подозрительная cron-задача' : 'Неизвестная systemd-служба',
+    client: pick(random, ['серый расчётный узел', 'закрытая кассовая сеть', 'ставочный шлюз', 'частный хостинг']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'linux',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `На ${host} после перезапуска возвращается неизвестный процесс. Найди учётку, механизм запуска и внешний адрес.`,
+    constraint: 'Работай по копии артефактов. Сначала зафиксируй данные, потом предлагай удаление.',
+    files: [
+      { name: 'passwd.txt', content: `root:x:0:0:root:/root:/bin/bash\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\n${user}:x:1014:1014:System Worker:/var/lib/${user}:/bin/bash` },
+      { name: mechanism === 'cron' ? 'cron.txt' : 'unit.txt', content: mechanism === 'cron' ? `*/4 * * * * ${user} ${command}` : `[Service]\nUser=${user}\nExecStart=${command}\nRestart=always` },
+      { name: 'sockets.txt', content: `ESTAB 0 0 10.71.4.18:49122 ${remote}:8443 users:((\".${user}\",pid=4188,fd=5))` },
+      { name: 'auth.log', content: `Accepted publickey for operator from ${remote}\nsudo: operator : USER=root ; COMMAND=/usr/sbin/useradd -m -s /bin/bash ${user}` },
+    ],
+    questions: [
+      { id: 'account', label: 'Подозрительная учётка', placeholder: 'username', answers: [user] },
+      { id: 'mechanism', label: 'Механизм закрепления', placeholder: 'cron / systemd', answers: [mechanism] },
+      { id: 'remote', label: 'Внешний адрес', placeholder: 'IP-адрес', answers: [remote] },
+    ],
+    hint: 'Сравни passwd.txt, файл запуска и PID в sockets.txt. Интерактивный shell у неизвестной сервисной учётки требует проверки.',
+  };
+}
+
+
 function windowsContract(seed: number, index: number): GeneratedContract {
   const random = mulberry32(seed);
   const host = pick(random, ['FIN-WS-03', 'OPS-WS-09', 'CASH-WS-14', 'DISPATCH-06']);
@@ -347,7 +385,7 @@ function timelineContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, processContract, windowsContract, pythonContract, secretContract, webContract, timelineContract] as const;
+const builders = [authContract, dnsContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract] as const;
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
   const daySeed = Number(progress.simulation.clock.dateIso.replaceAll('-', ''));
@@ -355,7 +393,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
   const candidates = builders
     .map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex))
     .filter((contract) => progress.routeCaseComplete || contract.type !== 'WEB_TIMELINE')
-    .filter((contract) => progress.windowsCaseComplete || contract.type !== 'WINDOWS_TRIAGE');
+    .filter((contract) => progress.windowsCaseComplete || contract.type !== 'WINDOWS_TRIAGE')
+    .filter((contract) => progress.linuxCaseComplete || contract.type !== 'LINUX_PERSISTENCE');
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);
