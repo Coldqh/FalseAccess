@@ -1,80 +1,128 @@
-import { useEffect } from 'react';
-import { CheckCircle2, ClipboardCheck, FileCheck2, RefreshCw, Save } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { CheckCircle2, FileCheck2, Save, XCircle } from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
+import { getClinicStage, clinicTransitions } from '../missions/clinic01';
+import { MissionGuideStrip } from '../components/MissionGuideStrip';
+import { MissionStageComplete } from '../components/MissionStageComplete';
+import type { AppId } from '../types';
 
-const emptyTemplate = `Инцидент: CLINIC-01
+const reportSections = [
+  {
+    id: 'observation', label: 'Наблюдение',
+    options: [
+      { id: 'auth-failures', text: 'Зафиксирована серия неудачных попыток входа по SSH.', correct: true },
+      { id: 'server-owned', text: 'Сервер полностью захвачен внешним атакующим.', correct: false },
+      { id: 'employee-theft', text: 'Сотрудник клиники украл базу пациентов.', correct: false },
+    ],
+  },
+  {
+    id: 'source', label: 'Источник',
+    options: [
+      { id: 'external-ip', text: '185.44.17.92', correct: true },
+      { id: 'backup-ip', text: '10.14.2.5', correct: false },
+      { id: 'unknown', text: 'Источник определить невозможно.', correct: false },
+    ],
+  },
+  {
+    id: 'confirmed', label: 'Подтверждённые факты',
+    options: [
+      { id: 'six-fails', text: 'Шесть неудачных входов и процесс PID 911 из /tmp/.cache.', correct: true },
+      { id: 'root-success', text: 'Успешный вход под root подтверждён.', correct: false },
+      { id: 'database-delete', text: 'Медицинская база была удалена.', correct: false },
+    ],
+  },
+  {
+    id: 'unconfirmed', label: 'Что не подтверждено',
+    options: [
+      { id: 'no-compromise', text: 'Компрометация учётной записи и получение внешнего доступа.', correct: true },
+      { id: 'no-attempts', text: 'Наличие попыток входа.', correct: false },
+      { id: 'no-process', text: 'Наличие подозрительного процесса.', correct: false },
+    ],
+  },
+  {
+    id: 'recommendation', label: 'Рекомендации',
+    options: [
+      { id: 'preserve-check-limit', text: 'Сохранить журналы, проверить PID 911 и ограничить внешний SSH.', correct: true },
+      { id: 'delete-all', text: 'Удалить журналы и все файлы из /tmp.', correct: false },
+      { id: 'shutdown-clinic', text: 'Выключить всю сеть клиники без дополнительной проверки.', correct: false },
+    ],
+  },
+] as const;
 
-Наблюдение:
+function buildReport(selections: Record<string, string>) {
+  const rows = reportSections.map((section) => {
+    const selected = section.options.find((option) => option.id === selections[section.id]);
+    return `${section.label}:\n${selected?.text ?? '—'}`;
+  });
+  return `Инцидент: CLINIC-01\n\n${rows.join('\n\n')}`;
+}
 
-Источник:
-
-Подтверждённые факты:
-
-Что не подтверждено:
-
-Рекомендации:
-`;
-
-const autoReport = `Инцидент: CLINIC-01
-
-Наблюдение:
-На рабочей станции clinic-ws зафиксирована серия попыток входа по SSH. Отдельно обнаружен процесс PID 911, запущенный из /tmp/.cache/update-agent.
-
-Источник:
-185.44.17.92
-
-Подтверждённые факты:
-- За 48 секунд журнал зафиксировал 6 неудачных попыток входа.
-- Попытки затронули учётные записи admin, root, postgres и oracle.
-- После серии отказов успешного внешнего входа с адреса 185.44.17.92 в журнале нет.
-- Процесс PID 911 запущен из нетипичного временного каталога.
-
-Что не подтверждено:
-Компрометация учётной записи и получение доступа внешним источником не подтверждены.
-
-Рекомендации:
-Сохранить исходные журналы, проверить файл и происхождение процесса PID 911, ограничить внешний SSH, проверить затронутые учётные записи и продолжить наблюдение за узлом.
-`;
-
-export function NotesApp() {
+export function NotesApp({ openApp }: { openApp: (id: AppId) => void }) {
   const { progress, setFlag } = useProgress();
-  useEffect(() => {
-    if (progress.alertReviewed && !progress.notes) setFlag('notes', autoReport);
-  }, [progress.alertReviewed, progress.notes, setFlag]);
+  const stage = getClinicStage(progress);
+  const missionActive = stage.id === 'report';
+  const [checked, setChecked] = useState(false);
+  const selections = progress.reportSelections;
+  const preview = useMemo(() => buildReport(selections), [selections]);
+  const allSelected = reportSections.every((section) => Boolean(selections[section.id]));
+  const allCorrect = reportSections.every((section) => section.options.find((option) => option.id === selections[section.id])?.correct);
 
-  const value = progress.notes || (progress.alertReviewed ? autoReport : emptyTemplate);
-  const sufficient = value.length > 180 && /185\.44\.17\.92/.test(value) && /6/.test(value) && /неудач/i.test(value);
-
-  const fillReport = () => setFlag('notes', autoReport);
-  const submit = () => {
-    if (sufficient) setFlag('reportSubmitted', true);
+  const choose = (sectionId: string, optionId: string) => {
+    setFlag('reportSelections', { ...selections, [sectionId]: optionId });
+    setChecked(false);
   };
 
+  const submit = () => {
+    setChecked(true);
+    if (!allSelected || !allCorrect) return;
+    setFlag('notes', preview);
+    setFlag('reportSubmitted', true);
+  };
+
+  if (!missionActive && !progress.reportSubmitted) {
+    return (
+      <div className="notes-base-app">
+        <header><FileCheck2 size={18} /><strong>untitled.md</strong><span>Локально</span></header>
+        <textarea value={progress.notes} onChange={(event) => setFlag('notes', event.target.value)} spellCheck={false} placeholder="Новая заметка" />
+        <footer>Notes</footer>
+      </div>
+    );
+  }
+
+  if (!missionActive && progress.reportSubmitted) {
+    return (
+      <div className="notes-base-app">
+        <header><FileCheck2 size={18} /><strong>clinic-01-report.md</strong><span>Сохранено</span></header>
+        <textarea value={progress.notes} onChange={(event) => setFlag('notes', event.target.value)} spellCheck={false} />
+        <footer>Локальный файл</footer>
+        <MissionStageComplete transition={clinicTransitions.report} openApp={openApp} />
+      </div>
+    );
+  }
+
   return (
-    <div className="notes-app">
-      <aside className="report-guide app-scroll">
-        <p className="eyebrow">ТЕХНИЧЕСКИЙ ОТЧЁТ</p>
-        <h2>Черновик по материалам дела</h2>
-        <button className="report-autofill" onClick={fillReport}><ClipboardCheck size={17} /><span><strong>Заполнить по найденным фактам</strong><small>IP, количество событий, процесс и рекомендации</small></span></button>
-        <div className="report-rule"><strong>Факт</strong><p>Шесть неудачных попыток SSH с адреса 185.44.17.92.</p></div>
-        <div className="report-rule"><strong>Не факт</strong><p>«Сервер взломали». Успешного внешнего входа в данных нет.</p></div>
-        <div className="report-rule"><strong>Рекомендация</strong><p>Сохранить журналы и проверить PID 911 до удаления файла.</p></div>
-        <div className="report-checks">
-          <span className={/185\.44\.17\.92/.test(value) ? 'ok' : ''}>IP-адрес</span>
-          <span className={/6/.test(value) ? 'ok' : ''}>Количество</span>
-          <span className={/неудач/i.test(value) ? 'ok' : ''}>Тип события</span>
-          <span className={value.length > 180 ? 'ok' : ''}>Достаточно текста</span>
+    <div className="report-builder-app app-scroll">
+      {missionActive && <MissionGuideStrip title="Собери отчёт" text="Выбирай только то, что подтверждают журналы и таблица SIEM." detail="В каждой строке один правильный вариант. После проверки отчёт соберётся в файл." />}
+      <section className="report-builder-grid">
+        <div className="report-choice-list">
+          {reportSections.map((section) => (
+            <article key={section.id}>
+              <h3>{section.label}</h3>
+              <div>{section.options.map((option) => {
+                const selected = selections[section.id] === option.id;
+                const bad = checked && selected && !option.correct;
+                const good = checked && selected && option.correct;
+                return <button key={option.id} className={`${selected ? 'selected' : ''} ${bad ? 'wrong' : ''} ${good ? 'correct' : ''}`} onClick={() => choose(section.id, option.id)}><span>{selected ? '●' : '○'}</span><p>{option.text}</p>{bad && <XCircle size={16} />}{good && <CheckCircle2 size={16} />}</button>;
+              })}</div>
+            </article>
+          ))}
         </div>
-      </aside>
-      <section className="report-editor">
-        <header><div><FileCheck2 size={18} /><strong>clinic-01-report.md</strong></div><div className="report-header-actions"><button title="Заполнить заново" onClick={fillReport}><RefreshCw size={14} /></button><span>{value.length} знаков</span></div></header>
-        <textarea value={value} onChange={(event) => setFlag('notes', event.target.value)} spellCheck={false} />
-        <footer>
-          <span>Черновик сохранён локально</span>
-          <button className="primary-action compact" disabled={!sufficient || progress.reportSubmitted} onClick={submit}>
-            {progress.reportSubmitted ? <><CheckCircle2 size={17} /> Отчёт принят</> : <><Save size={17} /> Отправить отчёт</>}
-          </button>
-        </footer>
+        <aside className="report-preview">
+          <p className="eyebrow">ПРЕДПРОСМОТР</p>
+          <pre>{preview}</pre>
+          <button className="primary-action" disabled={!allSelected} onClick={submit}><Save size={17} />Проверить и отправить</button>
+          {checked && !allCorrect && <div className="report-builder-error">В отчёте есть вывод, который не подтверждён данными.</div>}
+        </aside>
       </section>
     </div>
   );

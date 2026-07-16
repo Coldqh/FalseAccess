@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { Check, CornerDownLeft, MapPin, Radio, TerminalSquare, UserRound } from 'lucide-react';
 import { terminalObjectiveDefinitions } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
 import { runShellCommand } from '../system/virtualShell';
+import { getClinicStage, clinicTransitions } from '../missions/clinic01';
+import { MissionGuideStrip } from '../components/MissionGuideStrip';
+import { MissionStageComplete } from '../components/MissionStageComplete';
+import type { AppId } from '../types';
 
 function commandForObjective(id: string | undefined, cwd: string) {
   if (id === 'pwd') return 'pwd';
@@ -17,37 +20,35 @@ function commandForObjective(id: string | undefined, cwd: string) {
   if (id === 'read-brief') return cwd === '/home/ilya/cases/clinic-01' ? 'cat brief.txt' : 'cat /home/ilya/cases/clinic-01/brief.txt';
   if (id === 'grep-failed') return cwd === '/home/ilya/cases/clinic-01' ? 'grep "Failed password" auth.log' : 'grep "Failed password" /home/ilya/cases/clinic-01/auth.log';
   if (id === 'inspect-processes') return 'ps';
-  return 'mission';
+  return 'help';
 }
 
-function pathParts(cwd: string) {
-  return cwd.split('/').filter(Boolean);
-}
-
-export function TerminalApp() {
+export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const fillCommandRef = useRef<(command: string) => void>(() => undefined);
   const { progress, completeTerminalObjective } = useProgress();
   const completeRef = useRef(completeTerminalObjective);
   const [cwdState, setCwdState] = useState('/home/ilya');
-  const [mobilePane, setMobilePane] = useState<'brief' | 'shell'>('brief');
+  const stage = getClinicStage(progress);
+  const missionActive = stage.id === 'terminal';
+  const terminalDone = terminalObjectiveDefinitions.every((item) => progress.terminalObjectives.includes(item.id));
+  const nextObjective = useMemo(
+    () => missionActive ? terminalObjectiveDefinitions.find((item) => !progress.terminalObjectives.includes(item.id)) : undefined,
+    [missionActive, progress.terminalObjectives],
+  );
+  const suggestedCommand = commandForObjective(nextObjective?.id, cwdState);
 
   useEffect(() => { completeRef.current = completeTerminalObjective; }, [completeTerminalObjective]);
-
-  const nextObjective = useMemo(() => terminalObjectiveDefinitions.find((item) => !progress.terminalObjectives.includes(item.id)), [progress.terminalObjectives]);
-  const completed = terminalObjectiveDefinitions.filter((item) => progress.terminalObjectives.includes(item.id));
-  const lastCompleted = [...terminalObjectiveDefinitions].reverse().find((item) => progress.terminalObjectives.includes(item.id));
-  const suggestedCommand = commandForObjective(nextObjective?.id, cwdState);
 
   useEffect(() => {
     if (!hostRef.current) return;
     const terminal = new Terminal({
       cursorBlink: true,
       cursorStyle: 'block',
-      fontFamily: 'JetBrains Mono, IBM Plex Mono, Consolas, monospace',
-      fontSize: window.matchMedia('(max-width: 720px)').matches ? 11 : 13,
-      lineHeight: 1.25,
-      scrollback: 1000,
+      fontFamily: 'IBM Plex Mono, Consolas, monospace',
+      fontSize: window.matchMedia('(max-width: 720px)').matches ? 12 : 13,
+      lineHeight: 1.3,
+      scrollback: 1500,
       theme: {
         background: '#090b0d', foreground: '#e7e7df', cursor: '#ff5a38', cursorAccent: '#090b0d',
         selectionBackground: '#ff5a3833', black: '#0f1114', red: '#ff5a38', green: '#9dcf74',
@@ -57,34 +58,33 @@ export function TerminalApp() {
     const fit = new FitAddon();
     terminal.loadAddon(fit);
     terminal.open(hostRef.current);
-    const fitNow = () => { try { fit.fit(); } catch { /* window not measurable yet */ } };
-    window.setTimeout(fitNow, 50);
+    const fitNow = () => { try { fit.fit(); } catch { /* hidden while opening */ } };
+    window.setTimeout(fitNow, 60);
 
     let cwd = '/home/ilya';
     let input = '';
     let cursor = 0;
     const history: string[] = [];
     let historyIndex = 0;
-
     const shortPath = () => cwd === '/home/ilya' ? '~' : cwd.replace('/home/ilya', '~');
-    const prompt = () => terminal.write(`\r\n\x1b[38;2;255;90;56milya@fa\x1b[0m:\x1b[38;2;112;165;216m${shortPath()}\x1b[0m$ `);
+    const prompt = () => terminal.write(`\r\n\x1b[38;2;255;90;56milya@false-access\x1b[0m:\x1b[38;2;112;165;216m${shortPath()}\x1b[0m$ `);
     const redraw = () => {
       terminal.write('\x1b[2K\r');
-      terminal.write(`\x1b[38;2;255;90;56milya@fa\x1b[0m:\x1b[38;2;112;165;216m${shortPath()}\x1b[0m$ ${input}`);
+      terminal.write(`\x1b[38;2;255;90;56milya@false-access\x1b[0m:\x1b[38;2;112;165;216m${shortPath()}\x1b[0m$ ${input}`);
       const moveLeft = input.length - cursor;
       if (moveLeft > 0) terminal.write(`\x1b[${moveLeft}D`);
     };
 
     fillCommandRef.current = (command) => {
       input = command;
-      cursor = input.length;
+      cursor = command.length;
       terminal.focus();
       redraw();
     };
 
-    terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS // CLINIC-01\x1b[0m');
-    terminal.writeln('case mounted: /home/ilya/cases/clinic-01');
-    terminal.writeln('help — commands');
+    terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS TERMINAL\x1b[0m');
+    terminal.writeln(missionActive ? 'case: CLINIC-01' : 'local shell');
+    terminal.writeln('help — список команд');
     prompt();
 
     const disposable = terminal.onData((data) => {
@@ -97,12 +97,9 @@ export function TerminalApp() {
         cursor = 0;
         const result = runShellCommand(raw, cwd);
         if (result.clear) terminal.clear();
-        if (result.cwd) {
-          cwd = result.cwd;
-          setCwdState(cwd);
-        }
+        if (result.cwd) { cwd = result.cwd; setCwdState(cwd); }
         result.lines.forEach((line) => terminal.writeln(line));
-        if (result.objective) {
+        if (missionActive && result.objective) {
           completeRef.current(result.objective);
           terminal.writeln('\x1b[38;2;157;207;116m[OK]\x1b[0m');
         }
@@ -110,11 +107,7 @@ export function TerminalApp() {
         return;
       }
       if (data === '\u007F') {
-        if (cursor > 0) {
-          input = input.slice(0, cursor - 1) + input.slice(cursor);
-          cursor -= 1;
-          redraw();
-        }
+        if (cursor > 0) { input = input.slice(0, cursor - 1) + input.slice(cursor); cursor -= 1; redraw(); }
         return;
       }
       if (data === '\u001b[A') {
@@ -131,20 +124,10 @@ export function TerminalApp() {
         redraw();
         return;
       }
-      if (data === '\u001b[D') {
-        if (cursor > 0) { cursor -= 1; terminal.write('\x1b[D'); }
-        return;
-      }
-      if (data === '\u001b[C') {
-        if (cursor < input.length) { cursor += 1; terminal.write('\x1b[C'); }
-        return;
-      }
+      if (data === '\u001b[D') { if (cursor > 0) { cursor -= 1; terminal.write('\x1b[D'); } return; }
+      if (data === '\u001b[C') { if (cursor < input.length) { cursor += 1; terminal.write('\x1b[C'); } return; }
       if (data === '\t') return;
-      if (data >= ' ' && data !== '\u007F') {
-        input = input.slice(0, cursor) + data + input.slice(cursor);
-        cursor += data.length;
-        redraw();
-      }
+      if (data >= ' ' && data !== '\u007F') { input = input.slice(0, cursor) + data + input.slice(cursor); cursor += data.length; redraw(); }
     });
 
     const resize = new ResizeObserver(fitNow);
@@ -156,65 +139,22 @@ export function TerminalApp() {
       disposable.dispose();
       terminal.dispose();
     };
-  }, []);
-
-  const parts = pathParts(cwdState);
+  }, [missionActive]);
 
   return (
-    <div className={`terminal-app beginner-terminal live-terminal mobile-pane-${mobilePane}`}>
-      <nav className="mobile-work-tabs" aria-label="Панели терминала">
-        <button className={mobilePane === 'brief' ? 'active' : ''} onClick={() => setMobilePane('brief')}><UserRound size={15} />Максим</button>
-        <button className={mobilePane === 'shell' ? 'active' : ''} onClick={() => setMobilePane('shell')}><TerminalSquare size={15} />Терминал</button>
-      </nav>
-      <section className="mobile-inline-lesson terminal-inline-lesson">
-        <div className="mobile-inline-speaker">
-          <span>МБ</span>
-          <div>
-            <strong>{nextObjective?.label ?? 'Терминал закончен'}</strong>
-            <p>{nextObjective ? nextObjective.why : 'Все команды выполнены. Следующий этап — analyze_auth.py.'}</p>
-            {nextObjective && <small>{nextObjective.reply}</small>}
-          </div>
-        </div>
-        {nextObjective ? (
-          <button className="mobile-inline-command" onClick={() => fillCommandRef.current(suggestedCommand)}>
-            <span><b>Вставить команду</b><code>{suggestedCommand}</code></span><CornerDownLeft size={14} />
-          </button>
-        ) : (
-          <div className="mobile-terminal-next"><Check size={15} /><span>Вернись в Missions и продолжи звонок.</span></div>
-        )}
-      </section>
-      <aside className="terminal-guide app-scroll mentor-console">
-        <header className="mentor-console-header">
-          <div className="mentor-avatar">МБ<span /></div>
-          <div><strong>Максим Белов</strong><small><Radio size={11} /> на связи</small></div>
-          <b>{completed.length}/{terminalObjectiveDefinitions.length}</b>
-        </header>
-
-        <section className="location-card">
-          <header><MapPin size={15} /><span>PATH</span></header>
-          <div className="path-breadcrumb"><b>/</b>{parts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}</div>
-        </section>
-
-        <div className="mentor-chat-stream">
-          {completed.length === 0 && <div className="mentor-bubble"><span>МБ</span><p>Архив уже на месте. Ничего не удаляй. Начнём с текущей папки.</p></div>}
-          {lastCompleted && <div className="mentor-bubble result"><span>МБ</span><p>{lastCompleted.after}</p></div>}
-          {nextObjective ? (
-            <>
-              <div className="mentor-bubble"><span>МБ</span><p>{nextObjective.mentor}</p></div>
-              <div className="mentor-bubble"><span>МБ</span><p>{nextObjective.reply}</p></div>
-            </>
-          ) : <div className="mentor-bubble result"><span>МБ</span><p>Хватит терминала. Открой Code Editor. Посчитаем такие события скриптом.</p></div>}
-        </div>
-
-        {nextObjective ? (
-          <section className="live-action-card">
-            <p className="eyebrow">КОМАНДА</p>
-            <button className="command-to-run" onClick={() => { fillCommandRef.current(suggestedCommand); setMobilePane('shell'); }}><code>{suggestedCommand}</code><CornerDownLeft size={15} /></button>
-            <small>{nextObjective.label}</small>
-          </section>
-        ) : <section className="terminal-complete-card"><Check size={24} /><div><strong>Осмотр закончен</strong><span>Следующий шаг: analyze_auth.py</span></div></section>}
-      </aside>
-      <div className="terminal-host" ref={hostRef} />
+    <div className={`terminal-app-v4 ${missionActive ? 'mission-layer-active' : 'base-app-only'}`}>
+      {missionActive && nextObjective && (
+        <MissionGuideStrip
+          title={nextObjective.label}
+          text={nextObjective.mentor}
+          detail={`${nextObjective.reply} ${nextObjective.why}`}
+          code={suggestedCommand}
+          insertLabel="Вставить команду"
+          onInsert={() => fillCommandRef.current(suggestedCommand)}
+        />
+      )}
+      <div className="terminal-host terminal-host-v4" ref={hostRef} />
+      {terminalDone && <MissionStageComplete transition={clinicTransitions.terminal} openApp={openApp} />}
     </div>
   );
 }

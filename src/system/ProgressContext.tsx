@@ -10,6 +10,7 @@ interface ProgressContextValue {
   setFlag: <K extends keyof ProgressState>(key: K, value: ProgressState[K]) => void;
   markMailRead: (id: string) => void;
   markMessageRead: (id: string) => void;
+  acknowledgeTransition: (id: string) => void;
   completeInterview: (score: number) => void;
   completeFirstShift: (mistakes: number) => void;
   acceptContract: (contract: GeneratedContract) => void;
@@ -21,7 +22,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v3';
+const STORAGE_KEY = 'false-access-progress-v4';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -29,11 +30,21 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
   if (!value || typeof value !== 'object') return null;
   const parsed = value as Partial<ProgressState>;
   const fallback = createInitialProgress();
+  const terminalObjectives = Array.isArray(parsed.terminalObjectives) ? parsed.terminalObjectives.filter((item): item is string => typeof item === 'string') : [];
+  const pythonComplete = Boolean(parsed.pythonComplete);
+  const alertReviewed = Boolean(parsed.alertReviewed);
+  const reportSubmitted = Boolean(parsed.reportSubmitted);
+  const progressedIntoCase = terminalObjectives.length > 0 || pythonComplete || alertReviewed || reportSubmitted;
+
   return {
     ...fallback,
     ...parsed,
     booted: Boolean(parsed.booted),
     onboardingDone: Boolean(parsed.onboardingDone),
+    clinicIntroComplete: Boolean(parsed.clinicIntroComplete) || progressedIntoCase,
+    clinicWrapupComplete: Boolean(parsed.clinicWrapupComplete),
+    acknowledgedTransitions: Array.isArray(parsed.acknowledgedTransitions) ? parsed.acknowledgedTransitions.filter((item): item is string => typeof item === 'string') : [],
+    reportSelections: parsed.reportSelections && typeof parsed.reportSelections === 'object' ? parsed.reportSelections as Record<string, string> : {},
     interviewComplete: legacy ? false : Boolean(parsed.interviewComplete),
     interviewScore: legacy ? 0 : Number(parsed.interviewScore ?? 0),
     jobOfferUnlocked: legacy ? false : Boolean(parsed.jobOfferUnlocked),
@@ -42,7 +53,10 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     firstShiftMistakes: legacy ? 0 : Number(parsed.firstShiftMistakes ?? 0),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
-    terminalObjectives: Array.isArray(parsed.terminalObjectives) ? parsed.terminalObjectives.filter((item): item is string => typeof item === 'string') : [],
+    terminalObjectives,
+    pythonComplete,
+    alertReviewed,
+    reportSubmitted,
     readMail: Array.isArray(parsed.readMail) ? parsed.readMail.filter((item): item is string => typeof item === 'string') : [],
     readMessages: Array.isArray(parsed.readMessages) ? parsed.readMessages.filter((item): item is string => typeof item === 'string') : [],
     contractOffers: Array.isArray(parsed.contractOffers) ? parsed.contractOffers : [],
@@ -58,11 +72,13 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v3Raw
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -78,47 +94,29 @@ function persist(progress: ProgressState) {
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>(loadProgress);
 
-  useEffect(() => {
-    persist(progress);
-  }, [progress]);
+  useEffect(() => { persist(progress); }, [progress]);
 
   useEffect(() => {
-    if (progress.interviewComplete && !progress.jobOfferUnlocked) {
-      setProgress((current) => ({ ...current, jobOfferUnlocked: true }));
-    }
+    if (progress.interviewComplete && !progress.jobOfferUnlocked) setProgress((current) => ({ ...current, jobOfferUnlocked: true }));
   }, [progress.interviewComplete, progress.jobOfferUnlocked]);
 
   useEffect(() => {
-    if (progress.contractOffers.length === 0) {
-      setProgress((current) => ({ ...current, contractOffers: generateContractOffers(current, current.contractRefreshes) }));
-    }
+    if (progress.contractOffers.length === 0) setProgress((current) => ({ ...current, contractOffers: generateContractOffers(current, current.contractRefreshes) }));
   }, [progress.contractOffers.length, progress.contractRefreshes]);
 
   const value = useMemo<ProgressContextValue>(() => ({
     progress,
-    completeAcademyLesson: (id) => setProgress((current) => current.academyLessons.includes(id)
-      ? current
-      : { ...current, academyLessons: [...current.academyLessons, id] }),
-    completeTerminalObjective: (id) => setProgress((current) => current.terminalObjectives.includes(id)
-      ? current
-      : { ...current, terminalObjectives: [...current.terminalObjectives, id], contractOffers: [] }),
+    completeAcademyLesson: (id) => setProgress((current) => current.academyLessons.includes(id) ? current : { ...current, academyLessons: [...current.academyLessons, id] }),
+    completeTerminalObjective: (id) => setProgress((current) => current.terminalObjectives.includes(id) ? current : { ...current, terminalObjectives: [...current.terminalObjectives, id], contractOffers: [] }),
     setFlag: (key, value) => setProgress((current) => ({
       ...current,
       [key]: value,
       ...(key === 'pythonComplete' || key === 'alertReviewed' || key === 'reportSubmitted' ? { contractOffers: [] } : {}),
     })),
-    markMailRead: (id) => setProgress((current) => current.readMail.includes(id)
-      ? current
-      : { ...current, readMail: [...current.readMail, id] }),
-    markMessageRead: (id) => setProgress((current) => current.readMessages.includes(id)
-      ? current
-      : { ...current, readMessages: [...current.readMessages, id] }),
-    completeInterview: (score) => setProgress((current) => ({
-      ...current,
-      interviewComplete: true,
-      interviewScore: Math.max(current.interviewScore, score),
-      jobOfferUnlocked: true,
-    })),
+    markMailRead: (id) => setProgress((current) => current.readMail.includes(id) ? current : { ...current, readMail: [...current.readMail, id] }),
+    markMessageRead: (id) => setProgress((current) => current.readMessages.includes(id) ? current : { ...current, readMessages: [...current.readMessages, id] }),
+    acknowledgeTransition: (id) => setProgress((current) => current.acknowledgedTransitions.includes(id) ? current : { ...current, acknowledgedTransitions: [...current.acknowledgedTransitions, id] }),
+    completeInterview: (score) => setProgress((current) => ({ ...current, interviewComplete: true, interviewScore: Math.max(current.interviewScore, score), jobOfferUnlocked: true })),
     completeFirstShift: (mistakes) => setProgress((current) => ({
       ...current,
       firstShiftComplete: true,
@@ -132,25 +130,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     completeContract: (clean) => setProgress((current) => {
       const contract = current.activeContract;
       if (!contract) return current;
-      const record: CompletedContract = {
-        id: contract.id,
-        title: contract.title,
-        factionId: contract.factionId,
-        skill: contract.skill,
-        pay: contract.pay,
-        completedAt: new Date().toISOString(),
-        clean,
-      };
-      const repGain = clean ? 2 : 1;
+      const record: CompletedContract = { id: contract.id, title: contract.title, factionId: contract.factionId, skill: contract.skill, pay: contract.pay, completedAt: new Date().toISOString(), clean };
       return {
         ...current,
         balance: current.balance + contract.pay,
         activeContract: null,
         completedContracts: [record, ...current.completedContracts].slice(0, 50),
-        factionRep: {
-          ...current.factionRep,
-          [contract.factionId]: (current.factionRep[contract.factionId] ?? 0) + repGain,
-        },
+        factionRep: { ...current.factionRep, [contract.factionId]: (current.factionRep[contract.factionId] ?? 0) + (clean ? 2 : 1) },
         contractRefreshes: current.contractRefreshes + 1,
         contractOffers: [],
       };

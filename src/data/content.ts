@@ -1,86 +1,87 @@
 export const terminalObjectiveDefinitions = [
   {
     id: 'pwd',
-    label: 'Текущая папка',
+    label: 'Узнай текущую папку',
     command: 'pwd',
-    mentor: 'Начнём с места, где ты сейчас находишься.',
-    reply: 'Введи pwd. Команда покажет полный путь.',
-    why: 'pwd печатает текущую папку.',
-    result: '/home/ilya',
-    after: '/home/ilya. Это твоя домашняя папка. Теперь посмотрим, что внутри.',
+    mentor: 'Сначала нужно понять, где терминал сейчас находится. В Linux это важно: одна и та же команда работает с разными файлами в разных папках.',
+    reply: 'Напиши pwd после знака $. Это сокращение от print working directory — показать текущую рабочую папку.',
+    why: 'pwd ничего не меняет. Он только печатает полный путь.',
+    result: '/home/ilya — домашняя папка Ильи.',
+    after: 'Теперь мы знаем точку старта: /home/ilya. Следующий шаг — посмотреть, что лежит внутри.',
   },
   {
     id: 'ls',
-    label: 'Содержимое папки',
+    label: 'Посмотри содержимое папки',
     command: 'ls',
-    mentor: 'Введи ls.',
-    reply: 'Он покажет файлы и папки здесь.',
-    why: 'ls показывает содержимое папки.',
+    mentor: 'Папка может содержать файлы и другие папки. Нам нужен каталог с материалами дела.',
+    reply: 'Введи ls. Команда list покажет имена объектов в текущей папке.',
+    why: 'ls безопасна: она ничего не удаляет и не запускает.',
     result: 'README.txt  cases  scripts',
-    after: 'Вижу cases. Там лежат материалы дела.',
+    after: 'Папка cases содержит дела. Перейдём в нужное, а не будем искать файлы наугад.',
   },
   {
     id: 'cd-case',
-    label: 'Папка CLINIC-01',
+    label: 'Перейди в папку дела',
     command: 'cd cases/clinic-01',
-    mentor: 'Перейди в дело: cd cases/clinic-01.',
-    reply: 'cd меняет текущую папку. Путь cases/clinic-01 считается от /home/ilya.',
-    why: 'cd меняет текущую папку.',
-    result: '~/cases/clinic-01',
-    after: 'Мы в clinic-01. Теперь имена файлов можно писать без полного пути.',
+    mentor: 'Путь — адрес папки. Сейчас ты в /home/ilya, поэтому cases/clinic-01 считается от этой точки.',
+    reply: 'Введи cd cases/clinic-01. cd означает change directory — сменить текущую папку.',
+    why: 'После перехода приглашение терминала изменится. Это покажет новое местоположение.',
+    result: 'Строка станет ilya@fa:~/cases/clinic-01$.',
+    after: 'Мы внутри дела. Теперь можно читать его файлы короткими именами без полного пути.',
   },
   {
     id: 'read-brief',
-    label: 'Вводная по делу',
+    label: 'Прочитай постановку задачи',
     command: 'cat brief.txt',
-    mentor: 'Сначала прочитай brief.txt.',
-    reply: 'Введи cat brief.txt. cat выведет текст файла.',
-    why: 'cat выводит содержимое файла.',
-    result: 'Описание CLINIC-01',
-    after: 'Есть auth.log. В нём записи о входах по SSH.',
+    mentor: 'brief.txt — обычный текстовый файл. Сначала читаем задачу, потом трогаем данные.',
+    reply: 'Введи cat brief.txt. cat выведет содержимое файла прямо в терминал.',
+    why: 'Имя файла передаётся команде как аргумент: что именно нужно открыть.',
+    result: 'Появится описание CLINIC-01 и список целей.',
+    after: 'В деле есть журнал входов auth.log. Не будем читать каждую строку вручную — отфильтруем нужные.',
   },
   {
     id: 'grep-failed',
-    label: 'Неудачные входы',
+    label: 'Найди неудачные входы',
     command: 'grep "Failed password" auth.log',
-    mentor: 'Найди строки с Failed password.',
-    reply: 'Введи grep "Failed password" auth.log. grep оставит только совпадения.',
-    why: 'grep ищет текст в файле.',
-    result: '6 строк',
-    after: 'Шесть неудачных попыток с внешнего адреса. Успешного входа это не доказывает.',
+    mentor: 'Лог — список событий по времени. Строка Failed password означает неудачную попытку входа, а не успешный взлом.',
+    reply: 'Введи grep "Failed password" auth.log. grep ищет фразу в файле и показывает только совпавшие строки.',
+    why: 'Кавычки объединяют два слова в одну фразу. auth.log указывает, где искать.',
+    result: 'Шесть строк с неудачными попытками.',
+    after: 'Попытки входа объясняют алерт, но не тормоза компьютера. Проверим запущенные программы.',
   },
   {
     id: 'inspect-processes',
-    label: 'Запущенные процессы',
+    label: 'Проверь процессы',
     command: 'ps',
-    mentor: 'Теперь проверим, что запущено на компьютере.',
-    reply: 'Введи ps. Смотри на PID, пользователя и путь программы.',
-    why: 'ps показывает запущенные процессы.',
-    result: 'PID 911 /tmp/.cache/update-agent',
-    after: 'PID 911 запущен из /tmp/.cache. Путь нетипичный. Зафиксируем его и перейдём к журналу.',
+    mentor: 'Процесс — программа, которая сейчас запущена. У процесса есть PID, пользователь и команда запуска.',
+    reply: 'Введи ps и посмотри на пути программ. Нормальные службы обычно запускаются из системных каталогов.',
+    why: 'Нас интересует процесс из скрытого файла во временной папке /tmp.',
+    result: 'Процесс /tmp/.cache/update-agent --silent с PID 911.',
+    after: 'Ты собрал факты вручную. Теперь напишем программу, которая сможет обработать журнал из тысяч строк.',
   },
 ] as const;
 
-export const pythonStarter = `# CLINIC-01 / analyze_auth.py
+export const pythonStarter = `# Эта программа должна посчитать неудачные входы в auth.log.
+# Иди по шагам слева. Пиши код ПОД комментарием нужного шага.
 
-# [1] IMPORT
+# [1] ПОДКЛЮЧЕНИЕ ИНСТРУМЕНТА
 
-# [2] FILE PATH
+# [2] ПУТЬ К ФАЙЛУ
 
-# [3] READ LOG
+# [3] ЧТЕНИЕ ФАЙЛА
 
-# [4] COUNTER
+# [4] СЧЁТЧИК
 
-# [5] LOOP
+# [5] ЦИКЛ ПО СТРОКАМ
 
-    # [6] CONDITION
+    # [6] ПРОВЕРКА ТЕКУЩЕЙ СТРОКИ
 
-        # [7] COUNT
+        # [7] УВЕЛИЧЕНИЕ СЧЁТЧИКА
 
-# [8] OUTPUT
+# [8] ВЫВОД РЕЗУЛЬТАТА
 `;
 
-export const pythonSolution = `# CLINIC-01 / analyze_auth.py
+export const pythonSolution = `# Эта программа считает неудачные входы в auth.log.
 
 from pathlib import Path
 
@@ -98,90 +99,90 @@ print(f"Failed logins: {failed}")
 export const pythonGuideSteps = [
   {
     id: 'import',
-    marker: '# [1] IMPORT',
-    title: 'Подключить Path',
-    concept: 'import',
-    instruction: 'Под [1] напиши:',
+    marker: '# [1] ПОДКЛЮЧЕНИЕ ИНСТРУМЕНТА',
+    title: 'Подключи Path',
+    concept: 'Библиотека и import',
+    instruction: 'Найди комментарий [1]. На новой строке без отступа напиши:',
     snippet: 'from pathlib import Path',
-    why: 'Нам нужно открыть файл. Path умеет работать с путями.',
-    read: 'from pathlib import Path — взять Path из модуля pathlib.',
+    why: 'Path — готовый инструмент Python для работы с файлами. import подключает его к программе.',
+    read: 'from pathlib import Path читается: «из библиотеки pathlib подключить Path».',
     check: /from\s+pathlib\s+import\s+Path/,
   },
   {
     id: 'path',
-    marker: '# [2] FILE PATH',
-    title: 'Указать файл',
-    concept: 'переменная',
-    instruction: 'Под [2] напиши:',
+    marker: '# [2] ПУТЬ К ФАЙЛУ',
+    title: 'Сохрани адрес журнала',
+    concept: 'Переменная и строка',
+    instruction: 'Под комментарием [2] напиши:',
     snippet: 'log_path = "/home/pyodide/auth.log"',
-    why: 'Сохраним адрес журнала под именем log_path.',
-    read: 'Знак = записывает значение справа в имя слева. Текст пути стоит в кавычках.',
+    why: 'Переменная log_path хранит путь. Текст берётся в кавычки, потому что это строка.',
+    read: '= не означает «равно» из математики. Здесь он записывает значение справа в имя слева.',
     check: /log_path\s*=\s*["']\/home\/pyodide\/auth\.log["']/,
   },
   {
     id: 'read',
-    marker: '# [3] READ LOG',
-    title: 'Прочитать журнал',
-    concept: 'список строк',
-    instruction: 'Под [3] напиши:',
+    marker: '# [3] ЧТЕНИЕ ФАЙЛА',
+    title: 'Прочитай файл в список строк',
+    concept: 'Функция, метод и список',
+    instruction: 'Под комментарием [3] напиши:',
     snippet: 'lines = Path(log_path).read_text().splitlines()',
-    why: 'Прочитаем файл и разделим его на строки.',
-    read: 'После этой строки lines хранит список строк из auth.log.',
+    why: 'Path открывает путь, read_text читает весь текст, splitlines делит его на отдельные строки.',
+    read: 'После этой строки lines содержит список. Каждый элемент списка — одна строка журнала.',
     check: /lines\s*=\s*Path\(log_path\)\.read_text\(\)\.splitlines\(\)/,
   },
   {
     id: 'counter',
-    marker: '# [4] COUNTER',
-    title: 'Создать счётчик',
-    concept: 'число',
-    instruction: 'Под [4] напиши:',
+    marker: '# [4] СЧЁТЧИК',
+    title: 'Создай счётчик',
+    concept: 'Числовая переменная',
+    instruction: 'Под комментарием [4] напиши:',
     snippet: 'failed = 0',
-    why: 'До проверки мы нашли ноль совпадений.',
-    read: 'failed хранит число найденных строк.',
+    why: 'До проверки строк найдено ноль ошибок. Переменная failed будет хранить количество совпадений.',
+    read: 'Счётчик начинается с 0 и увеличивается каждый раз, когда найден Failed password.',
     check: /failed\s*=\s*0/,
   },
   {
     id: 'loop',
-    marker: '# [5] LOOP',
-    title: 'Перебрать строки',
-    concept: 'for',
-    instruction: 'Под [5] без отступа напиши:',
+    marker: '# [5] ЦИКЛ ПО СТРОКАМ',
+    title: 'Возьми строки по одной',
+    concept: 'Цикл for',
+    instruction: 'Под комментарием [5] без отступа напиши:',
     snippet: 'for line in lines:',
-    why: 'Нужно проверить каждую строку журнала.',
-    read: 'for берёт строки из lines по одной. Двоеточие открывает блок кода.',
+    why: 'Цикл повторит вложенный код для каждой строки из списка lines.',
+    read: 'Двоеточие открывает блок. Всё внутри цикла должно иметь отступ в четыре пробела.',
     check: /for\s+line\s+in\s+lines\s*:/,
   },
   {
     id: 'condition',
-    marker: '    # [6] CONDITION',
-    title: 'Проверить строку',
-    concept: 'if',
-    instruction: 'Под [6] напиши с четырьмя пробелами в начале:',
+    marker: '    # [6] ПРОВЕРКА ТЕКУЩЕЙ СТРОКИ',
+    title: 'Проверь текущую строку',
+    concept: 'Условие if и оператор in',
+    instruction: 'Под комментарием [6] напиши строку с ЧЕТЫРЬМЯ пробелами в начале:',
     snippet: '    if "Failed password" in line:',
-    why: 'Счётчик нужен только для строк с Failed password.',
-    read: 'if проверяет условие. in ищет фразу внутри текущей строки.',
+    why: 'if выполняет вложенный код только тогда, когда фраза найдена в текущей строке.',
+    read: 'in проверяет наличие текста. Двоеточие снова открывает вложенный блок.',
     check: /^ {4}if\s+["']Failed password["']\s+in\s+line\s*:/m,
   },
   {
     id: 'increment',
-    marker: '        # [7] COUNT',
-    title: 'Добавить совпадение',
-    concept: '+= 1',
-    instruction: 'Под [7] напиши с восемью пробелами в начале:',
+    marker: '        # [7] УВЕЛИЧЕНИЕ СЧЁТЧИКА',
+    title: 'Увеличь счётчик',
+    concept: 'Изменение значения',
+    instruction: 'Под комментарием [7] напиши строку с ВОСЕМЬЮ пробелами в начале:',
     snippet: '        failed += 1',
-    why: 'Каждое совпадение увеличивает счётчик на один.',
-    read: 'failed += 1 — то же самое, что failed = failed + 1.',
+    why: 'Строка выполняется только внутри if. Каждое совпадение добавляет к failed единицу.',
+    read: 'failed += 1 — короткая запись failed = failed + 1.',
     check: /^ {8}failed\s*\+=\s*1/m,
   },
   {
     id: 'print',
-    marker: '# [8] OUTPUT',
-    title: 'Вывести итог',
-    concept: 'print',
-    instruction: 'Под [8] без отступа напиши:',
+    marker: '# [8] ВЫВОД РЕЗУЛЬТАТА',
+    title: 'Покажи результат',
+    concept: 'print и f-строка',
+    instruction: 'Под комментарием [8] без отступа напиши:',
     snippet: 'print(f"Failed logins: {failed}")',
-    why: 'Нужно увидеть итог после проверки всех строк.',
-    read: 'print выводит текст. {failed} подставляет значение счётчика.',
+    why: 'print выводит текст. Буква f разрешает вставить значение failed внутрь фигурных скобок.',
+    read: 'Эта строка находится после цикла, поэтому печатает один итог, а не результат после каждой строки.',
     check: /print\s*\(\s*f["']Failed logins:\s*\{failed\}["']\s*\)/,
   },
 ] as const;
@@ -198,6 +199,10 @@ Mar 14 21:17:08 clinic-ws sshd[1280]: Accepted publickey for backup from 10.14.2
 export const createInitialProgress = () => ({
   booted: false,
   onboardingDone: false,
+  clinicIntroComplete: false,
+  clinicWrapupComplete: false,
+  acknowledgedTransitions: [] as string[],
+  reportSelections: {} as Record<string, string>,
   academyLessons: [] as string[],
   terminalObjectives: [] as string[],
   pythonLessonStep: 0,

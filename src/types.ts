@@ -78,6 +78,10 @@ export interface CompletedContract {
 export interface ProgressState {
   booted: boolean;
   onboardingDone: boolean;
+  clinicIntroComplete: boolean;
+  clinicWrapupComplete: boolean;
+  acknowledgedTransitions: string[];
+  reportSelections: Record<string, string>;
   academyLessons: string[];
   terminalObjectives: string[];
   pythonLessonStep: number;

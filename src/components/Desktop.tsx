@@ -19,7 +19,6 @@ import { NotesApp } from '../apps/NotesApp';
 import { InterviewApp } from '../apps/InterviewApp';
 import { FirstShiftApp } from '../apps/FirstShiftApp';
 import { SettingsApp } from '../apps/SettingsApp';
-import { Onboarding } from './Onboarding';
 import { useProgress } from '../system/ProgressContext';
 
 const apps: AppDefinition[] = [
@@ -42,16 +41,16 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
   switch (id) {
     case 'missions': return <MissionsApp openApp={openApp} />;
     case 'contracts': return <ContractsApp />;
-    case 'terminal': return <TerminalApp />;
-    case 'code': return <CodeApp />;
-    case 'mail': return <MailApp />;
-    case 'messenger': return <MessengerApp />;
+    case 'terminal': return <TerminalApp openApp={openApp} />;
+    case 'code': return <CodeApp openApp={openApp} />;
+    case 'mail': return <MailApp openApp={openApp} />;
+    case 'messenger': return <MessengerApp openApp={openApp} />;
     case 'browser': return <BrowserApp />;
-    case 'siem': return <SiemApp />;
+    case 'siem': return <SiemApp openApp={openApp} />;
     case 'interview': return <InterviewApp />;
     case 'firstshift': return <FirstShiftApp />;
     case 'skills': return <SkillsApp />;
-    case 'notes': return <NotesApp />;
+    case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;
   }
 }
@@ -76,7 +75,7 @@ export function Desktop() {
 
   const activeWindowId = useMemo(() => [...windows].filter((win) => !win.minimized).sort((a, b) => b.z - a.z)[0]?.id, [windows]);
   const isLocked = (id: AppId) => (id === 'siem' && !progress.pythonComplete)
-    || (id === 'interview' && !progress.reportSubmitted)
+    || (id === 'interview' && !progress.clinicWrapupComplete)
     || (id === 'firstshift' && !progress.jobAccepted);
 
   const focusWindow = (id: AppId) => {
@@ -123,7 +122,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 003.2</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 003.6</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -182,7 +181,7 @@ export function Desktop() {
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
           <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
-          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS 0.3.5</span></footer>
+          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS 0.3.6</span></footer>
         </section>
       )}
 
@@ -204,14 +203,13 @@ export function Desktop() {
         ) : (
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
-            <div className="mobile-alert" onClick={() => openApp(progress.jobOfferUnlocked ? 'contracts' : 'missions')}><BookOpenCheck size={20} /><div><strong>{progress.jobOfferUnlocked ? 'WORK//QUEUE' : 'CLINIC-01'}</strong><span>{progress.jobOfferUnlocked ? 'Новые заказы доступны' : 'Продолжить расследование'}</span></div><ChevronUp size={17} /></div>
+            <div className="mobile-alert" onClick={() => openApp(progress.firstShiftComplete ? 'contracts' : 'missions')}><BookOpenCheck size={20} /><div><strong>{progress.firstShiftComplete ? 'WORK//QUEUE' : 'СЮЖЕТ'}</strong><span>{progress.firstShiftComplete ? 'Новые заказы доступны' : 'Продолжить текущую миссию'}</span></div><ChevronUp size={17} /></div>
             <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={locked ? 'locked' : ''} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
           </>
         )}
       </section>
 
-      {!progress.onboardingDone && <Onboarding openApp={openApp} />}
     </main>
   );
 }
