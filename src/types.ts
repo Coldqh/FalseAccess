@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
+import type { SimulationState } from './simulation/types';
 
-export type AppId = 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -110,6 +111,7 @@ export interface ProgressState {
   completedContracts: CompletedContract[];
   factionRep: Record<string, number>;
   contractRefreshes: number;
+  simulation: SimulationState;
 }
 
 export interface ShellResult {

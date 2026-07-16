@@ -1,3 +1,5 @@
+import { createInitialSimulation } from '../simulation/engine';
+
 export const terminalObjectiveDefinitions = [
   {
     id: 'pwd',
@@ -231,4 +233,5 @@ export const createInitialProgress = () => ({
   completedContracts: [],
   factionRep: { line: 0, north: 0, sfera: 0 },
   contractRefreshes: 0,
+  simulation: createInitialSimulation(),
 });

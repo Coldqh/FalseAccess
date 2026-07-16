@@ -1,46 +1,74 @@
-import { Check, Circle, Code2, FileTerminal, Globe2, GraduationCap, LockKeyhole, MailWarning, Network, Radar, Shield, TerminalSquare, UserRoundCheck } from 'lucide-react';
-import { terminalObjectiveDefinitions } from '../data/content';
+import {
+  Check, Circle, Code2, Globe2, LockKeyhole, MailWarning, Network, Radar, Shield,
+  TerminalSquare, UserRoundCheck,
+} from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
+import type { SimulationSkillId } from '../simulation/types';
+import { getMiddleReadiness } from '../simulation/mastery';
+
+const skillMeta: Array<{ id: SimulationSkillId; name: string; icon: typeof TerminalSquare }> = [
+  { id: 'linux', name: 'Linux', icon: TerminalSquare },
+  { id: 'networking', name: 'Networking', icon: Network },
+  { id: 'python', name: 'Python', icon: Code2 },
+  { id: 'soc', name: 'SOC / IR', icon: Radar },
+  { id: 'windows', name: 'Windows', icon: Shield },
+  { id: 'web', name: 'Web Security', icon: Globe2 },
+  { id: 'forensics', name: 'Forensics', icon: LockKeyhole },
+  { id: 'communication', name: 'Communication', icon: UserRoundCheck },
+];
+
+function total(track: { theory: number; guided: number; independent: number; production: number }) {
+  return Math.round(track.theory * 0.15 + track.guided * 0.2 + track.independent * 0.3 + track.production * 0.35);
+}
 
 export function SkillsApp() {
   const { progress } = useProgress();
-  const terminalRatio = progress.terminalObjectives.length / terminalObjectiveDefinitions.length;
-  const contractSkills = (skill: string) => progress.completedContracts.filter((item) => item.skill === skill).length;
-  const skills = [
-    { name: 'Foundations', icon: GraduationCap, progress: Math.min(100, Math.round(terminalRatio * 45) + Math.round(progress.pythonLessonStep / 8 * 35) + (progress.alertReviewed ? 20 : 0)), state: 'Осваиваются внутри миссий' },
-    { name: 'Linux', icon: TerminalSquare, progress: Math.min(100, Math.round(terminalRatio * 22) + contractSkills('linux') * 4), state: terminalRatio >= 1 ? `Навигация + ${contractSkills('linux')} заказов` : 'Пути и команды' },
-    { name: 'Python', icon: Code2, progress: Math.min(100, (progress.pythonComplete ? 18 : Math.round(progress.pythonLessonStep / 8 * 14)) + contractSkills('python') * 5), state: progress.pythonComplete ? `Первая программа + ${contractSkills('python')} заказов` : `Шаг ${Math.min(8, progress.pythonLessonStep + 1)}/8` },
-    { name: 'SOC', icon: Radar, progress: Math.min(100, (progress.alertReviewed ? 14 : 2) + (progress.phishingComplete ? 6 : 0) + (progress.powershellComplete ? 6 : 0) + (progress.dnsComplete ? 6 : 0) + contractSkills('soc') * 5), state: progress.firstShiftComplete ? 'Первая смена закрыта' : progress.alertReviewed ? 'Первый triage' : 'Не начато' },
-    { name: 'Reports', icon: FileTerminal, progress: progress.reportSubmitted ? 12 : 0, state: progress.reportSubmitted ? 'Первый отчёт принят' : 'Не начато' },
-    { name: 'Communication', icon: UserRoundCheck, progress: progress.interviewComplete ? 10 + progress.interviewScore * 2 : 0, state: progress.interviewComplete ? `Собеседование ${progress.interviewScore}/5` : 'Не начато' },
-    { name: 'Phishing', icon: MailWarning, progress: progress.phishingComplete ? 16 : 0, state: progress.phishingComplete ? 'Письмо разобрано' : 'Закрыто' },
-    { name: 'Networking', icon: Network, progress: Math.min(100, 4 + (progress.dnsComplete ? 14 : 0) + contractSkills('networking') * 4), state: progress.dnsComplete ? 'DNS и повторяющиеся запросы' : contractSkills('networking') > 0 ? `${contractSkills('networking')} заказов` : 'Вводная' },
-    { name: 'Web Security', icon: Globe2, progress: contractSkills('web') * 4, state: contractSkills('web') > 0 ? `${contractSkills('web')} заказов` : 'Закрыто' },
-    { name: 'Windows', icon: Shield, progress: progress.powershellComplete ? 14 : 0, state: progress.powershellComplete ? 'Event 4688 и PowerShell' : 'Закрыто' },
-    { name: 'Forensics', icon: LockKeyhole, progress: 0, state: 'Следующие главы' },
-  ];
-
+  const tracks = progress.simulation.skills;
+  const readiness = getMiddleReadiness(progress.simulation);
   const milestones = [
-    ['Понять путь во время работы с терминалом', progress.terminalObjectives.includes('cd-case')],
-    ['Проверить путь в Linux', progress.terminalObjectives.includes('pwd')],
-    ['Прочитать файл командой cat', progress.terminalObjectives.includes('read-brief')],
-    ['Найти строки через grep', progress.terminalObjectives.includes('grep-failed')],
-    ['Собрать программу из восьми частей', progress.pythonComplete],
-    ['Правильно разобрать алерт', progress.alertReviewed],
+    ['Пройти навигацию Linux', progress.terminalObjectives.includes('inspect-processes')],
+    ['Собрать первую программу', progress.pythonComplete],
+    ['Разобрать первый алерт', progress.alertReviewed],
     ['Сдать технический отчёт', progress.reportSubmitted],
-    ['Пройти первое собеседование', progress.interviewComplete],
+    ['Пройти собеседование', progress.interviewComplete],
     ['Закрыть фишинговый тикет', progress.phishingComplete],
-    ['Разобрать запуск PowerShell из Word', progress.powershellComplete],
-    ['Найти повторяющиеся DNS-запросы', progress.dnsComplete],
+    ['Разобрать PowerShell', progress.powershellComplete],
+    ['Найти DNS-маяк', progress.dnsComplete],
     ['Закрыть первую смену', progress.firstShiftComplete],
-    ['Закрыть повторяемый заказ', progress.completedContracts.length > 0],
+    ['Закрыть заказ без подсказки', progress.completedContracts.some((item) => item.clean)],
   ];
 
   return (
-    <div className="skills-app app-scroll">
-      <header className="skills-header"><div><p className="eyebrow">ПРОФИЛЬ / ИЛЬЯ ВОРОНЦОВ</p><h2>Подтверждённые навыки</h2><p>Здесь записаны действия, которые Илья уже выполнил сам.</p></div><div className="profile-badge"><span>18</span><small>лет</small></div></header>
-      <section className="skill-grid">{skills.map((skill) => { const Icon = skill.icon; return <article key={skill.name} className={skill.progress === 0 ? 'locked' : ''}><header><span><Icon size={20} /></span><strong>{skill.name}</strong><b>{skill.progress}%</b></header><div className="skill-bar"><i style={{ width: `${skill.progress}%` }} /></div><small>{skill.state}</small></article>; })}</section>
-      <section className="milestone-panel"><div><p className="eyebrow">ПОДТВЕРЖДЁННЫЕ ДЕЙСТВИЯ</p><h3>Кампания 0.4</h3></div><div className="milestone-list">{milestones.map(([label, done]) => <div key={label as string} className={done ? 'done' : ''}><span>{done ? <Check size={14} /> : <Circle size={12} />}</span><strong>{label as string}</strong></div>)}</div></section>
+    <div className="skills-app app-scroll skills-app-v5">
+      <header className="skills-header">
+        <div><p className="eyebrow">ПРОФИЛЬ / ИЛЬЯ ВОРОНЦОВ</p><h2>Навык подтверждается практикой</h2><p>Теория не равна рабочему опыту. Для сильных вакансий и операций нужны самостоятельные решения и задачи в реальных условиях стенда.</p></div>
+        <div className="profile-badge"><span>{readiness.total}</span><small>middle-ready</small></div>
+      </header>
+
+      <section className="mastery-summary"><div><strong>{readiness.total}%</strong><span>Общая готовность</span></div><p>100% требует теории, самостоятельных решений и рабочего опыта по всем направлениям.</p></section>
+
+      <section className="skill-track-grid">
+        {skillMeta.map((meta) => {
+          const track = tracks[meta.id];
+          const Icon = meta.icon;
+          const score = total(track);
+          return <article key={meta.id} className={score === 0 ? 'locked' : ''}>
+            <header><span><Icon size={19} /></span><strong>{meta.name}</strong><b>{score}</b></header>
+            <div className="skill-total"><i style={{ width: `${score}%` }} /></div>
+            <dl>
+              <div><dt>Теория</dt><dd>{track.theory}</dd></div>
+              <div><dt>С куратором</dt><dd>{track.guided}</dd></div>
+              <div><dt>Самостоятельно</dt><dd>{track.independent}</dd></div>
+              <div><dt>Рабочий опыт</dt><dd>{track.production}</dd></div>
+            </dl>
+          </article>;
+        })}
+      </section>
+
+      <section className="milestone-panel">
+        <div><p className="eyebrow">ПОДТВЕРЖДЁННЫЕ ДЕЙСТВИЯ</p><h3>Кампания и симулятор</h3><MailWarning size={20} /></div>
+        <div className="milestone-list">{milestones.map(([label, done]) => <div key={label as string} className={done ? 'done' : ''}><span>{done ? <Check size={14} /> : <Circle size={12} />}</span><strong>{label as string}</strong></div>)}</div>
+      </section>
     </div>
   );
 }

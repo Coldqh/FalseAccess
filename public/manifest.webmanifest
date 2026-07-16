@@ -12,7 +12,7 @@
   "orientation": "any",
   "background_color": "#08090b",
   "theme_color": "#0a0b0d",
-  "description": "Сюжетная RPG и практический тренажёр по информационной безопасности.",
+  "description": "Сюжетный симулятор жизни, карьеры и практической информационной безопасности.",
   "categories": [
     "games",
     "education"
@@ -51,6 +51,18 @@
   ],
   "shortcuts": [
     {
+      "name": "Открыть жизнь",
+      "short_name": "Life",
+      "url": "./?open=life",
+      "icons": [
+        {
+          "src": "./assets/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
       "name": "Продолжить дело",
       "short_name": "Missions",
       "url": "./?open=missions",
@@ -75,5 +87,5 @@
       ]
     }
   ],
-  "version": "0.4.2"
+  "version": "0.5.0"
 }

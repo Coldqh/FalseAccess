@@ -1,7 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CompletedContract, GeneratedContract, ProgressState } from '../types';
+import type { FoodPlanId, SimulationSkillId } from '../simulation/types';
 import { createInitialProgress } from '../data/content';
 import { generateContractOffers } from '../data/contracts';
+import { storeItems } from '../simulation/catalog';
+import {
+  advanceSlots, buyStoreItem, calculateWantedLevel, moveToHousing, normalizeSimulation,
+  quitCurrentJob, reduceDigitalRisk, restUntilMorning, syncStoryProgress, takeJob, workCompanyShift,
+} from '../simulation/engine';
 
 interface ProgressContextValue {
   progress: ProgressState;
@@ -17,12 +23,21 @@ interface ProgressContextValue {
   abandonContract: () => void;
   completeContract: (clean: boolean) => void;
   refreshContracts: () => void;
+  advanceTime: () => void;
+  rest: () => void;
+  setFoodPlan: (id: FoodPlanId) => void;
+  buyItem: (id: string) => void;
+  changeHousing: (id: string) => void;
+  workShift: () => void;
+  acceptJob: (id: string) => void;
+  quitJob: () => void;
+  secureDevices: () => void;
   saveNow: () => string;
   importProgress: (value: unknown) => boolean;
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v4';
+const STORAGE_KEY = 'false-access-progress-v5';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -36,6 +51,8 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
   const reportSubmitted = Boolean(parsed.reportSubmitted);
   const progressedIntoCase = terminalObjectives.length > 0 || pythonComplete || alertReviewed || reportSubmitted;
   const legacyShortShift = Boolean(parsed.firstShiftComplete) && parsed.firstShiftStage === undefined;
+  const jobAccepted = legacy ? false : Boolean(parsed.jobAccepted);
+  const firstShiftComplete = legacy || legacyShortShift ? false : Boolean(parsed.firstShiftComplete);
 
   return {
     ...fallback,
@@ -49,15 +66,15 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     interviewComplete: legacy ? false : Boolean(parsed.interviewComplete),
     interviewScore: legacy ? 0 : Number(parsed.interviewScore ?? 0),
     jobOfferUnlocked: legacy ? false : Boolean(parsed.jobOfferUnlocked),
-    jobAccepted: legacy ? false : Boolean(parsed.jobAccepted),
-    firstShiftComplete: legacy || legacyShortShift ? false : Boolean(parsed.firstShiftComplete),
+    jobAccepted,
+    firstShiftComplete,
     firstShiftMistakes: legacy || legacyShortShift ? 0 : Number(parsed.firstShiftMistakes ?? 0),
-    firstShiftStage: legacy || legacyShortShift ? 0 : (Boolean(parsed.firstShiftComplete) ? 5 : Number(parsed.firstShiftStage ?? 0)),
+    firstShiftStage: legacy || legacyShortShift ? 0 : (firstShiftComplete ? 5 : Number(parsed.firstShiftStage ?? 0)),
     phishingComplete: legacy || legacyShortShift ? false : Boolean(parsed.phishingComplete),
     powershellComplete: legacy || legacyShortShift ? false : Boolean(parsed.powershellComplete),
     dnsComplete: legacy || legacyShortShift ? false : Boolean(parsed.dnsComplete),
     shiftReportChoice: legacyShortShift ? '' : (parsed.shiftReportChoice === 'full' || parsed.shiftReportChoice === 'soft' ? parsed.shiftReportChoice : ''),
-    criminalContactUnlocked: legacy || legacyShortShift ? false : (Boolean(parsed.criminalContactUnlocked) || Boolean(parsed.firstShiftComplete)),
+    criminalContactUnlocked: legacy || legacyShortShift ? false : (Boolean(parsed.criminalContactUnlocked) || firstShiftComplete),
     criminalContactResponse: legacyShortShift ? '' : (parsed.criminalContactResponse === 'interested' || parsed.criminalContactResponse === 'declined' ? parsed.criminalContactResponse : ''),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
@@ -73,6 +90,7 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     notes: typeof parsed.notes === 'string' ? parsed.notes : '',
     balance: Number.isFinite(Number(parsed.balance)) ? Number(parsed.balance) : fallback.balance,
     contractRefreshes: Number.isFinite(Number(parsed.contractRefreshes)) ? Number(parsed.contractRefreshes) : 0,
+    simulation: normalizeSimulation(parsed.simulation, jobAccepted, firstShiftComplete),
   };
 }
 
@@ -80,13 +98,15 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v4Raw
       ?? v3Raw
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -97,6 +117,18 @@ function persist(progress: ProgressState) {
   const timestamp = new Date().toISOString();
   localStorage.setItem(SAVE_TIME_KEY, timestamp);
   return timestamp;
+}
+
+function addContractSkill(progress: ProgressState, skill: SimulationSkillId, clean: boolean) {
+  const current = progress.simulation.skills[skill];
+  return {
+    ...progress.simulation.skills,
+    [skill]: {
+      ...current,
+      independent: Math.min(100, current.independent + (clean ? 3 : 1)),
+      production: Math.min(100, current.production + (clean ? 2 : 1)),
+    },
+  };
 }
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
@@ -112,6 +144,21 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     if (progress.contractOffers.length === 0) setProgress((current) => ({ ...current, contractOffers: generateContractOffers(current, current.contractRefreshes) }));
   }, [progress.contractOffers.length, progress.contractRefreshes]);
 
+  useEffect(() => {
+    const synced = syncStoryProgress(progress.simulation, {
+      jobAccepted: progress.jobAccepted,
+      firstShiftComplete: progress.firstShiftComplete,
+      terminalObjectives: progress.terminalObjectives,
+      pythonComplete: progress.pythonComplete,
+      alertReviewed: progress.alertReviewed,
+      interviewScore: progress.interviewScore,
+      phishingComplete: progress.phishingComplete,
+      powershellComplete: progress.powershellComplete,
+      dnsComplete: progress.dnsComplete,
+    });
+    if (JSON.stringify(synced) !== JSON.stringify(progress.simulation)) setProgress((current) => ({ ...current, simulation: synced }));
+  }, [progress.jobAccepted, progress.firstShiftComplete, progress.terminalObjectives, progress.pythonComplete, progress.alertReviewed, progress.interviewScore, progress.phishingComplete, progress.powershellComplete, progress.dnsComplete, progress.simulation]);
+
   const value = useMemo<ProgressContextValue>(() => ({
     progress,
     completeAcademyLesson: (id) => setProgress((current) => current.academyLessons.includes(id) ? current : { ...current, academyLessons: [...current.academyLessons, id] }),
@@ -124,7 +171,23 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     markMailRead: (id) => setProgress((current) => current.readMail.includes(id) ? current : { ...current, readMail: [...current.readMail, id] }),
     markMessageRead: (id) => setProgress((current) => current.readMessages.includes(id) ? current : { ...current, readMessages: [...current.readMessages, id] }),
     acknowledgeTransition: (id) => setProgress((current) => current.acknowledgedTransitions.includes(id) ? current : { ...current, acknowledgedTransitions: [...current.acknowledgedTransitions, id] }),
-    completeInterview: (score) => setProgress((current) => ({ ...current, interviewComplete: true, interviewScore: Math.max(current.interviewScore, score), jobOfferUnlocked: true })),
+    completeInterview: (score) => setProgress((current) => ({
+      ...current,
+      interviewComplete: true,
+      interviewScore: Math.max(current.interviewScore, score),
+      jobOfferUnlocked: true,
+      simulation: {
+        ...current.simulation,
+        reputation: { ...current.simulation.reputation, professional: Math.min(100, current.simulation.reputation.professional + Math.max(1, score)) },
+        skills: {
+          ...current.simulation.skills,
+          communication: {
+            ...current.simulation.skills.communication,
+            guided: Math.min(100, current.simulation.skills.communication.guided + score * 2),
+          },
+        },
+      },
+    })),
     completeFirstShift: (mistakes) => setProgress((current) => ({
       ...current,
       firstShiftComplete: true,
@@ -141,6 +204,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       const contract = current.activeContract;
       if (!contract) return current;
       const record: CompletedContract = { id: contract.id, title: contract.title, factionId: contract.factionId, skill: contract.skill, pay: contract.pay, completedAt: new Date().toISOString(), clean };
+      const underground = contract.factionId === 'north' || contract.factionId === 'line';
+      const heat = {
+        ...current.simulation.heat,
+        digitalTrace: Math.min(100, current.simulation.heat.digitalTrace + (clean ? 1 : 5)),
+        criminalExposure: Math.min(100, current.simulation.heat.criminalExposure + (underground ? 3 : 0)),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
       return {
         ...current,
         balance: current.balance + contract.pay,
@@ -149,9 +219,48 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         factionRep: { ...current.factionRep, [contract.factionId]: (current.factionRep[contract.factionId] ?? 0) + (clean ? 2 : 1) },
         contractRefreshes: current.contractRefreshes + 1,
         contractOffers: [],
+        simulation: {
+          ...current.simulation,
+          heat,
+          reputation: {
+            ...current.simulation.reputation,
+            reliability: Math.min(100, current.simulation.reputation.reliability + (clean ? 2 : 1)),
+            underground: Math.min(100, current.simulation.reputation.underground + (underground ? 1 : 0)),
+          },
+          skills: addContractSkill(current, contract.skill, clean),
+        },
       };
     }),
     refreshContracts: () => setProgress((current) => ({ ...current, contractRefreshes: current.contractRefreshes + 1, contractOffers: [] })),
+    advanceTime: () => setProgress((current) => {
+      const result = advanceSlots(current.simulation, current.balance, 1, 'free');
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    rest: () => setProgress((current) => {
+      const result = restUntilMorning(current.simulation, current.balance);
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    setFoodPlan: (id) => setProgress((current) => ({ ...current, simulation: { ...current.simulation, foodPlanId: id } })),
+    buyItem: (id) => setProgress((current) => {
+      const item = storeItems.find((entry) => entry.id === id);
+      if (!item) return current;
+      const result = buyStoreItem(current.simulation, current.balance, id, item.price);
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    changeHousing: (id) => setProgress((current) => {
+      const result = moveToHousing(current.simulation, current.balance, id);
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    workShift: () => setProgress((current) => {
+      const result = workCompanyShift(current.simulation, current.balance);
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
+    acceptJob: (id) => setProgress((current) => ({ ...current, simulation: takeJob(current.simulation, id) })),
+    quitJob: () => setProgress((current) => ({ ...current, simulation: quitCurrentJob(current.simulation) })),
+    secureDevices: () => setProgress((current) => {
+      const result = reduceDigitalRisk(current.simulation, current.balance);
+      return { ...current, simulation: result.simulation, balance: result.balance };
+    }),
     saveNow: () => persist(progress),
     importProgress: (raw) => {
       const next = normalizeProgress(raw);

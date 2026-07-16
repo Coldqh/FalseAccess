@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, BriefcaseBusiness, ChevronUp, CircleUserRound, Code2,
   Globe2, Mail, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
+  Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X, HeartPulse,
 } from 'lucide-react';
 import type { AppDefinition, AppId, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -19,11 +19,13 @@ import { NotesApp } from '../apps/NotesApp';
 import { InterviewApp } from '../apps/InterviewApp';
 import { FirstShiftApp } from '../apps/FirstShiftApp';
 import { SettingsApp } from '../apps/SettingsApp';
+import { LifeApp } from '../apps/LifeApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
 
 const apps: AppDefinition[] = [
+  { id: 'life', title: 'Life', shortTitle: 'Life', icon: HeartPulse, width: 1180, height: 740, accent: '#67c7c4' },
   { id: 'missions', title: 'Missions', shortTitle: 'Missions', icon: BookOpenCheck, width: 920, height: 670, accent: '#ff5a38' },
   { id: 'contracts', title: 'Work Queue', shortTitle: 'Contracts', icon: BriefcaseBusiness, width: 1180, height: 720, accent: '#efc46b' },
   { id: 'terminal', title: 'Terminal', shortTitle: 'Terminal', icon: TerminalSquare, width: 1080, height: 690, accent: '#9dcf74' },
@@ -41,6 +43,7 @@ const apps: AppDefinition[] = [
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
   switch (id) {
+    case 'life': return <LifeApp />;
     case 'missions': return <MissionsApp openApp={openApp} />;
     case 'contracts': return <ContractsApp />;
     case 'terminal': return <TerminalApp openApp={openApp} />;
@@ -126,7 +129,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / {APP_VERSION}</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>SIMULATION BUILD / {APP_VERSION}</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -208,7 +211,7 @@ export function Desktop() {
         ) : (
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
-            <div className="mobile-alert" onClick={() => openApp(progress.firstShiftComplete ? 'contracts' : 'missions')}><BookOpenCheck size={20} /><div><strong>{progress.firstShiftComplete ? 'WORK//QUEUE' : 'СЮЖЕТ'}</strong><span>{progress.firstShiftComplete ? 'Новые заказы доступны' : 'Продолжить текущую миссию'}</span></div><ChevronUp size={17} /></div>
+            <div className="mobile-alert" onClick={() => openApp('life')}><HeartPulse size={20} /><div><strong>ЖИЗНЬ</strong><span>День {progress.simulation.clock.day} · {progress.simulation.career.status === 'employed' ? progress.simulation.career.title : 'без работы'}</span></div><ChevronUp size={17} /></div>
             <UpdateButton />
             <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={locked ? 'locked' : ''} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
