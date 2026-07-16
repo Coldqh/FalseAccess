@@ -237,6 +237,45 @@ function processContract(seed: number, index: number): GeneratedContract {
 }
 
 
+
+function windowsContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const host = pick(random, ['FIN-WS-03', 'OPS-WS-09', 'CASH-WS-14', 'DISPATCH-06']);
+  const user = pick(random, ['operator', 'accountant', 'dispatcher', 'manager']);
+  const parent = pick(random, ['WINWORD.EXE', 'OUTLOOK.EXE', 'wscript.exe']);
+  const suspicious = pick(random, ['sync_host.exe', 'invoice_viewer.exe', 'office_helper.exe', 'update_worker.exe']);
+  const pid = Math.floor(random() * 3500) + 3200;
+  const remote = ip(random);
+  const hash = `${Math.floor(random() * 1e16).toString(16).padStart(16, 'A')}${Math.floor(random() * 1e16).toString(16).padStart(16, 'B')}${Math.floor(random() * 1e16).toString(16).padStart(16, 'C')}${Math.floor(random() * 1e16).toString(16).padStart(16, 'D')}`.slice(0, 64).toUpperCase();
+  const difficulty = difficultyFor('windows', index + 1);
+  return {
+    id: `windows-${seed}`,
+    seed,
+    type: 'WINDOWS_TRIAGE',
+    title: 'Цепочка процессов Windows',
+    client: pick(random, ['складская касса', 'диспетчерская', 'серый расчётный офис', 'логистическая точка']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'windows',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `На ${host} после открытия документа появился неизвестный процесс. Свяжи родителя, PID, сетевой адрес и хэш файла.`,
+    constraint: 'Работай с изолированным снимком. Не удаляй файл до фиксации артефактов.',
+    files: [
+      { name: 'processes.txt', content: `PID PPID USER NAME COMMANDLINE\n2200 1044 ${user} ${parent} ${parent}\n${pid} 2200 ${user} powershell.exe powershell.exe -NoProfile -File C:\\\\Users\\\\${user}\\\\AppData\\\\Local\\\\Temp\\\\check.ps1\n${pid + 91} ${pid} ${user} ${suspicious} ${suspicious} --background` },
+      { name: 'security-4688.log', content: `EventID=4688 Host=${host} User=${user} Parent=${parent} NewProcess=powershell.exe PID=${pid}\nEventID=4688 Host=${host} User=${user} Parent=powershell.exe NewProcess=${suspicious} PID=${pid + 91}` },
+      { name: 'network.txt', content: `OwningProcess=${pid + 91} RemoteAddress=${remote} RemotePort=443 State=Established` },
+      { name: 'hash.txt', content: `SHA256 ${hash} C:\\\\Users\\\\${user}\\\\AppData\\\\Local\\\\Temp\\\\${suspicious}` },
+    ],
+    questions: [
+      { id: 'process', label: 'Подозрительный процесс', placeholder: 'filename.exe', answers: [suspicious] },
+      { id: 'remote', label: 'Внешний адрес', placeholder: 'IP-адрес', answers: [remote] },
+      { id: 'hash', label: 'SHA-256', placeholder: '64 символа', answers: [hash] },
+    ],
+    hint: 'Сначала cat processes.txt. Затем свяжи дочерний PID с OwningProcess в network.txt и проверь hash.txt.',
+  };
+}
+
 function pythonContract(seed: number, index: number): GeneratedContract {
   const random = mulberry32(seed);
   const failed = Math.floor(random() * 5) + 4;
@@ -308,12 +347,15 @@ function timelineContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, processContract, pythonContract, secretContract, webContract, timelineContract] as const;
+const builders = [authContract, dnsContract, processContract, windowsContract, pythonContract, secretContract, webContract, timelineContract] as const;
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
   const daySeed = Number(progress.simulation.clock.dateIso.replaceAll('-', ''));
   const baseSeed = daySeed + refreshIndex * 997 + progress.completedContracts.length * 131;
-  const candidates = builders.map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex)).filter((contract) => progress.routeCaseComplete || contract.type !== 'WEB_TIMELINE');
+  const candidates = builders
+    .map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex))
+    .filter((contract) => progress.routeCaseComplete || contract.type !== 'WEB_TIMELINE')
+    .filter((contract) => progress.windowsCaseComplete || contract.type !== 'WINDOWS_TRIAGE');
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

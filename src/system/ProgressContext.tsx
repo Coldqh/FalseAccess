@@ -42,6 +42,7 @@ interface ProgressContextValue {
   travelTo: (locationId: string, modeId: TravelModeId) => void;
   completeCityScene: (sceneId: string) => void;
   completeRouteCase: (choice: RouteCaseChoice) => void;
+  completeWindowsCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -49,7 +50,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v8';
+const STORAGE_KEY = 'false-access-progress-v9';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -113,6 +114,17 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     routeCaseReportSelections: parsed.routeCaseReportSelections && typeof parsed.routeCaseReportSelections === 'object' ? parsed.routeCaseReportSelections as Record<string, string> : {},
     routeCaseChoice: ['full', 'safe', 'lie', 'refuse', 'owner', 'anna'].includes(String(parsed.routeCaseChoice)) ? parsed.routeCaseChoice as ProgressState['routeCaseChoice'] : '',
     routeCaseComplete: Boolean(parsed.routeCaseComplete),
+    windowsCaseStage: Number.isFinite(Number(parsed.windowsCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.windowsCaseStage))) : 0,
+    windowsCaseObjectives: Array.isArray(parsed.windowsCaseObjectives) ? parsed.windowsCaseObjectives.filter((item): item is string => typeof item === 'string') : [],
+    windowsCaseProcessAnswers: parsed.windowsCaseProcessAnswers && typeof parsed.windowsCaseProcessAnswers === 'object' ? parsed.windowsCaseProcessAnswers as Record<string, string> : {},
+    windowsCaseScript: typeof parsed.windowsCaseScript === 'string' ? parsed.windowsCaseScript : '',
+    windowsCaseScriptStep: Number.isFinite(Number(parsed.windowsCaseScriptStep)) ? Math.max(0, Number(parsed.windowsCaseScriptStep)) : 0,
+    windowsCaseIndependentObjectives: Array.isArray(parsed.windowsCaseIndependentObjectives) ? parsed.windowsCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    windowsCaseIndependentAnswers: parsed.windowsCaseIndependentAnswers && typeof parsed.windowsCaseIndependentAnswers === 'object' ? parsed.windowsCaseIndependentAnswers as Record<string, string> : {},
+    windowsCaseFindingSelections: parsed.windowsCaseFindingSelections && typeof parsed.windowsCaseFindingSelections === 'object' ? parsed.windowsCaseFindingSelections as Record<string, string> : {},
+    windowsCaseReportSelections: parsed.windowsCaseReportSelections && typeof parsed.windowsCaseReportSelections === 'object' ? parsed.windowsCaseReportSelections as Record<string, string> : {},
+    windowsCaseHintUses: Number.isFinite(Number(parsed.windowsCaseHintUses)) ? Math.max(0, Number(parsed.windowsCaseHintUses)) : 0,
+    windowsCaseComplete: Boolean(parsed.windowsCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -136,12 +148,14 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v8Raw = localStorage.getItem('false-access-progress-v8');
     const v7Raw = localStorage.getItem('false-access-progress-v7');
     const v6Raw = localStorage.getItem('false-access-progress-v6');
     const v5Raw = localStorage.getItem('false-access-progress-v5');
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v8Raw
       ?? v7Raw
       ?? v6Raw
       ?? v5Raw
@@ -150,7 +164,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -413,6 +427,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           reliability: bump(advanced.simulation.reputation.reliability, config.reliability),
           underground: bump(advanced.simulation.reputation.underground, config.underground),
         },
+        progression: {
+          ...advanced.simulation.progression,
+          passedExamIds: advanced.simulation.progression.passedExamIds.includes('stage-2-capstone')
+            ? advanced.simulation.progression.passedExamIds
+            : [...advanced.simulation.progression.passedExamIds, 'stage-2-capstone'],
+        },
         skills: {
           ...advanced.simulation.skills,
           web: { ...advanced.simulation.skills.web, theory: bump(advanced.simulation.skills.web.theory, 10), guided: bump(advanced.simulation.skills.web.guided, 12), independent: bump(advanced.simulation.skills.web.independent, 7) },
@@ -433,6 +453,78 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           north: Math.max(0, (current.factionRep.north ?? 0) + config.igor),
           sfera: Math.max(0, (current.factionRep.sfera ?? 0) + config.sfera),
         },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeWindowsCase: () => setProgress((current) => {
+      if (current.windowsCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 2, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 1),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 2),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 2),
+          reliability: bump(advanced.simulation.reputation.reliability, current.windowsCaseHintUses > 8 ? 1 : 3),
+          underground: bump(advanced.simulation.reputation.underground, 3),
+        },
+        progression: {
+          ...advanced.simulation.progression,
+          passedExamIds: advanced.simulation.progression.passedExamIds.includes('windows-workstation')
+            ? advanced.simulation.progression.passedExamIds
+            : [...advanced.simulation.progression.passedExamIds, 'windows-workstation'],
+        },
+        skills: {
+          ...advanced.simulation.skills,
+          windows: {
+            ...advanced.simulation.skills.windows,
+            theory: bump(advanced.simulation.skills.windows.theory, 18),
+            guided: bump(advanced.simulation.skills.windows.guided, 20),
+            independent: bump(advanced.simulation.skills.windows.independent, 12),
+            production: bump(advanced.simulation.skills.windows.production, 5),
+          },
+          powershell: {
+            ...advanced.simulation.skills.powershell,
+            theory: bump(advanced.simulation.skills.powershell.theory, 16),
+            guided: bump(advanced.simulation.skills.powershell.guided, 18),
+            independent: bump(advanced.simulation.skills.powershell.independent, 10),
+            production: bump(advanced.simulation.skills.powershell.production, 4),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 10),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 12),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 8),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 4),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 7),
+            guided: bump(advanced.simulation.skills.forensics.guided, 8),
+            independent: bump(advanced.simulation.skills.forensics.independent, 5),
+          },
+          networking: {
+            ...advanced.simulation.skills.networking,
+            guided: bump(advanced.simulation.skills.networking.guided, 5),
+            independent: bump(advanced.simulation.skills.networking.independent, 4),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'NORTHLINE-07 закрыт', `Две Windows-машины разобраны. Подсказок: ${current.windowsCaseHintUses}.`, 6500);
+      return {
+        ...current,
+        windowsCaseComplete: true,
+        windowsCaseStage: 7,
+        balance: advanced.balance + 6500,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 3 },
         contractOffers: [],
         simulation,
       };

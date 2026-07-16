@@ -280,6 +280,7 @@ export function getJobAccess(progress: ProgressState, job: {
 
 const contractRequirements: Record<ContractSkill, { stage: ProgressionStageId; tracks: SkillRequirementMap }> = {
   linux: { stage: 0, tracks: { linux: { guided: 6 } } },
+  windows: { stage: 1, tracks: { windows: { guided: 12 }, powershell: { guided: 8 } } },
   networking: { stage: 1, tracks: { networking: { theory: 6, guided: 6 } } },
   python: { stage: 1, tracks: { python: { guided: 12 } } },
   soc: { stage: 1, tracks: { soc: { guided: 8 } } },

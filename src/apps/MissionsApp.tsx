@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MessageSquare, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -75,12 +75,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.routeCaseStage < 6 ? 'Нужны IP, время и учётка. Остальное потом.' : 'Скинь IP, время, учётку и cookie.', speaker: 'И',
       target: 'routecase', button: 'Продолжить дело', icon: FileSearch,
     };
+  } else if (!progress.windowsCaseComplete) {
+    const windowsObjectives = [
+      'Прочитать условия и данные по FIN-WS-07.',
+      'Разобрать дерево процессов.',
+      'Собрать артефакты PowerShell-командами.',
+      'Написать сборщик collect-artifacts.ps1.',
+      'Самостоятельно разобрать OPS-WS-12.',
+      'Выбрать подтверждённые выводы.',
+      'Составить отчёт по двум машинам.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'NORTHLINE-07', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Рабочая станция',
+      context: 'Игорь передал изолированные снимки двух Windows-машин со склада «Северной линии».',
+      objective: windowsObjectives[Math.min(progress.windowsCaseStage, windowsObjectives.length - 1)],
+      dialogue: progress.windowsCaseStage === 0 ? 'Машина уже без сети. Сначала пойми, что запустилось.' : 'Нужны цепочка, файл, закрепление и соседние узлы.', speaker: 'И',
+      target: 'windowscase', button: 'Открыть NORTHLINE-07', icon: MonitorCog,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: progress.routeCaseComplete ? 'MARSHRUT-01 закрыт. Открылись новые веб-заказы.' : progress.criminalContactResponse === 'interested' ? 'Игорь ждёт встречи в кафе.' : 'Первая смена закончена. Можно взять подработку.',
-      objective: 'Выбрать заказ или закрыть компьютер.',
-      dialogue: progress.routeCaseComplete ? 'Если будет ещё работа — напишу.' : progress.criminalContactResponse === 'interested' ? 'Столик у стены.' : 'Завтра будет очередь побольше.', speaker: progress.criminalContactResponse === 'interested' ? 'И' : 'КЗ',
+      context: 'NORTHLINE-07 закрыт. Открылись повторяемые задания по Windows и PowerShell.',
+      objective: 'Выбрать заказ или продолжить обучение.',
+      dialogue: 'Следующая большая работа будет на Linux-сервере.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

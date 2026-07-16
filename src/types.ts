@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'networking' | 'python' | 'soc' | 'web';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -121,6 +121,17 @@ export interface ProgressState {
   routeCaseReportSelections: Record<string, string>;
   routeCaseChoice: 'full' | 'safe' | 'lie' | 'refuse' | 'owner' | 'anna' | '';
   routeCaseComplete: boolean;
+  windowsCaseStage: number;
+  windowsCaseObjectives: string[];
+  windowsCaseProcessAnswers: Record<string, string>;
+  windowsCaseScript: string;
+  windowsCaseScriptStep: number;
+  windowsCaseIndependentObjectives: string[];
+  windowsCaseIndependentAnswers: Record<string, string>;
+  windowsCaseFindingSelections: Record<string, string>;
+  windowsCaseReportSelections: Record<string, string>;
+  windowsCaseHintUses: number;
+  windowsCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;
