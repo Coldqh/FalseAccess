@@ -423,7 +423,73 @@ function networkSegmentContract(seed: number, index: number): GeneratedContract 
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract] as const;
+
+function apiAuthorizationContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const user = Math.floor(random() * 40) + 10;
+  const foreignOwner = user + 1;
+  const ownObject = Math.floor(random() * 700) + 100;
+  const foreignObject = ownObject + 1;
+  const resource = pick(random, ['invoice', 'shipment', 'document', 'payout']);
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `api-authz-${seed}`,
+    seed,
+    type: 'API_AUTHORIZATION',
+    title: 'Чужой объект через API',
+    client: pick(random, ['расчётный портал', 'закрытый склад', 'сервис документов', 'панель выплат']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'web',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `Аккаунт user-${user} открыл ${resource} другого владельца. Определи объект, владельца и отсутствующую проверку.`,
+    constraint: 'Работай с синтетической копией API. Не используй идентификаторы вне стенда.',
+    files: [
+      { name: 'requests.log', content: `GET /api/v1/me sid=sid_${user} -> 200 user_id=${user}\nGET /api/v1/${resource}s/${ownObject} sid=sid_${user} -> 200 owner_id=${user}\nGET /api/v1/${resource}s/${foreignObject} sid=sid_${user} -> 200 owner_id=${foreignOwner}` },
+      { name: 'route.js', content: `router.get('/${resource}s/:id', requireSession, async (req, res) => {\n  const row = await db.oneOrNone('SELECT * FROM ${resource}s WHERE id = $1', [req.params.id])\n  res.json(row)\n})` },
+    ],
+    questions: [
+      { id: 'object', label: 'Чужой объект', placeholder: 'ID', answers: [String(foreignObject)] },
+      { id: 'owner', label: 'Фактический владелец', placeholder: 'user id', answers: [String(foreignOwner)] },
+      { id: 'fix', label: 'Недостающая проверка', placeholder: 'кратко', answers: ['owner_id', 'проверка владельца', 'авторизация объекта', 'object authorization'] },
+    ],
+    hint: 'Сравни user_id текущей сессии с owner_id каждого объекта. requireSession подтверждает личность, но не право на строку.',
+  };
+}
+
+function sqlReviewContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const table = pick(random, ['payments', 'orders', 'files', 'tickets']);
+  const difficulty: ContractDifficulty = index % 2 === 0 ? 'STANDARD' : 'HARD';
+  return {
+    id: `sql-review-${seed}`,
+    seed,
+    type: 'SQL_QUERY_REVIEW',
+    title: 'Опасный запрос к базе',
+    client: pick(random, ['внутренний API', 'служба расчётов', 'архив документов', 'панель операторов']),
+    factionId: pick(random, ['line', 'north']),
+    factionName: '',
+    skill: 'web',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `В маршруте таблицы ${table} найден SQL, собранный строкой. Укажи опасный фрагмент и безопасный принцип исправления.`,
+    constraint: 'Ничего не выполняй. Это ревью кода на локальной копии.',
+    files: [
+      { name: 'handler.js', content: `const query = "SELECT * FROM ${table} WHERE id = " + req.params.id\nconst row = await db.query(query)\nreturn res.json(row.rows[0])` },
+      { name: 'safe-example.js', content: `const row = await db.query('SELECT * FROM ${table} WHERE id = $1 AND owner_id = $2', [req.params.id, req.user.id])` },
+    ],
+    questions: [
+      { id: 'problem', label: 'Опасный приём', placeholder: 'что не так', answers: ['конкатенация', 'склейка строки', 'string concatenation'] },
+      { id: 'sql', label: 'Безопасный принцип SQL', placeholder: 'что использовать', answers: ['параметры', 'параметризованный запрос', 'prepared statement'] },
+      { id: 'authz', label: 'Что ещё проверять', placeholder: 'доступ к объекту', answers: ['owner_id', 'владельца', 'авторизацию', 'права доступа'] },
+    ],
+    hint: 'Параметризованный запрос отделяет данные от SQL. Отдельно ограничь строку владельцем или политикой доступа.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract] as const;
+
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
   const daySeed = Number(progress.simulation.clock.dateIso.replaceAll('-', ''));
@@ -433,7 +499,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.routeCaseComplete || contract.type !== 'WEB_TIMELINE')
     .filter((contract) => progress.windowsCaseComplete || contract.type !== 'WINDOWS_TRIAGE')
     .filter((contract) => progress.linuxCaseComplete || contract.type !== 'LINUX_PERSISTENCE')
-    .filter((contract) => progress.networkCaseComplete || contract.type !== 'NETWORK_SEGMENT');
+    .filter((contract) => progress.networkCaseComplete || contract.type !== 'NETWORK_SEGMENT')
+    .filter((contract) => progress.webCaseComplete || !['API_AUTHORIZATION', 'SQL_QUERY_REVIEW'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

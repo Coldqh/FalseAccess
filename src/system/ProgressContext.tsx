@@ -45,6 +45,7 @@ interface ProgressContextValue {
   completeWindowsCase: () => void;
   completeLinuxCase: () => void;
   completeNetworkCase: () => void;
+  completeWebCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -52,7 +53,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v11';
+const STORAGE_KEY = 'false-access-progress-v12';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -151,6 +152,19 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     networkCaseReportSelections: parsed.networkCaseReportSelections && typeof parsed.networkCaseReportSelections === 'object' ? parsed.networkCaseReportSelections as Record<string, string> : {},
     networkCaseHintUses: Number.isFinite(Number(parsed.networkCaseHintUses)) ? Math.max(0, Number(parsed.networkCaseHintUses)) : 0,
     networkCaseComplete: Boolean(parsed.networkCaseComplete),
+    webCaseStage: Number.isFinite(Number(parsed.webCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.webCaseStage))) : 0,
+    webCaseFoundationAnswers: parsed.webCaseFoundationAnswers && typeof parsed.webCaseFoundationAnswers === 'object' ? parsed.webCaseFoundationAnswers as Record<string, string> : {},
+    webCaseHttpObjectives: Array.isArray(parsed.webCaseHttpObjectives) ? parsed.webCaseHttpObjectives.filter((item): item is string => typeof item === 'string') : [],
+    webCaseSessionAnswers: parsed.webCaseSessionAnswers && typeof parsed.webCaseSessionAnswers === 'object' ? parsed.webCaseSessionAnswers as Record<string, string> : {},
+    webCasePatch: typeof parsed.webCasePatch === 'string' ? parsed.webCasePatch : '',
+    webCaseCodeAnswers: parsed.webCaseCodeAnswers && typeof parsed.webCaseCodeAnswers === 'object' ? parsed.webCaseCodeAnswers as Record<string, string> : {},
+    webCaseSqlObjectives: Array.isArray(parsed.webCaseSqlObjectives) ? parsed.webCaseSqlObjectives.filter((item): item is string => typeof item === 'string') : [],
+    webCaseIndependentObjectives: Array.isArray(parsed.webCaseIndependentObjectives) ? parsed.webCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    webCaseIndependentAnswers: parsed.webCaseIndependentAnswers && typeof parsed.webCaseIndependentAnswers === 'object' ? parsed.webCaseIndependentAnswers as Record<string, string> : {},
+    webCaseFindingSelections: parsed.webCaseFindingSelections && typeof parsed.webCaseFindingSelections === 'object' ? parsed.webCaseFindingSelections as Record<string, string> : {},
+    webCaseReportSelections: parsed.webCaseReportSelections && typeof parsed.webCaseReportSelections === 'object' ? parsed.webCaseReportSelections as Record<string, string> : {},
+    webCaseHintUses: Number.isFinite(Number(parsed.webCaseHintUses)) ? Math.max(0, Number(parsed.webCaseHintUses)) : 0,
+    webCaseComplete: Boolean(parsed.webCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -174,6 +188,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v11Raw = localStorage.getItem('false-access-progress-v11');
     const v10Raw = localStorage.getItem('false-access-progress-v10');
     const v9Raw = localStorage.getItem('false-access-progress-v9');
     const v8Raw = localStorage.getItem('false-access-progress-v8');
@@ -183,6 +198,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v11Raw
       ?? v10Raw
       ?? v9Raw
       ?? v8Raw
@@ -194,7 +210,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -706,6 +722,78 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         networkCaseStage: 7,
         balance: advanced.balance + 9000,
         factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 5 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeWebCase: () => setProgress((current) => {
+      if (current.webCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 2, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 4),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 5),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 4),
+          reliability: bump(advanced.simulation.reputation.reliability, current.webCaseHintUses > 10 ? 2 : 6),
+          underground: bump(advanced.simulation.reputation.underground, 6),
+        },
+        progression: {
+          ...advanced.simulation.progression,
+          passedExamIds: advanced.simulation.progression.passedExamIds.includes('web-api-sql')
+            ? advanced.simulation.progression.passedExamIds
+            : [...advanced.simulation.progression.passedExamIds, 'web-api-sql'],
+        },
+        skills: {
+          ...advanced.simulation.skills,
+          web: {
+            ...advanced.simulation.skills.web,
+            theory: bump(advanced.simulation.skills.web.theory, 28),
+            guided: bump(advanced.simulation.skills.web.guided, 30),
+            independent: bump(advanced.simulation.skills.web.independent, 20),
+            production: bump(advanced.simulation.skills.web.production, 9),
+          },
+          sql: {
+            ...advanced.simulation.skills.sql,
+            theory: bump(advanced.simulation.skills.sql.theory, 20),
+            guided: bump(advanced.simulation.skills.sql.guided, 22),
+            independent: bump(advanced.simulation.skills.sql.independent, 12),
+            production: bump(advanced.simulation.skills.sql.production, 5),
+          },
+          appsec: {
+            ...advanced.simulation.skills.appsec,
+            theory: bump(advanced.simulation.skills.appsec.theory, 18),
+            guided: bump(advanced.simulation.skills.appsec.guided, 20),
+            independent: bump(advanced.simulation.skills.appsec.independent, 14),
+            production: bump(advanced.simulation.skills.appsec.production, 6),
+          },
+          securityEngineering: {
+            ...advanced.simulation.skills.securityEngineering,
+            theory: bump(advanced.simulation.skills.securityEngineering.theory, 8),
+            guided: bump(advanced.simulation.skills.securityEngineering.guided, 10),
+            independent: bump(advanced.simulation.skills.securityEngineering.independent, 8),
+          },
+          communication: {
+            ...advanced.simulation.skills.communication,
+            guided: bump(advanced.simulation.skills.communication.guided, 5),
+            production: bump(advanced.simulation.skills.communication.production, 4),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'VANTA-04 закрыт', `Два API-маршрута исправлены, SQL и сессии проверены. Подсказок: ${current.webCaseHintUses}.`, 10500);
+      return {
+        ...current,
+        webCaseComplete: true,
+        webCaseStage: 7,
+        balance: advanced.balance + 10500,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 6 },
         contractOffers: [],
         simulation,
       };

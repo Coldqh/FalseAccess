@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpenCheck, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
+  Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
   FileSearch, Globe2, HeartPulse, Mail, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
   Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
@@ -26,6 +26,7 @@ import { RouteCaseApp } from '../apps/RouteCaseApp';
 import { WindowsCaseApp } from '../apps/WindowsCaseApp';
 import { LinuxCaseApp } from '../apps/LinuxCaseApp';
 import { NetworkCaseApp } from '../apps/NetworkCaseApp';
+import { WebCaseApp } from '../apps/WebCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -83,6 +84,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1280, height: 800, accent: '#67c7c4', kind: 'temporary',
     visible: (progress) => progress.linuxCaseComplete && !progress.networkCaseComplete,
   },
+  {
+    id: 'webcase', title: 'VANTA-04', shortTitle: 'Web-04', icon: Braces,
+    width: 1300, height: 820, accent: '#b58bd8', kind: 'temporary',
+    visible: (progress) => progress.networkCaseComplete && !progress.webCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -104,6 +110,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'windowscase': return <WindowsCaseApp />;
     case 'linuxcase': return <LinuxCaseApp />;
     case 'networkcase': return <NetworkCaseApp />;
+    case 'webcase': return <WebCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

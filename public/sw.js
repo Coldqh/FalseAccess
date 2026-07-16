@@ -1,4 +1,4 @@
-const VERSION = '0.6.3';
+const VERSION = '0.6.4';
 const CACHE = `false-access-${VERSION}`;
 const FALLBACK = './index.html';
 const CORE = [
@@ -18,6 +18,7 @@ const CORE = [
   './sites/ostrogorsk-news/index.html',
   './sites/sfera/index.html',
   './sites/marshrut/index.html',
+  './sites/vanta/index.html',
   './pyodide/pyodide.mjs',
   './pyodide/pyodide.asm.js',
   './pyodide/pyodide.asm.wasm',

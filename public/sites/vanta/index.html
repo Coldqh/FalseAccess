@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VANTA Ledger</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,Arial,sans-serif;background:#080a0f;color:#e8e9ee}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 80% 0,#201833 0,transparent 36%),#080a0f}
+    button,input{font:inherit}.shell{min-height:100vh;display:grid;grid-template-columns:230px 1fr}.side{border-right:1px solid #292d38;background:#0d1017;padding:22px 16px;display:flex;flex-direction:column;gap:20px}.brand{display:flex;gap:10px;align-items:center}.mark{width:34px;height:34px;border:1px solid #8b6ddb;border-radius:9px;display:grid;place-items:center;color:#bca7ff;font-weight:900}.brand strong{display:block;letter-spacing:.12em}.brand span{font-size:11px;color:#777f91}.side nav{display:grid;gap:7px}.side button{border:0;background:transparent;color:#8f96a8;text-align:left;padding:11px 12px;border-radius:8px;cursor:pointer}.side button.active{background:#201a32;color:#e9e0ff}.side footer{margin-top:auto;border-top:1px solid #272b35;padding-top:15px;font-size:11px;color:#7d8494}.main{padding:24px;min-width:0}.top{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:24px}.top h1{font-size:20px;margin:0}.top span{font-size:12px;color:#8e95a6}.user{border:1px solid #343947;background:#11151e;border-radius:10px;padding:10px 13px;font-size:12px}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid #2c3140;background:linear-gradient(180deg,#131722,#0f1219);border-radius:12px;padding:17px}.card span{font-size:10px;color:#8a91a1;letter-spacing:.1em}.card strong{display:block;font-size:23px;margin:8px 0}.card p{font-size:12px;color:#8991a2;margin:0}.panel{margin-top:18px;border:1px solid #2b303d;background:#0f131b;border-radius:12px;overflow:hidden}.panel header{display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #292e39}.panel header strong{font-size:13px}.panel header span{font-size:11px;color:#8c94a6}.row{display:grid;grid-template-columns:80px 1fr 140px 120px;gap:12px;padding:14px 16px;border-bottom:1px solid #222733;align-items:center;font-size:12px}.row:last-child{border:0}.row code{color:#cbbcff}.tag{justify-self:start;padding:4px 8px;border:1px solid #5d4b88;border-radius:999px;color:#c9b8ff}.warning{margin-top:18px;border:1px solid #664d22;background:#1c160d;border-radius:10px;padding:13px 15px;color:#d6b570;font-size:12px;display:none}.warning.show{display:block}.api{display:none}.api.show{display:block}.api pre{white-space:pre-wrap;margin:0;padding:18px;color:#b9c2d4;font:12px/1.55 ui-monospace,monospace}.api .bar{padding:12px 16px;border-bottom:1px solid #292e39;display:flex;gap:8px}.api input{flex:1;background:#090c12;border:1px solid #313746;color:#d9deea;border-radius:7px;padding:9px}.api button{border:1px solid #7159b2;background:#2a2042;color:#eee8ff;border-radius:7px;padding:9px 12px}
+    @media(max-width:700px){.shell{grid-template-columns:1fr}.side{display:none}.main{padding:14px}.cards{grid-template-columns:1fr}.row{grid-template-columns:65px 1fr}.row>*:nth-child(n+3){display:none}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><div class="mark">V</div><div><strong>VANTA</strong><span>LEDGER CLIENT</span></div></div>
+    <nav>
+      <button class="active" data-view="dashboard">Обзор</button>
+      <button data-view="settlements">Расчёты</button>
+      <button data-view="api">API console</button>
+      <button data-view="profile">Профиль</button>
+    </nav>
+    <footer>LAB MIRROR<br>SYNTHETIC DATA<br>BUILD 4.8.19</footer>
+  </aside>
+  <main class="main">
+    <div class="top"><div><h1>Расчётный кабинет</h1><span>Низкоприоритетный клиентский контур</span></div><div class="user">client-41 · CLIENT</div></div>
+    <section id="dashboard">
+      <div class="cards">
+        <article class="card"><span>HELD</span><strong>184 000 ₽</strong><p>Расчёт 901 ожидает подтверждения.</p></article>
+        <article class="card"><span>RELEASED</span><strong>72 000 ₽</strong><p>Расчёт 905 закрыт.</p></article>
+        <article class="card"><span>SESSION</span><strong>18 мин</strong><p>Последняя ротация идентификатора.</p></article>
+      </div>
+      <div class="panel"><header><strong>Последние расчёты</strong><span>owner_id=41</span></header><div class="row"><code>#901</code><span>K-Transit</span><span>184 000 ₽</span><span class="tag">HELD</span></div><div class="row"><code>#905</code><span>North Storage</span><span>72 000 ₽</span><span class="tag">RELEASED</span></div></div>
+    </section>
+    <section id="settlements" style="display:none">
+      <div class="panel"><header><strong>Объект по ID</strong><span>GET /api/v1/settlements/:id</span></header><div class="row"><code>#901</code><span>owner 41 · K-Transit</span><span>184 000 ₽</span><span class="tag">ALLOWED</span></div><div class="row foreign"><code>#902</code><span>owner 42 · City Procurement Office</span><span>920 000 ₽</span><span class="tag">200 OK</span></div></div>
+      <div id="warn" class="warning show">Интерфейс показывает объект владельца 42 с сессией client-41. Это копия стенда. Проверка должна выполняться на API.</div>
+    </section>
+    <section id="api" class="api">
+      <div class="panel"><div class="bar"><input value="GET /api/v1/settlements/902" aria-label="request" /><button id="send">SEND</button></div><pre id="out">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"id":902,"owner_id":42,"amount":920000,"status":"released"}</pre></div>
+    </section>
+    <section id="profile" style="display:none"><div class="panel"><header><strong>Текущая сессия</strong><span>sid_41_a71c</span></header><div class="row"><code>USER</code><span>client-41</span><span>role</span><span class="tag">CLIENT</span></div><div class="row"><code>COOKIE</code><span>HttpOnly · Secure</span><span>SameSite</span><span class="tag">LAX</span></div></div></section>
+  </main>
+</div>
+<script>
+  const views=['dashboard','settlements','api','profile'];
+  document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
+    views.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.style.display=id===btn.dataset.view?'block':'none';el.classList.toggle('show',id===btn.dataset.view)});
+  }));
+  document.getElementById('send').addEventListener('click',()=>{document.getElementById('out').textContent='HTTP/1.1 200 OK\nContent-Type: application/json\n\n{"id":902,"owner_id":42,"amount":920000,"status":"released"}'});
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -129,12 +129,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.networkCaseStage === 0 ? 'Платёжный сегмент на резерве. Не выключай всё подряд.' : 'Нужны DHCP, DNS, маршрут, MAC и точный масштаб.', speaker: 'И',
       target: 'networkcase', button: 'Открыть BLACKWIRE-03', icon: Router,
     };
+  } else if (!progress.webCaseComplete) {
+    const webObjectives = [
+      'Прочитать условия и архитектуру VANTA-04.',
+      'Разобрать HTTP-запрос, ответ, cookie и API.',
+      'Подтвердить чтение чужого объекта через API.',
+      'Разделить аутентификацию и авторизацию.',
+      'Исправить серверный маршрут и проверить SQL.',
+      'Самостоятельно проверить второй API.',
+      'Собрать вывод и отчёт по двум сервисам.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'VANTA-04', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Web / API / SQL',
+      context: 'В закрытом расчётном портале обычный аккаунт получает чужие объекты по прямому ID.',
+      objective: webObjectives[Math.min(progress.webCaseStage, webObjectives.length - 1)],
+      dialogue: progress.webCaseStage === 0 ? 'Копия портала готова. Прод не трогай.' : 'Нужны запрос, сессия, проверка прав, SQL и точный масштаб.', speaker: 'И',
+      target: 'webcase', button: 'Открыть VANTA-04', icon: Braces,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: 'BLACKWIRE-03 закрыт. Открылись задания по DHCP, DNS, VLAN, NAT и анализу трафика.',
+      context: 'VANTA-04 закрыт. Открылись задания по API, сессиям, авторизации и SQL.',
       objective: 'Выбрать заказ или продолжить следующую главу.',
-      dialogue: 'Следующая крупная работа — Web, API и SQL.', speaker: 'И',
+      dialogue: 'Следующая крупная работа — смартфон и мобильные сессии.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

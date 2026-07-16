@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -156,6 +156,19 @@ export interface ProgressState {
   networkCaseReportSelections: Record<string, string>;
   networkCaseHintUses: number;
   networkCaseComplete: boolean;
+  webCaseStage: number;
+  webCaseFoundationAnswers: Record<string, string>;
+  webCaseHttpObjectives: string[];
+  webCaseSessionAnswers: Record<string, string>;
+  webCasePatch: string;
+  webCaseCodeAnswers: Record<string, string>;
+  webCaseSqlObjectives: string[];
+  webCaseIndependentObjectives: string[];
+  webCaseIndependentAnswers: Record<string, string>;
+  webCaseFindingSelections: Record<string, string>;
+  webCaseReportSelections: Record<string, string>;
+  webCaseHintUses: number;
+  webCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

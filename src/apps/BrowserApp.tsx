@@ -10,7 +10,12 @@ const baseSites = [
 
 export function BrowserApp() {
   const { progress } = useProgress();
-  const sites = useMemo(() => progress.routeCaseAccepted ? [...baseSites, { id: 'marshrut', label: 'Маршрут', path: 'sites/marshrut/index.html', display: 'marshrut.local' }] : baseSites, [progress.routeCaseAccepted]);
+  const sites = useMemo(() => {
+    const next = [...baseSites];
+    if (progress.routeCaseAccepted) next.push({ id: 'marshrut', label: 'Маршрут', path: 'sites/marshrut/index.html', display: 'marshrut.local' });
+    if (progress.networkCaseComplete) next.push({ id: 'vanta', label: 'VANTA Ledger', path: 'sites/vanta/index.html', display: 'vanta.local' });
+    return next;
+  }, [progress.routeCaseAccepted, progress.networkCaseComplete]);
   const [activeId, setActiveId] = useState('sfera');
   const [reloadKey, setReloadKey] = useState(0);
   const active = useMemo(() => sites.find((site) => site.id === activeId)!, [activeId]);
