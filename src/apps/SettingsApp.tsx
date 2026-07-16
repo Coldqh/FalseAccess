@@ -40,7 +40,7 @@ export function SettingsApp() {
   const exportSave = () => {
     const payload = JSON.stringify({
       game: 'FALSE ACCESS',
-      version: '0.4.0',
+      version: '0.4.1',
       exportedAt: new Date().toISOString(),
       progress,
     }, null, 2);
@@ -147,7 +147,7 @@ export function SettingsApp() {
         </article>
 
         <article className="settings-card app-card">
-          <header><span><Smartphone size={19} /></span><div><strong>Приложение</strong><small>BUILD 0.4.0</small></div></header>
+          <header><span><Smartphone size={19} /></span><div><strong>Приложение</strong><small>BUILD 0.4.1</small></div></header>
           <dl>
             <div><dt>Режим</dt><dd>{standalone ? 'Установлено на устройство' : 'Браузер'}</dd></div>
             <div><dt>Хранилище</dt><dd>LocalStorage + Cache Storage</dd></div>

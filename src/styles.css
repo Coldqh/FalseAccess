@@ -1791,3 +1791,75 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
   .quick-replies { display:grid;grid-template-columns:1fr; }
   .quick-replies button { min-height:44px;font-size:10px; }
 }
+
+
+/* 0.4.1 — messenger scroll and mobile layout fix */
+.messenger-app {
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+}
+.messenger-app .chat-list,
+.messenger-app .conversation {
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+}
+.messenger-app .conversation {
+  grid-template-rows:58px minmax(0,1fr) 52px;
+}
+.messenger-app .message-stream {
+  min-width:0;
+  min-height:0;
+  max-height:100%;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+}
+.messenger-app .message-stream > * {
+  flex:0 0 auto;
+}
+.messenger-app .story-call-dialogue,
+.messenger-app .quick-replies,
+.messenger-app .incoming-call-card {
+  flex-shrink:0;
+}
+
+@media (max-width:720px) {
+  .messenger-app-v5 {
+    height:100%;
+    min-height:0;
+    display:block;
+    overflow:hidden;
+  }
+  .messenger-app-v5 .chat-list,
+  .messenger-app-v5 .conversation {
+    width:100%;
+    height:100%;
+    min-height:0;
+  }
+  .messenger-app-v5.mobile-list .conversation { display:none; }
+  .messenger-app-v5.mobile-chat .chat-list { display:none; }
+  .messenger-app-v5 .chat-list {
+    display:grid;
+    grid-template-rows:52px 48px minmax(0,1fr);
+  }
+  .messenger-app-v5 .conversation {
+    display:grid;
+    grid-template-rows:58px minmax(0,1fr) 56px;
+  }
+  .messenger-app-v5 .message-stream {
+    padding:14px 12px 20px;
+    touch-action:pan-y;
+  }
+  .messenger-app-v5 .conversation > header {
+    display:grid;
+    grid-template-columns:auto 38px minmax(0,1fr) auto;
+  }
+  .messenger-app-v5 .conversation > footer input,
+  .messenger-app-v5 .chat-search input {
+    font-size:16px!important;
+  }
+}

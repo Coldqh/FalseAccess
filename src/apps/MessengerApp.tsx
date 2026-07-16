@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCheck, MoreHorizontal, Paperclip, Phone, Search, Send, ShieldCheck } from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -49,6 +49,7 @@ export function MessengerApp({ openApp }: { openApp: (id: AppId) => void }) {
   const [callOpen, setCallOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [localMessages, setLocalMessages] = useState<Record<ChatId, ChatMessage[]>>({ maxim: [], mother: [], kirill: [], igor: [] });
+  const messageStreamRef = useRef<HTMLDivElement>(null);
   const stage = getClinicStage(progress);
   const activeChat = chats.find((chat) => chat.id === activeId) ?? chats[0];
 
@@ -89,6 +90,17 @@ export function MessengerApp({ openApp }: { openApp: (id: AppId) => void }) {
     }
     return result;
   }, [activeId, localMessages, progress]);
+
+  useEffect(() => {
+    const stream = messageStreamRef.current;
+    if (!stream || mobileScreen !== 'chat' && window.matchMedia('(max-width: 720px)').matches) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      stream.scrollTo({ top: stream.scrollHeight, behavior: 'auto' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeId, messages.length, callOpen, mobileScreen, progress.criminalContactResponse, progress.clinicWrapupComplete]);
 
   const openChat = (id: ChatId) => {
     setActiveId(id);
@@ -148,7 +160,7 @@ export function MessengerApp({ openApp }: { openApp: (id: AppId) => void }) {
           <div><button onClick={() => activeId === 'maxim' && (hasIncomingCall ? setCallOpen(true) : openApp(stage.app))}><Phone size={17} /></button><button><Search size={17} /></button><button><MoreHorizontal size={17} /></button></div>
         </header>
 
-        <div className="message-stream app-scroll">
+        <div ref={messageStreamRef} className="message-stream app-scroll">
           <div className="day-separator">{activeId === 'igor' ? 'ПОНЕДЕЛЬНИК' : '14 МАРТА'}</div>
           {messages.map((message, index) => <div key={`${message.time}-${index}`} className={`message-bubble ${message.mine ? 'mine' : ''}`}><p>{message.text}</p><span>{message.time}{message.mine && <CheckCheck size={13} />}</span></div>)}
 
