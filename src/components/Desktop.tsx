@@ -112,7 +112,9 @@ export function Desktop() {
   const updateWindow = (id: AppId, patch: Partial<WindowState>) => setWindows((current) => current.map((win) => win.id === id ? { ...win, ...patch } : win));
   const closeWindow = (id: AppId) => setWindows((current) => current.filter((win) => win.id !== id));
 
-  const unread = (progress.jobOfferUnlocked && !progress.readMail.includes('job-offer') ? 1 : 0) + (!progress.readMessages.includes('maxim') ? 2 : 0);
+  const unread = (progress.jobOfferUnlocked && !progress.readMail.includes('job-offer') ? 1 : 0)
+    + (!progress.readMessages.includes('maxim') ? 2 : 0)
+    + (progress.criminalContactUnlocked && !progress.criminalContactResponse ? 2 : 0);
   const date = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(time);
   const clock = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(time);
 
@@ -122,7 +124,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 003.6</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>LOCAL BUILD / 004.0</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -181,7 +183,7 @@ export function Desktop() {
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
           <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
-          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS 0.3.6</span></footer>
+          <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS 0.4.0</span></footer>
         </section>
       )}
 
@@ -189,7 +191,8 @@ export function Desktop() {
         <section className="notification-center">
           <header><strong>Уведомления</strong><button onClick={() => setNotificationOpen(false)}><X size={16} /></button></header>
           <button onClick={() => openApp('messenger')}><MessageSquare size={18} /><div><strong>Максим</strong><p>Я отправил копию журналов на почту.</p></div><time>21:17</time></button>
-          {progress.jobOfferUnlocked && <button className="important" onClick={() => openApp('mail')}><Mail size={18} /><div><strong>Предложение о работе</strong><p>«Сфера-Интеграция» готова принять тебя.</p></div><time>Сейчас</time></button>}
+          {progress.jobOfferUnlocked && !progress.jobAccepted && <button className="important" onClick={() => openApp('mail')}><Mail size={18} /><div><strong>Анна Соколова</strong><p>Предложение о работе.</p></div><time>Сейчас</time></button>}
+          {progress.criminalContactUnlocked && !progress.criminalContactResponse && <button className="important" onClick={() => openApp('messenger')}><MessageSquare size={18} /><div><strong>Незнакомый номер</strong><p>Есть подработка по логам.</p></div><time>19:27</time></button>}
         </section>
       )}
 

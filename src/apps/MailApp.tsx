@@ -64,15 +64,45 @@ export function MailApp({ openApp }: { openApp: (id: AppId) => void }) {
     }
 
     if (progress.jobAccepted) {
+      const ticket = progress.firstShiftStage >= 4
+        ? {
+          subject: 'Запрос клиента по формулировке',
+          preview: 'Не использовать слово «утечка» без подтверждения...',
+          body: [
+            'Клиент: «Рубеж-Логистика».',
+            'Просьба не использовать слово «утечка» без подтверждённого содержимого передачи.',
+            'В отчёте должны остаться найденные события, объём трафика и ограничения вывода.',
+          ],
+          time: '17:46',
+        }
+        : progress.firstShiftStage >= 3
+          ? {
+            subject: 'DNS-2026-0221 назначен',
+            preview: 'Повторяющиеся запросы с 10.23.8.44...',
+            body: ['Новый тикет: DNS-2026-0221.', 'Узел 10.23.8.44 изолирован.', 'Определи повторяющийся домен и зафиксируй, что подтверждают данные.'],
+            time: '11:04',
+          }
+          : progress.firstShiftStage >= 2
+            ? {
+              subject: 'EDR-2026-0198 назначен',
+              preview: 'Word запустил PowerShell...',
+              body: ['Новый тикет: EDR-2026-0198.', 'На рабочей станции бухгалтерии зафиксировано создание powershell.exe.', 'Проверь родительский процесс и командную строку.'],
+              time: '10:26',
+            }
+            : {
+              subject: 'PHISH-2026-0041 назначен',
+              preview: 'Бухгалтерия переслала подозрительное письмо...',
+              body: ['Новый тикет: PHISH-2026-0041.', 'Бухгалтерия получила письмо об обновлении зарплатного кабинета.', 'Пользователь не открывал вложение. Проверь отправителя, ссылку и файл.'],
+              time: '09:42',
+            };
       base.unshift({
-        id: 'first-ticket', sender: 'WATCHTOWER SOC', address: 'tickets@sfera-integration.local', subject: 'PHISH-2026-0041 назначен',
-        preview: 'Бухгалтерия переслала подозрительное письмо...',
-        body: ['Новый тикет: PHISH-2026-0041.', 'Бухгалтерия получила письмо об обновлении зарплатного кабинета.', 'Пользователь не открывал вложение. Проверь отправителя, ссылку и файл.'],
-        time: '09:42', unread: !progress.readMail.includes('first-ticket'), action: 'open-shift',
+        id: 'first-ticket', sender: 'WATCHTOWER SOC', address: 'tickets@sfera-integration.local',
+        subject: ticket.subject, preview: ticket.preview, body: ticket.body, time: ticket.time,
+        unread: !progress.readMail.includes('first-ticket'), action: 'open-shift',
       });
     }
     return base;
-  }, [progress.interviewScore, progress.jobAccepted, progress.jobOfferUnlocked, progress.readMail]);
+  }, [progress.firstShiftStage, progress.interviewScore, progress.jobAccepted, progress.jobOfferUnlocked, progress.readMail]);
 
   const active = mails.find((mail) => mail.id === activeId) ?? null;
   const openMail = (id: string) => { setActiveId(id); markMailRead(id); };

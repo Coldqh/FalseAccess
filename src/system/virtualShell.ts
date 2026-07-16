@@ -9,10 +9,10 @@ const paths: Record<string, string[]> = {
 };
 
 const files: Record<string, string> = {
-  '/home/ilya/README.txt': `FALSE ACCESS // CLINIC-01
+  '/home/ilya/README.txt': `ILYA-HOME / TERMINAL
 
-help      команды
-mission   дело
+help      список команд
+mission   текущая задача
 clear     очистить экран`,
   '/home/ilya/cases/clinic-01/brief.txt': `ДЕЛО CLINIC-01
 
@@ -99,7 +99,7 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
     case 'whoami':
       return { lines: ['ilya'] };
     case 'hostname':
-      return { lines: ['clinic-ws-copy'] };
+      return { lines: ['ilya-home'] };
     case 'clear':
       return { lines: [], clear: true };
     case 'echo':
@@ -115,7 +115,11 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
       const requested = args[0] ?? '~';
       const target = normalizePath(cwd, requested);
       if (!paths[target]) {
-        return { lines: [`bash: cd: ${requested}: No such file or directory`] };
+        return { lines: [
+          `bash: cd: ${requested}: No such directory`,
+          `Подсказка: ты находишься в ${cwd}. Относительный путь добавляется к этой папке.`,
+          'Проверь содержимое командой ls или используй полный путь, начинающийся с /.',
+        ] };
       }
       return { lines: [], cwd: target, objective: target === '/home/ilya/cases/clinic-01' ? 'cd-case' : undefined };
     }
@@ -178,12 +182,12 @@ export function runShellCommand(raw: string, cwd: string): ShellResult {
       return { lines: [
         'CLINIC-01 / ПЕРВИЧНЫЙ ОСМОТР',
         `Текущая папка: ${cwd}`,
-        'Проверить auth.log и список процессов.',
-        'Ничего не удалять.',
+        'Задача: открыть дело, найти ошибки входа и проверить процессы.',
+        'Слева показан следующий шаг и объяснение команды.',
       ] };
     case 'man':
-      return { lines: [`No manual entry for ${args[0] ?? ''}`] };
+      return { lines: [`Справка собрана в help. Для команды ${args[0] ?? ''} используй боковую панель.`] };
     default:
-      return { lines: [`${name}: command not found`] };
+      return { lines: [`${name}: command not found. Напиши help.`, 'Проверь раскладку, регистр и пробелы.'] };
   }
 }

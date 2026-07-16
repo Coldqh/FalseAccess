@@ -35,6 +35,7 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
   const alertReviewed = Boolean(parsed.alertReviewed);
   const reportSubmitted = Boolean(parsed.reportSubmitted);
   const progressedIntoCase = terminalObjectives.length > 0 || pythonComplete || alertReviewed || reportSubmitted;
+  const legacyShortShift = Boolean(parsed.firstShiftComplete) && parsed.firstShiftStage === undefined;
 
   return {
     ...fallback,
@@ -49,8 +50,15 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     interviewScore: legacy ? 0 : Number(parsed.interviewScore ?? 0),
     jobOfferUnlocked: legacy ? false : Boolean(parsed.jobOfferUnlocked),
     jobAccepted: legacy ? false : Boolean(parsed.jobAccepted),
-    firstShiftComplete: legacy ? false : Boolean(parsed.firstShiftComplete),
-    firstShiftMistakes: legacy ? 0 : Number(parsed.firstShiftMistakes ?? 0),
+    firstShiftComplete: legacy || legacyShortShift ? false : Boolean(parsed.firstShiftComplete),
+    firstShiftMistakes: legacy || legacyShortShift ? 0 : Number(parsed.firstShiftMistakes ?? 0),
+    firstShiftStage: legacy || legacyShortShift ? 0 : (Boolean(parsed.firstShiftComplete) ? 5 : Number(parsed.firstShiftStage ?? 0)),
+    phishingComplete: legacy || legacyShortShift ? false : Boolean(parsed.phishingComplete),
+    powershellComplete: legacy || legacyShortShift ? false : Boolean(parsed.powershellComplete),
+    dnsComplete: legacy || legacyShortShift ? false : Boolean(parsed.dnsComplete),
+    shiftReportChoice: legacyShortShift ? '' : (parsed.shiftReportChoice === 'full' || parsed.shiftReportChoice === 'soft' ? parsed.shiftReportChoice : ''),
+    criminalContactUnlocked: legacy || legacyShortShift ? false : (Boolean(parsed.criminalContactUnlocked) || Boolean(parsed.firstShiftComplete)),
+    criminalContactResponse: legacyShortShift ? '' : (parsed.criminalContactResponse === 'interested' || parsed.criminalContactResponse === 'declined' ? parsed.criminalContactResponse : ''),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -120,7 +128,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     completeFirstShift: (mistakes) => setProgress((current) => ({
       ...current,
       firstShiftComplete: true,
+      firstShiftStage: 5,
       firstShiftMistakes: mistakes,
+      criminalContactUnlocked: true,
       balance: current.balance + Math.max(500, 1200 - mistakes * 150),
       factionRep: { ...current.factionRep, sfera: (current.factionRep.sfera ?? 0) + Math.max(1, 3 - mistakes) },
       contractOffers: [],

@@ -3,6 +3,14 @@ import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
 
+const shiftStages = [
+  { title: 'Первый день', objective: 'Войти в офис и получить рабочий доступ.', dialogue: 'Ты Илья? Пропуск держи.', speaker: 'КЗ' },
+  { title: 'Письмо в бухгалтерию', objective: 'Проверить отправителя, ссылку и вложение.', dialogue: 'Пользователь ничего не открыл. Начни с адреса.', speaker: 'КЗ' },
+  { title: 'Word запустил PowerShell', objective: 'Разобрать событие 4688 и выбрать первое действие.', dialogue: 'Читай родительский процесс и командную строку.', speaker: 'КЗ' },
+  { title: 'Повторяющиеся DNS-запросы', objective: 'Найти источник и описать подтверждённые факты.', dialogue: 'Узел уже изолирован. Теперь разберись, что он делал.', speaker: 'КЗ' },
+  { title: 'Отчёт по смене', objective: 'Выбрать точную формулировку и закрыть смену.', dialogue: 'Укажи трафик. Не пиши то, чего мы не доказали.', speaker: 'КЗ' },
+];
+
 export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   const { progress } = useProgress();
   const clinic = getClinicStage(progress);
@@ -12,41 +20,50 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   if (clinic.id !== 'complete') {
     current = {
       caseId: 'CLINIC-01', time: '14 МАРТА / 21:20', title: 'Компьютер регистратуры',
-      context: 'Максим Белов работает системным администратором в городской клинике №4. Он прислал очищенную копию журналов с компьютера, который начал тормозить после ночных попыток входа.',
+      context: 'Максим прислал копию журналов с компьютера клиники.',
       objective: clinic.objective,
       dialogue: clinic.dialogue, speaker: 'МБ',
       target: clinic.app, button: clinic.action, icon: MessageSquare,
     };
   } else if (!progress.interviewComplete) {
     current = {
-      caseId: 'INTERVIEW-01', time: '15 МАРТА / 11:30', title: 'Собеседование в «Сфере»',
-      context: 'Максим передал отчёт Анне Соколовой. Она согласилась провести короткое техническое собеседование.',
-      objective: 'Ответить на пять вопросов по CLINIC-01.',
-      dialogue: '«Мне не нужны громкие слова. Объясни, что доказали данные и что ты сделал бы первым».', speaker: 'АС',
-      target: 'interview', button: 'Начать собеседование', icon: UserRoundCheck,
+      caseId: 'INTERVIEW-01', time: '15 МАРТА / 11:30', title: 'Собеседование',
+      context: 'Анна Соколова получила отчёт от Максима.',
+      objective: 'Ответить на пять вопросов по делу CLINIC-01.',
+      dialogue: 'Пять вопросов. Где не знаешь — не выдумывай.', speaker: 'АС',
+      target: 'interview', button: 'Ответить на звонок', icon: UserRoundCheck,
     };
   } else if (!progress.jobAccepted) {
     current = {
       caseId: 'MAIL-01', time: '15 МАРТА / 16:42', title: 'Ответ от «Сферы»',
-      context: 'Собеседование закончено. Во входящих появилось письмо от Анны Соколовой.',
-      objective: 'Открыть предложение и дать ответ.',
-      dialogue: '«Результат принят. Ответ нужен до завтра, 18:00».', speaker: 'АС',
+      context: 'Во входящих письмо от Анны.',
+      objective: 'Открыть письмо и дать ответ.',
+      dialogue: 'Ответ нужен до завтра, 18:00.', speaker: 'АС',
       target: 'mail', button: 'Открыть Mail', icon: Mail,
     };
   } else if (!progress.firstShiftComplete) {
+    const stage = shiftStages[Math.min(progress.firstShiftStage, shiftStages.length - 1)];
     current = {
-      caseId: 'SHIFT-01', time: 'ПОНЕДЕЛЬНИК / 09:42', title: 'Первый тикет',
-      context: 'Илья вышел на первую смену младшим аналитиком SOC. Бухгалтерия переслала подозрительное письмо.',
-      objective: 'Разобрать тикет PHISH-2026-0041 и выбрать первые действия.',
-      dialogue: '«Не открывай вложение. Сначала отправитель, ссылка и заголовки».', speaker: 'КЗ',
-      target: 'firstshift', button: 'Открыть тикет', icon: ShieldCheck,
+      caseId: 'SHIFT-01', time: progress.firstShiftStage === 0 ? 'ПОНЕДЕЛЬНИК / 08:57' : 'ПОНЕДЕЛЬНИК', title: stage.title,
+      context: 'Первая смена Ильи в SOC «Сферы».',
+      objective: stage.objective,
+      dialogue: stage.dialogue, speaker: stage.speaker,
+      target: 'firstshift', button: progress.firstShiftStage === 0 ? 'Войти в офис' : 'Продолжить смену', icon: ShieldCheck,
+    };
+  } else if (progress.criminalContactUnlocked && !progress.criminalContactResponse) {
+    current = {
+      caseId: 'WIRE-UNKNOWN', time: 'ПОНЕДЕЛЬНИК / 19:27', title: 'Новый контакт',
+      context: 'После смены написал незнакомый номер.',
+      objective: 'Открыть Messenger и прочитать сообщение.',
+      dialogue: 'Есть подработка по логам. 8 тысяч после результата.', speaker: '?',
+      target: 'messenger', button: 'Открыть Messenger', icon: MessageSquare,
     };
   } else {
     current = {
-      caseId: 'WORK//QUEUE', time: 'ПОСЛЕ СМЕНЫ', title: 'Свободные заказы',
-      context: 'Первая смена закончена. Доступны повторяемые задачи по уже пройденным навыкам.',
-      objective: 'Выбрать заказ или дождаться следующей сюжетной главы.',
-      dialogue: '«Завтра покажу, как у нас устроены смены. Сегодня домой».', speaker: 'КЗ',
+      caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
+      context: progress.criminalContactResponse === 'interested' ? 'Игорь обещал прислать копию логов. Пока доступны обычные заказы.' : 'Первая смена закончена. Можно взять подработку.',
+      objective: 'Выбрать заказ или закрыть компьютер.',
+      dialogue: progress.criminalContactResponse === 'interested' ? 'Скину копию, когда будешь дома.' : 'Завтра будет очередь побольше.', speaker: progress.criminalContactResponse === 'interested' ? 'И' : 'КЗ',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

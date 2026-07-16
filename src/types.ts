@@ -94,6 +94,13 @@ export interface ProgressState {
   jobAccepted: boolean;
   firstShiftComplete: boolean;
   firstShiftMistakes: number;
+  firstShiftStage: number;
+  phishingComplete: boolean;
+  powershellComplete: boolean;
+  dnsComplete: boolean;
+  shiftReportChoice: 'full' | 'soft' | '';
+  criminalContactUnlocked: boolean;
+  criminalContactResponse: 'interested' | 'declined' | '';
   readMail: string[];
   readMessages: string[];
   notes: string;

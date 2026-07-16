@@ -4,52 +4,78 @@ import { useProgress } from '../system/ProgressContext';
 
 const questions = [
   {
-    question: 'Ты открыл терминал и видишь приглашение ilya@fa:~/cases$. Что означает ~/cases?',
-    options: ['Текущую папку пользователя', 'IP-адрес компьютера', 'Имя запущенного процесса'],
+    question: 'В терминале написано ilya@fa:~/cases$. Где ты находишься?',
+    options: ['В /home/ilya/cases', 'На сервере с адресом cases', 'В процессе с именем ilya'],
     correct: 0,
-    explanation: '~ заменяет домашнюю папку /home/ilya. Значит, текущий путь — /home/ilya/cases.',
+    explanation: '~ — домашняя папка пользователя. Для Ильи это /home/ilya.',
   },
   {
-    question: 'В журнале шесть строк Failed password с одного внешнего IP. Что доказано?',
-    options: ['Система полностью захвачена', 'Были неудачные попытки входа', 'Пароль root точно украден'],
-    correct: 1,
-    explanation: 'Failed password подтверждает только неудачную аутентификацию. Успешный доступ нужно искать отдельно.',
+    question: 'В auth.log шесть строк Failed password с одного внешнего IP. Что ты можешь утверждать?',
+    options: ['Были неудачные попытки входа', 'Сервер взломан', 'Пароль root украден'],
+    correct: 0,
+    explanation: 'Failed password означает отказ. Успешный вход ищется отдельно.',
   },
   {
-    question: 'Зачем программе переменная failed = 0?',
-    options: ['Чтобы хранить количество найденных ошибок', 'Чтобы закрыть сетевой порт', 'Чтобы удалить журнал'],
+    question: 'Для чего в скрипте failed = 0?',
+    options: ['Это счётчик найденных строк', 'Это номер сетевого порта', 'Это команда очистки файла'],
     correct: 0,
-    explanation: 'failed — счётчик. Он начинается с нуля и увеличивается при каждом совпадении.',
+    explanation: 'Счётчик начинается с нуля и растёт на единицу при каждом совпадении.',
   },
   {
-    question: 'Что аналитик должен сделать до удаления подозрительного файла?',
-    options: ['Сохранить данные и зафиксировать путь, процесс и время', 'Немедленно удалить всё', 'Опубликовать файл в чате'],
+    question: 'Нашёл процесс из /tmp. Что делаешь до удаления?',
+    options: ['Фиксирую PID, путь, время и сохраняю данные', 'Удаляю файл сразу', 'Перезагружаю компьютер'],
     correct: 0,
-    explanation: 'Сначала сохраняют доказательства и контекст. Иначе можно уничтожить данные, нужные для расследования.',
+    explanation: 'После удаления часть данных пропадёт. Сначала их сохраняют.',
   },
   {
-    question: 'Почему технический отчёт разделяет факты и предположения?',
-    options: ['Чтобы не выдавать гипотезу за доказанное событие', 'Чтобы отчёт был длиннее', 'Чтобы скрыть ошибки аналитика'],
+    question: 'Успешного внешнего входа нет. Как написать итог?',
+    options: ['Зафиксированы попытки входа; компрометация не подтверждена', 'Сервер точно безопасен', 'Атакующий получил root'],
     correct: 0,
-    explanation: 'Решения принимают по отчёту. Неточная формулировка может привести к неправильной блокировке, обвинению или потере данных.',
+    explanation: 'Отчёт должен отделять найденные события от того, чего данные не доказали.',
   },
 ];
 
 export function InterviewApp() {
   const { progress, completeInterview } = useProgress();
+  const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>(questions.map(() => null));
   const [active, setActive] = useState(0);
   const [checked, setChecked] = useState<boolean[]>(questions.map(() => false));
   const available = progress.reportSubmitted;
   const score = useMemo(() => answers.reduce<number>((sum, answer, index) => sum + (answer === questions[index].correct ? 1 : 0), 0), [answers]);
-  const allChecked = checked.every(Boolean);
 
   if (!available) {
-    return <div className="interview-locked"><UserRoundCheck size={48} /><h2>Сначала закончи CLINIC-01</h2><p>Анна ждёт итоговый отчёт по CLINIC-01.</p></div>;
+    return <div className="interview-locked"><UserRoundCheck size={48} /><h2>Сначала закончи CLINIC-01</h2><p>Анна ждёт отчёт.</p></div>;
   }
 
   if (progress.interviewComplete) {
-    return <div className="interview-result-screen"><div className="interview-seal"><CheckCircle2 size={40} /></div><p className="eyebrow">СОБЕСЕДОВАНИЕ ЗАВЕРШЕНО</p><h2>{progress.interviewScore}/{questions.length}</h2><p>Анна закрыла ноутбук и сказала ждать письмо от отдела кадров.</p><div className="result-next"><strong>Новое письмо</strong><span>Предложение от «Сферы-Интеграции» уже в Mail.</span></div></div>;
+    return (
+      <div className="interview-result-screen">
+        <div className="interview-seal"><CheckCircle2 size={40} /></div>
+        <p className="eyebrow">СОБЕСЕДОВАНИЕ ЗАКОНЧЕНО</p>
+        <h2>{progress.interviewScore}/{questions.length}</h2>
+        <div className="interview-final-dialogue">
+          <strong>Анна Соколова</strong>
+          <p>{progress.interviewScore >= 4 ? 'Ладно. Для стажёра нормально. Ответ пришлю на почту.' : 'Термины плавают. Но с данными ты работаешь аккуратно. Ответ пришлю позже.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!started) {
+    return (
+      <div className="interview-intro">
+        <div className="interviewer-avatar large">АС</div>
+        <p className="eyebrow">ВИДЕОЗВОНОК / 11:30</p>
+        <h2>Анна Соколова</h2>
+        <span>Руководитель смены SOC · «Сфера-Интеграция»</span>
+        <div className="interview-call-lines">
+          <p>Максим прислал твой отчёт.</p>
+          <p>Пять вопросов. Где не знаешь — не выдумывай.</p>
+        </div>
+        <button className="primary-action" onClick={() => setStarted(true)}>Начать</button>
+      </div>
+    );
   }
 
   const question = questions[active];
@@ -69,24 +95,23 @@ export function InterviewApp() {
 
   const next = () => {
     if (active < questions.length - 1) setActive((value) => value + 1);
-    else if (allChecked) completeInterview(score);
+    else completeInterview(score);
   };
 
   return (
-    <div className="interview-app">
+    <div className="interview-app interview-app-v5">
       <aside className="interview-room">
         <div className="interview-company"><span>СФЕРА</span><strong>SECURITY OPERATIONS</strong></div>
-        <div className="interviewer-card"><div className="interviewer-avatar">АС</div><strong>Анна Соколова</strong><span>Руководитель смены SOC</span><p>«Не торопись. Мне важнее ход мысли, чем выученная формулировка».</p></div>
-        <div className="interview-rules"><span>АННА СОКОЛОВА</span><p>«Отвечай по данным. Не додумывай».</p></div>
+        <div className="interviewer-card"><div className="interviewer-avatar">АС</div><strong>Анна Соколова</strong><span>Руководитель смены</span><p>{isChecked ? (correct ? 'Хорошо. Дальше.' : 'Нет. Смотри на формулировку.') : 'Слушаю.'}</p></div>
       </aside>
       <main className="interview-main">
-        <header><div><p className="eyebrow">ТЕХНИЧЕСКОЕ СОБЕСЕДОВАНИЕ</p><h2>Вопрос {active + 1} из {questions.length}</h2></div><strong>{score} верно</strong></header>
+        <header><div><p className="eyebrow">ВОПРОС {active + 1} / {questions.length}</p><h2>{question.question}</h2></div><strong>{score} верно</strong></header>
         <div className="interview-progress">{questions.map((_, index) => <button key={index} className={`${active === index ? 'active' : ''} ${checked[index] ? (answers[index] === questions[index].correct ? 'correct' : 'wrong') : ''}`} onClick={() => setActive(index)}>{checked[index] ? (answers[index] === questions[index].correct ? <Check size={13} /> : <XCircle size={13} />) : <Circle size={10} />}</button>)}</div>
-        <section className="interview-question"><p>{question.question}</p><div>{question.options.map((option, index) => <button key={option} className={`${selected === index ? 'selected' : ''} ${isChecked ? (index === question.correct ? 'correct' : selected === index ? 'wrong' : '') : ''}`} onClick={() => choose(index)}><span>{String.fromCharCode(65 + index)}</span><strong>{option}</strong>{isChecked && index === question.correct && <Check size={18} />}</button>)}</div></section>
-        {isChecked && <section className={`interview-explanation ${correct ? 'success' : 'error'}`}><strong>{correct ? 'Анна: «Да».' : 'Анна: «Нет».'}</strong><p>{question.explanation}</p></section>}
+        <section className="interview-question"><div>{question.options.map((option, index) => <button key={option} className={`${selected === index ? 'selected' : ''} ${isChecked ? (index === question.correct ? 'correct' : selected === index ? 'wrong' : '') : ''}`} onClick={() => choose(index)}><span>{String.fromCharCode(65 + index)}</span><strong>{option}</strong>{isChecked && index === question.correct && <Check size={18} />}</button>)}</div></section>
+        {isChecked && <section className={`interview-explanation ${correct ? 'success' : 'error'}`}><p>{question.explanation}</p></section>}
         <footer>
-          <button className="secondary-action" onClick={() => { setAnswers(questions.map(() => null)); setChecked(questions.map(() => false)); setActive(0); }}><RotateCcw size={15} />Начать заново</button>
-          {!isChecked ? <button className="primary-action" disabled={selected === null} onClick={check}>Проверить ответ</button> : <button className="primary-action" onClick={next}>{active === questions.length - 1 ? 'Завершить собеседование' : 'Следующий вопрос'}<ChevronRight size={17} /></button>}
+          <button className="secondary-action" onClick={() => { setAnswers(questions.map(() => null)); setChecked(questions.map(() => false)); setActive(0); }}><RotateCcw size={15} />Сначала</button>
+          {!isChecked ? <button className="primary-action" disabled={selected === null} onClick={check}>Ответить</button> : <button className="primary-action" onClick={next}>{active === questions.length - 1 ? 'Закончить' : 'Следующий'}<ChevronRight size={17} /></button>}
         </footer>
       </main>
     </div>
