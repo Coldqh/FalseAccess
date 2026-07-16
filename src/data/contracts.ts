@@ -488,7 +488,74 @@ function sqlReviewContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract] as const;
+
+function mobileProfileContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const packageName = pick(random, ['com.quickmemo.mobile', 'net.routeassist.app', 'com.lighttools.scan']);
+  const specialAccess = pick(random, ['Accessibility', 'Device Admin', 'Notification Listener']);
+  const remote = ip(random);
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `mobile-profile-${seed}`,
+    seed,
+    type: 'MOBILE_PROFILE',
+    title: 'Посторонний профиль на телефоне',
+    client: pick(random, ['курьерская сеть', 'закрытая диспетчерская', 'частный перевозчик']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'mobile',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'В образе телефона найден сторонний пакет со специальным доступом и внешним соединением. Свяжи пакет, полномочие и адрес.',
+    constraint: 'Работай только с синтетическим образом. Не подключайся к внешнему адресу.',
+    files: [
+      { name: 'packages.txt', content: `package=${packageName}\ninstaller=com.android.packageinstaller\ninstalled=02:14:09` },
+      { name: 'special_access.txt', content: `package=${packageName}\naccess=${specialAccess}\nstate=enabled` },
+      { name: 'network.log', content: `package=${packageName} remote=${remote}:443 bytes=44821` },
+    ],
+    questions: [
+      { id: 'package', label: 'Подозрительный пакет', placeholder: 'package name', answers: [packageName] },
+      { id: 'access', label: 'Специальный доступ', placeholder: 'тип доступа', answers: [specialAccess] },
+      { id: 'remote', label: 'Внешний адрес', placeholder: 'IP', answers: [remote] },
+    ],
+    hint: 'Сопоставь package во всех трёх файлах. Специальный доступ важнее обычного списка permissions.',
+  };
+}
+
+function mobileTokenContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const account = `courier-${Math.floor(random() * 70) + 10}`;
+  const token = `rt_${Math.floor(random() * 9000) + 1000}_${Math.floor(random() * 0xffffff).toString(36).padStart(4, '0').slice(0, 4)}`;
+  const remote = ip(random);
+  const difficulty: ContractDifficulty = index % 2 === 0 ? 'STANDARD' : 'HARD';
+  return {
+    id: `mobile-token-${seed}`,
+    seed,
+    type: 'MOBILE_TOKEN_BACKUP',
+    title: 'Токен в резервной копии',
+    client: pick(random, ['мобильная бригада', 'служба маршрутов', 'оператор склада']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'mobile',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'В незашифрованной резервной копии найден refresh token. Проверь его удалённое использование и назови первое действие.',
+    constraint: 'Не используй токен. Анализируй только копию журналов.',
+    files: [
+      { name: 'backup_manifest.txt', content: `encrypted=false\ncontains=shared_prefs/session.xml` },
+      { name: 'session.xml', content: `<string name="account">${account}</string>\n<string name="refresh_token">${token}</string>` },
+      { name: 'oauth.log', content: `token=${token} account=${account} ip=${remote} result=access_issued\naccount=${account} ip=${remote} POST /export 200` },
+    ],
+    questions: [
+      { id: 'token', label: 'Refresh token', placeholder: 'token', answers: [token] },
+      { id: 'remote', label: 'Удалённый адрес', placeholder: 'IP', answers: [remote] },
+      { id: 'action', label: 'Первое действие', placeholder: 'что отозвать', answers: ['отозвать токен', 'отозвать refresh token', 'отозвать сессии', 'revoke token'] },
+    ],
+    hint: 'Сначала найди token в session.xml, затем тот же token в oauth.log. После подтверждения его нужно отозвать вместе с дочерними сессиями.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract] as const;
 
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
@@ -500,7 +567,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.windowsCaseComplete || contract.type !== 'WINDOWS_TRIAGE')
     .filter((contract) => progress.linuxCaseComplete || contract.type !== 'LINUX_PERSISTENCE')
     .filter((contract) => progress.networkCaseComplete || contract.type !== 'NETWORK_SEGMENT')
-    .filter((contract) => progress.webCaseComplete || !['API_AUTHORIZATION', 'SQL_QUERY_REVIEW'].includes(contract.type));
+    .filter((contract) => progress.webCaseComplete || !['API_AUTHORIZATION', 'SQL_QUERY_REVIEW'].includes(contract.type))
+    .filter((contract) => progress.mobileCaseComplete || !['MOBILE_PROFILE', 'MOBILE_TOKEN_BACKUP'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

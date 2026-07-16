@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -147,12 +147,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.webCaseStage === 0 ? 'Копия портала готова. Прод не трогай.' : 'Нужны запрос, сессия, проверка прав, SQL и точный масштаб.', speaker: 'И',
       target: 'webcase', button: 'Открыть VANTA-04', icon: Braces,
     };
+  } else if (!progress.mobileCaseComplete) {
+    const mobileObjectives = [
+      'Прочитать условия и архитектуру MIRRORCELL-05.',
+      'Разобрать разрешения, специальные доступы и токены.',
+      'Найти подозрительный пакет и его полномочия.',
+      'Связать backup, refresh token и удалённую выгрузку.',
+      'Исправить хранение сессии и AndroidManifest.',
+      'Выбрать безопасную локализацию и fleet hunt.',
+      'Самостоятельно разобрать второе устройство и отчёт.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'MIRRORCELL-05', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Смартфон и сессии',
+      context: 'Корпоративный телефон курьера вернули через два часа. Позже с его учётки выгрузили маршруты.',
+      objective: mobileObjectives[Math.min(progress.mobileCaseStage, mobileObjectives.length - 1)],
+      dialogue: progress.mobileCaseStage === 0 ? 'Есть образ Android, MDM и OAuth. Сначала докажи цепочку.' : 'Нужны пакет, полномочия, backup, токен и второй телефон.', speaker: 'И',
+      target: 'mobilecase', button: 'Открыть MIRRORCELL-05', icon: Smartphone,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: 'VANTA-04 закрыт. Открылись задания по API, сессиям, авторизации и SQL.',
+      context: 'MIRRORCELL-05 закрыт. Открылись задания по мобильным профилям, backup и токенам.',
       objective: 'Выбрать заказ или продолжить следующую главу.',
-      dialogue: 'Следующая крупная работа — смартфон и мобильные сессии.', speaker: 'И',
+      dialogue: 'Следующая крупная работа — корпоративный домен и Active Directory.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

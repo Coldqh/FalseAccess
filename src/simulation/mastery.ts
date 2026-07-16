@@ -25,6 +25,7 @@ export const middleReadinessRequirements: MasteryRequirement[] = [
   { id: 'threatHunting', theory: 60, guided: 55, independent: 50, production: 35 },
   { id: 'securityEngineering', theory: 65, guided: 60, independent: 55, production: 40 },
   { id: 'appsec', theory: 55, guided: 50, independent: 45, production: 30 },
+  { id: 'mobileSecurity', theory: 50, guided: 50, independent: 45, production: 25 },
   { id: 'cloud', theory: 55, guided: 50, independent: 45, production: 30 },
   { id: 'activeDirectory', theory: 60, guided: 55, independent: 50, production: 35 },
   { id: 'communication', theory: 60, guided: 65, independent: 60, production: 50 },

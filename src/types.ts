@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -169,6 +169,21 @@ export interface ProgressState {
   webCaseReportSelections: Record<string, string>;
   webCaseHintUses: number;
   webCaseComplete: boolean;
+  mobileCaseStage: number;
+  mobileCaseFoundationAnswers: Record<string, string>;
+  mobileCaseObjectives: string[];
+  mobileCaseSessionAnswers: Record<string, string>;
+  mobileCaseBackupObjectives: string[];
+  mobileCaseTokenAnswers: Record<string, string>;
+  mobileCasePatch: string;
+  mobileCaseCodeAnswers: Record<string, string>;
+  mobileCaseContainmentSelections: Record<string, string>;
+  mobileCaseIndependentObjectives: string[];
+  mobileCaseIndependentAnswers: Record<string, string>;
+  mobileCaseFindingSelections: Record<string, string>;
+  mobileCaseReportSelections: Record<string, string>;
+  mobileCaseHintUses: number;
+  mobileCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

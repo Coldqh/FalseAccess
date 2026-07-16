@@ -99,6 +99,7 @@ export type SimulationSkillId =
   | 'threatHunting'
   | 'securityEngineering'
   | 'appsec'
+  | 'mobileSecurity'
   | 'cloud'
   | 'activeDirectory'
   | 'communication'

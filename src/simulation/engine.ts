@@ -30,6 +30,7 @@ function createSkills(): Record<SimulationSkillId, SkillTrackState> {
     threatHunting: blankSkill(),
     securityEngineering: blankSkill(),
     appsec: blankSkill(),
+    mobileSecurity: blankSkill(),
     cloud: blankSkill(),
     activeDirectory: blankSkill(),
     communication: blankSkill(),

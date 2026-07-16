@@ -46,6 +46,7 @@ interface ProgressContextValue {
   completeLinuxCase: () => void;
   completeNetworkCase: () => void;
   completeWebCase: () => void;
+  completeMobileCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -53,7 +54,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v12';
+const STORAGE_KEY = 'false-access-progress-v13';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -165,6 +166,21 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     webCaseReportSelections: parsed.webCaseReportSelections && typeof parsed.webCaseReportSelections === 'object' ? parsed.webCaseReportSelections as Record<string, string> : {},
     webCaseHintUses: Number.isFinite(Number(parsed.webCaseHintUses)) ? Math.max(0, Number(parsed.webCaseHintUses)) : 0,
     webCaseComplete: Boolean(parsed.webCaseComplete),
+    mobileCaseStage: Number.isFinite(Number(parsed.mobileCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.mobileCaseStage))) : 0,
+    mobileCaseFoundationAnswers: parsed.mobileCaseFoundationAnswers && typeof parsed.mobileCaseFoundationAnswers === 'object' ? parsed.mobileCaseFoundationAnswers as Record<string, string> : {},
+    mobileCaseObjectives: Array.isArray(parsed.mobileCaseObjectives) ? parsed.mobileCaseObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mobileCaseSessionAnswers: parsed.mobileCaseSessionAnswers && typeof parsed.mobileCaseSessionAnswers === 'object' ? parsed.mobileCaseSessionAnswers as Record<string, string> : {},
+    mobileCaseBackupObjectives: Array.isArray(parsed.mobileCaseBackupObjectives) ? parsed.mobileCaseBackupObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mobileCaseTokenAnswers: parsed.mobileCaseTokenAnswers && typeof parsed.mobileCaseTokenAnswers === 'object' ? parsed.mobileCaseTokenAnswers as Record<string, string> : {},
+    mobileCasePatch: typeof parsed.mobileCasePatch === 'string' ? parsed.mobileCasePatch : '',
+    mobileCaseCodeAnswers: parsed.mobileCaseCodeAnswers && typeof parsed.mobileCaseCodeAnswers === 'object' ? parsed.mobileCaseCodeAnswers as Record<string, string> : {},
+    mobileCaseContainmentSelections: parsed.mobileCaseContainmentSelections && typeof parsed.mobileCaseContainmentSelections === 'object' ? parsed.mobileCaseContainmentSelections as Record<string, string> : {},
+    mobileCaseIndependentObjectives: Array.isArray(parsed.mobileCaseIndependentObjectives) ? parsed.mobileCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mobileCaseIndependentAnswers: parsed.mobileCaseIndependentAnswers && typeof parsed.mobileCaseIndependentAnswers === 'object' ? parsed.mobileCaseIndependentAnswers as Record<string, string> : {},
+    mobileCaseFindingSelections: parsed.mobileCaseFindingSelections && typeof parsed.mobileCaseFindingSelections === 'object' ? parsed.mobileCaseFindingSelections as Record<string, string> : {},
+    mobileCaseReportSelections: parsed.mobileCaseReportSelections && typeof parsed.mobileCaseReportSelections === 'object' ? parsed.mobileCaseReportSelections as Record<string, string> : {},
+    mobileCaseHintUses: Number.isFinite(Number(parsed.mobileCaseHintUses)) ? Math.max(0, Number(parsed.mobileCaseHintUses)) : 0,
+    mobileCaseComplete: Boolean(parsed.mobileCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -188,6 +204,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v12Raw = localStorage.getItem('false-access-progress-v12');
     const v11Raw = localStorage.getItem('false-access-progress-v11');
     const v10Raw = localStorage.getItem('false-access-progress-v10');
     const v9Raw = localStorage.getItem('false-access-progress-v9');
@@ -198,6 +215,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v12Raw
       ?? v11Raw
       ?? v10Raw
       ?? v9Raw
@@ -210,7 +228,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -223,11 +241,12 @@ function persist(progress: ProgressState) {
   return timestamp;
 }
 
-function addContractSkill(progress: ProgressState, skill: SimulationSkillId, clean: boolean) {
-  const current = progress.simulation.skills[skill];
+function addContractSkill(progress: ProgressState, skill: GeneratedContract['skill'], clean: boolean) {
+  const skillId: SimulationSkillId = skill === 'mobile' ? 'mobileSecurity' : skill;
+  const current = progress.simulation.skills[skillId];
   return {
     ...progress.simulation.skills,
-    [skill]: {
+    [skillId]: {
       ...current,
       independent: Math.min(100, current.independent + (clean ? 3 : 1)),
       production: Math.min(100, current.production + (clean ? 2 : 1)),
@@ -794,6 +813,85 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         webCaseStage: 7,
         balance: advanced.balance + 10500,
         factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 6 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeMobileCase: () => setProgress((current) => {
+      if (current.mobileCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 2, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 5),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 6),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 4),
+          reliability: bump(advanced.simulation.reputation.reliability, current.mobileCaseHintUses > 11 ? 2 : 6),
+          underground: bump(advanced.simulation.reputation.underground, 7),
+        },
+        progression: {
+          ...advanced.simulation.progression,
+          passedExamIds: advanced.simulation.progression.passedExamIds.includes('mobile-security')
+            ? advanced.simulation.progression.passedExamIds
+            : [...advanced.simulation.progression.passedExamIds, 'mobile-security'],
+        },
+        skills: {
+          ...advanced.simulation.skills,
+          mobileSecurity: {
+            ...advanced.simulation.skills.mobileSecurity,
+            theory: bump(advanced.simulation.skills.mobileSecurity.theory, 30),
+            guided: bump(advanced.simulation.skills.mobileSecurity.guided, 30),
+            independent: bump(advanced.simulation.skills.mobileSecurity.independent, 20),
+            production: bump(advanced.simulation.skills.mobileSecurity.production, 8),
+          },
+          appsec: {
+            ...advanced.simulation.skills.appsec,
+            theory: bump(advanced.simulation.skills.appsec.theory, 10),
+            guided: bump(advanced.simulation.skills.appsec.guided, 12),
+            independent: bump(advanced.simulation.skills.appsec.independent, 8),
+            production: bump(advanced.simulation.skills.appsec.production, 3),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 10),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 12),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 10),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 5),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 12),
+            guided: bump(advanced.simulation.skills.forensics.guided, 12),
+            independent: bump(advanced.simulation.skills.forensics.independent, 10),
+            production: bump(advanced.simulation.skills.forensics.production, 4),
+          },
+          networking: {
+            ...advanced.simulation.skills.networking,
+            guided: bump(advanced.simulation.skills.networking.guided, 8),
+            independent: bump(advanced.simulation.skills.networking.independent, 6),
+          },
+          securityEngineering: {
+            ...advanced.simulation.skills.securityEngineering,
+            theory: bump(advanced.simulation.skills.securityEngineering.theory, 8),
+            guided: bump(advanced.simulation.skills.securityEngineering.guided, 10),
+            independent: bump(advanced.simulation.skills.securityEngineering.independent, 7),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'MIRRORCELL-05 закрыт', `Два мобильных устройства разобраны. Подсказок: ${current.mobileCaseHintUses}.`, 12000);
+      return {
+        ...current,
+        mobileCaseComplete: true,
+        mobileCaseStage: 7,
+        balance: advanced.balance + 12000,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 7 },
         contractOffers: [],
         simulation,
       };

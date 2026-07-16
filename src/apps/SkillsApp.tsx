@@ -1,6 +1,6 @@
 import {
   Check, Circle, Code2, Database, Globe2, LockKeyhole, MailWarning, Network, Radar, Shield, ShieldCheck,
-  TerminalSquare, UserRoundCheck,
+  Smartphone, TerminalSquare, UserRoundCheck,
 } from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
 import type { SimulationSkillId } from '../simulation/types';
@@ -15,6 +15,7 @@ const skillMeta: Array<{ id: SimulationSkillId; name: string; icon: typeof Termi
   { id: 'web', name: 'Web Security', icon: Globe2 },
   { id: 'sql', name: 'SQL', icon: Database },
   { id: 'appsec', name: 'Application Security', icon: ShieldCheck },
+  { id: 'mobileSecurity', name: 'Mobile Security', icon: Smartphone },
   { id: 'forensics', name: 'Forensics', icon: LockKeyhole },
   { id: 'communication', name: 'Communication', icon: UserRoundCheck },
 ];
@@ -38,6 +39,7 @@ export function SkillsApp() {
     ['Найти DNS-маяк', progress.dnsComplete],
     ['Закрыть первую смену', progress.firstShiftComplete],
     ['Разобрать Web / API / SQL', progress.webCaseComplete],
+    ['Разобрать мобильный инцидент', progress.mobileCaseComplete],
     ['Закрыть заказ без подсказки', progress.completedContracts.some((item) => item.clean)],
   ];
 
