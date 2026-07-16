@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
-  FileSearch, Globe2, HeartPulse, Mail, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
+  FileSearch, Globe2, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
   Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, Smartphone, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
@@ -29,6 +29,7 @@ import { NetworkCaseApp } from '../apps/NetworkCaseApp';
 import { WebCaseApp } from '../apps/WebCaseApp';
 import { MobileCaseApp } from '../apps/MobileCaseApp';
 import { AdCaseApp } from '../apps/AdCaseApp';
+import { MailCaseApp } from '../apps/MailCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -101,6 +102,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1320, height: 840, accent: '#e0b86a', kind: 'temporary',
     visible: (progress) => progress.mobileCaseComplete && !progress.adCaseComplete,
   },
+  {
+    id: 'mailcase', title: 'BLACKPOST-07', shortTitle: 'Mail-07', icon: MailWarning,
+    width: 1320, height: 840, accent: '#f0b06a', kind: 'temporary',
+    visible: (progress) => progress.adCaseComplete && !progress.mailCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -125,6 +131,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'webcase': return <WebCaseApp />;
     case 'mobilecase': return <MobileCaseApp />;
     case 'adcase': return <AdCaseApp />;
+    case 'mailcase': return <MailCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

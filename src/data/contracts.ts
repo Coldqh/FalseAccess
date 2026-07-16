@@ -623,7 +623,74 @@ function adGpoAclContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract] as const;
+
+function mailHeaderContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const source = ip(random);
+  const visibleDomain = pick(random, ['settlement-note.example', 'partner-pay.example', 'cargo-alert.example']);
+  const signer = pick(random, ['mailer-cdn.example', 'bulk-relay.example', 'notify-edge.example']);
+  const reply = pick(random, ['ops-box@example.invalid', 'billing-desk@example.invalid', 'control-room@example.invalid']);
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `mail-header-${seed}`,
+    seed,
+    type: 'EMAIL_HEADER',
+    title: 'Подмена в заголовках письма',
+    client: pick(random, ['расчётный отдел', 'закрытая логистика', 'сеть обменных касс']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'email',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'Письмо выглядит внутренним, но платёжные реквизиты изменены. Проверь raw-заголовки и объясни, почему шлюз пропустил сообщение.',
+    constraint: 'Работай только с сохранённым EML и DNS-снимком. Не переходи по ссылкам.',
+    files: [
+      { name: 'message.eml', content: `From: Finance <pay@${visibleDomain}>\nReturn-Path: <bounce@${signer}>\nReply-To: ${reply}\nReceived: from relay.${signer} (${source}) by mx.internal.local\nAuthentication-Results: spf=pass smtp.mailfrom=${signer}; dkim=pass header.d=${signer}; dmarc=fail header.from=${visibleDomain}` },
+      { name: 'dmarc.txt', content: `domain=${visibleDomain}\nrecord=v=DMARC1; p=none; rua=mailto:dmarc@${visibleDomain}` },
+    ],
+    questions: [
+      { id: 'source', label: 'Отправивший IP', placeholder: 'IP', answers: [source] },
+      { id: 'reply', label: 'Куда уйдёт ответ', placeholder: 'Reply-To', answers: [reply] },
+      { id: 'reason', label: 'Почему DMARC fail', placeholder: 'кратко', answers: ['нет alignment', 'домены не совпадают', 'spf и dkim другого домена', 'alignment fail'] },
+    ],
+    hint: 'Сравни From, Return-Path, DKIM header.d и Authentication-Results. SPF/DKIM pass не означает DMARC pass.',
+  };
+}
+
+function mailOauthContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const user = pick(random, ['dispatch4', 'finance2', 'operator11', 'warehouse3']);
+  const app = pick(random, ['Shared Mail Sync', 'PDF Review Cloud', 'Partner Documents']);
+  const appId = `mail-app-${Math.floor(random() * 900 + 100)}`;
+  const source = ip(random);
+  const difficulty: ContractDifficulty = index % 2 === 0 ? 'STANDARD' : 'HARD';
+  return {
+    id: `mail-oauth-${seed}`,
+    seed,
+    type: 'EMAIL_OAUTH',
+    title: 'Посторонний OAuth-доступ к ящику',
+    client: pick(random, ['диспетчерская сеть', 'закрытый склад', 'серый расчётный сервис']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'email',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: 'Пользователь дал внешнему приложению доступ к почте. Определи масштаб, опасные scopes и безопасный порядок локализации.',
+    constraint: 'Не удаляй аудит. Сначала зафиксируй consent, токены и действия приложения.',
+    files: [
+      { name: 'oauth-audit.jsonl', content: `time=21:14:02 user=${user} event=ConsentToApp app="${app}" appId=${appId} scopes="Mail.ReadWrite offline_access" publisher=unverified ip=${source}\ntime=21:14:08 user=${user} event=RefreshTokenIssued appId=${appId}` },
+      { name: 'mailbox-audit.jsonl', content: `time=21:15:31 user=${user} appId=${appId} event=MailItemsAccessed count=167 ip=${source}\ntime=21:16:04 user=${user} appId=${appId} event=CreateInboxRule name=RSS moveTo="RSS Feeds"` },
+    ],
+    questions: [
+      { id: 'user', label: 'Затронутый пользователь', placeholder: 'user', answers: [user] },
+      { id: 'scope', label: 'Опасный долгоживущий scope', placeholder: 'scope', answers: ['offline_access'] },
+      { id: 'action', label: 'Первое безопасное действие после фиксации', placeholder: 'кратко', answers: ['отозвать consent и токены', 'revoke consent', 'revoke tokens', 'отозвать токены'] },
+    ],
+    hint: 'ConsentToApp и RefreshTokenIssued показывают доступ. MailItemsAccessed и CreateInboxRule показывают фактические действия.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract] as const;
 
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
@@ -637,7 +704,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.networkCaseComplete || contract.type !== 'NETWORK_SEGMENT')
     .filter((contract) => progress.webCaseComplete || !['API_AUTHORIZATION', 'SQL_QUERY_REVIEW'].includes(contract.type))
     .filter((contract) => progress.mobileCaseComplete || !['MOBILE_PROFILE', 'MOBILE_TOKEN_BACKUP'].includes(contract.type))
-    .filter((contract) => progress.adCaseComplete || !['AD_STALE_ACCOUNT', 'AD_GPO_ACL'].includes(contract.type));
+    .filter((contract) => progress.adCaseComplete || !['AD_STALE_ACCOUNT', 'AD_GPO_ACL'].includes(contract.type))
+    .filter((contract) => progress.mailCaseComplete || !['EMAIL_HEADER', 'EMAIL_OAUTH'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

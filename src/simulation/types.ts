@@ -102,6 +102,7 @@ export type SimulationSkillId =
   | 'mobileSecurity'
   | 'cloud'
   | 'activeDirectory'
+  | 'emailSecurity'
   | 'communication'
   | 'operationalPlanning';
 

@@ -46,6 +46,7 @@ export const skillLabels: Record<SimulationSkillId, string> = {
   mobileSecurity: 'Mobile Security',
   cloud: 'Cloud Security',
   activeDirectory: 'Active Directory',
+  emailSecurity: 'Email Security',
   communication: 'Коммуникация',
   operationalPlanning: 'Планирование операций',
 };
@@ -193,7 +194,7 @@ export const specializations: Array<{
   description: string;
   skills: SimulationSkillId[];
 }> = [
-  { id: 'blue-team', title: 'Blue Team', description: 'SOC, SIEM, Detection, IR и Threat Hunting.', skills: ['soc', 'siem', 'incidentResponse', 'threatHunting'] },
+  { id: 'blue-team', title: 'Blue Team', description: 'SOC, SIEM, Detection, IR и Threat Hunting.', skills: ['soc', 'siem', 'incidentResponse', 'threatHunting', 'emailSecurity'] },
   { id: 'red-team', title: 'Red Team', description: 'Web, инфраструктура, анализ доступов и планирование атак в стендах.', skills: ['web', 'networking', 'activeDirectory', 'operationalPlanning'] },
   { id: 'dfir', title: 'DFIR', description: 'Диски, события, временные линии и расследования.', skills: ['forensics', 'incidentResponse', 'windows', 'linux'] },
   { id: 'security-engineering', title: 'Security Engineering', description: 'Архитектура, сегментация, доступы и мониторинг.', skills: ['securityEngineering', 'networking', 'cloud', 'activeDirectory'] },
@@ -288,6 +289,7 @@ const contractRequirements: Record<ContractSkill, { stage: ProgressionStageId; t
   web: { stage: 2, tracks: { web: { theory: 5 }, python: { guided: 12 } } },
   mobile: { stage: 2, tracks: { mobileSecurity: { theory: 8, guided: 8 }, networking: { guided: 10 } } },
   activeDirectory: { stage: 3, tracks: { activeDirectory: { theory: 15, guided: 15 }, windows: { guided: 25 }, powershell: { guided: 18 } } },
+  email: { stage: 3, tracks: { emailSecurity: { theory: 15, guided: 15 }, soc: { guided: 25 }, networking: { guided: 20 } } },
 };
 
 const difficultyStage: Record<ContractDifficulty, number> = { STARTER: 0, STANDARD: 1, HARD: 2 };

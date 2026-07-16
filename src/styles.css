@@ -2931,3 +2931,64 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
   .ad-case-main .windows-terminal-input { flex-wrap:wrap; }
   .ad-case-main .windows-terminal-input input { min-width:0;flex:1 1 100%; }
 }
+
+
+/* 0.7.1 — BLACKPOST mail security campaign */
+.mail-case-app { --case-accent:#f0b06a; }
+.mail-case-sidebar header span { color:#ffc77e; }
+.mail-case-sidebar nav button.active span,
+.mail-case-sidebar nav button.done span { background:#f0b06a;color:#1a1209; }
+.mail-case-main { min-height:0; }
+.mail-case-main section > header svg,
+.mail-brief-stage > header svg { color:#f0b06a; }
+.mail-architecture-grid { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;margin:14px 0; }
+.mail-architecture-grid article { min-width:0;border:1px solid rgba(240,176,106,.28);background:linear-gradient(180deg,rgba(240,176,106,.08),rgba(8,10,14,.72));padding:15px;border-radius:12px;display:grid;gap:7px; }
+.mail-architecture-grid article > span { color:#ffc77e;font:700 9px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.1em; }
+.mail-architecture-grid article svg { color:#f0b06a; }
+.mail-architecture-grid article strong { font-size:14px; }
+.mail-architecture-grid article p { margin:0;color:#9299a4;font-size:12px; }
+.mail-architecture-grid article code { color:#ead5bc;font-size:11px;overflow-wrap:anywhere; }
+.mail-theory-strip { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.mail-theory-strip article { border-top-color:#f0b06a; }
+.mail-question-stack .windows-question-card button.selected { border-color:rgba(240,176,106,.65); }
+.mail-terminal-box { min-height:360px; }
+.mail-chain-strip { display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:10px;align-items:center;margin-bottom:14px; }
+.mail-chain-strip article { min-height:92px;border:1px solid rgba(240,176,106,.25);background:#15120e;padding:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border-radius:10px; }
+.mail-chain-strip article strong { color:#ffc77e; }
+.mail-chain-strip article span { color:#95908a;font:11px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace; }
+.mail-chain-strip > svg { color:#746555; }
+.mail-code-layout { min-height:500px; }
+.mail-code-layout .web-code-card textarea { min-height:420px; }
+.mail-command-bank { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.mail-command-bank button { min-width:0; }
+.mail-command-bank code { overflow-wrap:anywhere;white-space:normal; }
+.mail-final-grid { display:grid;grid-template-columns:1fr 1fr;gap:15px;align-items:start;margin-top:14px; }
+.mail-final-grid > section { min-width:0;border:1px solid rgba(255,255,255,.09);background:rgba(8,10,14,.45);border-radius:12px;padding:13px;display:grid;gap:12px; }
+.mail-final-grid > section > header { display:flex;align-items:center;gap:9px;color:#f0b06a; }
+.mail-complete-stage > svg { color:#f0b06a; }
+
+@media(max-width:1000px){
+  .mail-architecture-grid,.mail-theory-strip { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .mail-chain-strip { grid-template-columns:1fr auto 1fr; }
+  .mail-chain-strip article:nth-of-type(3),.mail-chain-strip article:nth-of-type(4),.mail-chain-strip svg:nth-of-type(2),.mail-chain-strip svg:nth-of-type(3) { display:none; }
+}
+@media(max-width:720px){
+  .mail-case-app { height:auto;min-height:100%;overflow:visible;display:block; }
+  .mail-case-sidebar { display:none; }
+  .mail-case-main { height:auto;max-height:none;overflow-y:visible!important;padding:14px 14px 110px; }
+  .mail-case-main > section { min-height:0;overflow:visible; }
+  .mail-architecture-grid,.mail-theory-strip,.mail-final-grid,.mail-command-bank { grid-template-columns:1fr; }
+  .mail-chain-strip { grid-template-columns:1fr; }
+  .mail-chain-strip > svg { transform:rotate(90deg);margin:auto; }
+  .mail-chain-strip article:nth-of-type(3),.mail-chain-strip article:nth-of-type(4),.mail-chain-strip svg:nth-of-type(2),.mail-chain-strip svg:nth-of-type(3) { display:flex; }
+  .mail-chain-strip svg:nth-of-type(2),.mail-chain-strip svg:nth-of-type(3) { display:block; }
+  .mail-code-layout { grid-template-columns:1fr;min-height:0; }
+  .mail-code-layout .web-code-card { min-height:0; }
+  .mail-code-layout .web-code-card pre { max-height:300px; }
+  .mail-code-layout .web-code-card textarea { min-height:430px;font-size:16px;overflow:auto;-webkit-overflow-scrolling:touch; }
+  .mail-case-main input,.mail-case-main textarea,.mail-case-main select { font-size:16px; }
+  .mail-terminal-box { min-height:0; }
+  .mail-terminal-box .windows-terminal-history { max-height:360px;overflow-y:auto; }
+  .mail-case-main .windows-terminal-input { flex-wrap:wrap; }
+  .mail-case-main .windows-terminal-input input { min-width:0;flex:1 1 100%; }
+}

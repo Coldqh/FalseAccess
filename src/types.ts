@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -200,6 +200,22 @@ export interface ProgressState {
   adCaseReportSelections: Record<string, string>;
   adCaseHintUses: number;
   adCaseComplete: boolean;
+  mailCaseStage: number;
+  mailCaseFoundationAnswers: Record<string, string>;
+  mailCaseHeaderObjectives: string[];
+  mailCaseHeaderAnswers: Record<string, string>;
+  mailCaseAttachmentObjectives: string[];
+  mailCaseAttachmentAnswers: Record<string, string>;
+  mailCaseGatewayObjectives: string[];
+  mailCasePolicy: string;
+  mailCasePolicyAnswers: Record<string, string>;
+  mailCaseContainmentSelections: Record<string, string>;
+  mailCaseIndependentObjectives: string[];
+  mailCaseIndependentAnswers: Record<string, string>;
+  mailCaseFindingSelections: Record<string, string>;
+  mailCaseReportSelections: Record<string, string>;
+  mailCaseHintUses: number;
+  mailCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

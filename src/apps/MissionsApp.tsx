@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck, Waypoints } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck, Waypoints } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -183,12 +183,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.adCaseStage === 0 ? 'Домен уже клонирован. Нужны путь, закрепление и масштаб.' : 'Проверь учётки, билеты, GPO, SYSVOL и второй сегмент.', speaker: 'И',
       target: 'adcase', button: 'Открыть IRONROOT-06', icon: Waypoints,
     };
+  } else if (!progress.mailCaseComplete) {
+    const mailObjectives = [
+      'Прочитать условия и схему BLACKPOST-07.',
+      'Разобрать SMTP, SPF, DKIM, DMARC и Received.',
+      'Подтвердить подмену по raw-заголовкам.',
+      'Связать вложение, PowerShell, прокси и второй хост.',
+      'Исправить шлюз, пересылку и OAuth-политику.',
+      'Выбрать безопасную локализацию.',
+      'Самостоятельно разобрать OAuth-фишинг и отчёт.',
+      'Закрыть дело.',
+    ];
+    current = {
+      caseId: 'BLACKPOST-07', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Почта и фишинг',
+      context: 'Платёжное письмо прошло шлюз, запустило PowerShell и оставило правило пересылки с OAuth-доступом.',
+      objective: mailObjectives[Math.min(progress.mailCaseStage, mailObjectives.length - 1)],
+      dialogue: progress.mailCaseStage === 0 ? 'Есть raw EML, шлюз, ящик, две машины и прокси. Разбери цепочку.' : 'Нужны заголовки, вложение, endpoint, OAuth и масштаб.', speaker: 'И',
+      target: 'mailcase', button: 'Открыть BLACKPOST-07', icon: MailWarning,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'ВЕЧЕР', title: 'Свободные заказы',
-      context: 'IRONROOT-06 закрыт. Открылись задания по Active Directory, GPO и делегированным правам.',
+      context: 'BLACKPOST-07 закрыт. Открылись задания по заголовкам, почтовым правилам и OAuth.',
       objective: 'Выбрать заказ или продолжить следующую главу.',
-      dialogue: 'Дальше — почта, фишинг и цепочка заражения через несколько систем.', speaker: 'И',
+      dialogue: 'Дальше — SIEM, EDR и полный SOC-инцидент.', speaker: 'И',
       target: 'contracts', button: 'Открыть Work Queue', icon: BriefcaseBusiness,
     };
   }

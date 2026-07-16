@@ -17,6 +17,7 @@ const skillMeta: Array<{ id: SimulationSkillId; name: string; icon: typeof Termi
   { id: 'appsec', name: 'Application Security', icon: ShieldCheck },
   { id: 'mobileSecurity', name: 'Mobile Security', icon: Smartphone },
   { id: 'activeDirectory', name: 'Active Directory', icon: Waypoints },
+  { id: 'emailSecurity', name: 'Email Security', icon: MailWarning },
   { id: 'forensics', name: 'Forensics', icon: LockKeyhole },
   { id: 'communication', name: 'Communication', icon: UserRoundCheck },
 ];
@@ -42,6 +43,7 @@ export function SkillsApp() {
     ['Разобрать Web / API / SQL', progress.webCaseComplete],
     ['Разобрать мобильный инцидент', progress.mobileCaseComplete],
     ['Разобрать корпоративный домен', progress.adCaseComplete],
+    ['Разобрать почтовую цепочку', progress.mailCaseComplete],
     ['Закрыть заказ без подсказки', progress.completedContracts.some((item) => item.clean)],
   ];
 

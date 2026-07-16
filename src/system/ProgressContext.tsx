@@ -48,6 +48,7 @@ interface ProgressContextValue {
   completeWebCase: () => void;
   completeMobileCase: () => void;
   completeAdCase: () => void;
+  completeMailCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -55,7 +56,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v14';
+const STORAGE_KEY = 'false-access-progress-v15';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -198,6 +199,22 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     adCaseReportSelections: parsed.adCaseReportSelections && typeof parsed.adCaseReportSelections === 'object' ? parsed.adCaseReportSelections as Record<string, string> : {},
     adCaseHintUses: Number.isFinite(Number(parsed.adCaseHintUses)) ? Math.max(0, Number(parsed.adCaseHintUses)) : 0,
     adCaseComplete: Boolean(parsed.adCaseComplete),
+    mailCaseStage: Number.isFinite(Number(parsed.mailCaseStage)) ? Math.max(0, Math.min(7, Number(parsed.mailCaseStage))) : 0,
+    mailCaseFoundationAnswers: parsed.mailCaseFoundationAnswers && typeof parsed.mailCaseFoundationAnswers === 'object' ? parsed.mailCaseFoundationAnswers as Record<string, string> : {},
+    mailCaseHeaderObjectives: Array.isArray(parsed.mailCaseHeaderObjectives) ? parsed.mailCaseHeaderObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mailCaseHeaderAnswers: parsed.mailCaseHeaderAnswers && typeof parsed.mailCaseHeaderAnswers === 'object' ? parsed.mailCaseHeaderAnswers as Record<string, string> : {},
+    mailCaseAttachmentObjectives: Array.isArray(parsed.mailCaseAttachmentObjectives) ? parsed.mailCaseAttachmentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mailCaseAttachmentAnswers: parsed.mailCaseAttachmentAnswers && typeof parsed.mailCaseAttachmentAnswers === 'object' ? parsed.mailCaseAttachmentAnswers as Record<string, string> : {},
+    mailCaseGatewayObjectives: Array.isArray(parsed.mailCaseGatewayObjectives) ? parsed.mailCaseGatewayObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mailCasePolicy: typeof parsed.mailCasePolicy === 'string' ? parsed.mailCasePolicy : '',
+    mailCasePolicyAnswers: parsed.mailCasePolicyAnswers && typeof parsed.mailCasePolicyAnswers === 'object' ? parsed.mailCasePolicyAnswers as Record<string, string> : {},
+    mailCaseContainmentSelections: parsed.mailCaseContainmentSelections && typeof parsed.mailCaseContainmentSelections === 'object' ? parsed.mailCaseContainmentSelections as Record<string, string> : {},
+    mailCaseIndependentObjectives: Array.isArray(parsed.mailCaseIndependentObjectives) ? parsed.mailCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    mailCaseIndependentAnswers: parsed.mailCaseIndependentAnswers && typeof parsed.mailCaseIndependentAnswers === 'object' ? parsed.mailCaseIndependentAnswers as Record<string, string> : {},
+    mailCaseFindingSelections: parsed.mailCaseFindingSelections && typeof parsed.mailCaseFindingSelections === 'object' ? parsed.mailCaseFindingSelections as Record<string, string> : {},
+    mailCaseReportSelections: parsed.mailCaseReportSelections && typeof parsed.mailCaseReportSelections === 'object' ? parsed.mailCaseReportSelections as Record<string, string> : {},
+    mailCaseHintUses: Number.isFinite(Number(parsed.mailCaseHintUses)) ? Math.max(0, Number(parsed.mailCaseHintUses)) : 0,
+    mailCaseComplete: Boolean(parsed.mailCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -221,6 +238,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v14Raw = localStorage.getItem('false-access-progress-v14');
     const v13Raw = localStorage.getItem('false-access-progress-v13');
     const v12Raw = localStorage.getItem('false-access-progress-v12');
     const v11Raw = localStorage.getItem('false-access-progress-v11');
@@ -233,6 +251,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v14Raw
       ?? v13Raw
       ?? v12Raw
       ?? v11Raw
@@ -247,7 +266,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -261,7 +280,7 @@ function persist(progress: ProgressState) {
 }
 
 function addContractSkill(progress: ProgressState, skill: GeneratedContract['skill'], clean: boolean) {
-  const skillId: SimulationSkillId = skill === 'mobile' ? 'mobileSecurity' : skill;
+  const skillId: SimulationSkillId = skill === 'mobile' ? 'mobileSecurity' : skill === 'email' ? 'emailSecurity' : skill;
   const current = progress.simulation.skills[skillId];
   return {
     ...progress.simulation.skills,
@@ -1012,6 +1031,99 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         adCaseStage: 7,
         balance: advanced.balance + 15000,
         factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 9 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeMailCase: () => setProgress((current) => {
+      if (current.mailCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 3, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 7),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 8),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      ['mail-incident', 'stage-3-mail'].forEach((id) => { if (!passedExamIds.includes(id)) passedExamIds.push(id); });
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 7),
+          reliability: bump(advanced.simulation.reputation.reliability, current.mailCaseHintUses > 12 ? 2 : 8),
+          underground: bump(advanced.simulation.reputation.underground, 10),
+        },
+        progression: { ...advanced.simulation.progression, passedExamIds },
+        skills: {
+          ...advanced.simulation.skills,
+          emailSecurity: {
+            ...advanced.simulation.skills.emailSecurity,
+            theory: bump(advanced.simulation.skills.emailSecurity.theory, 42),
+            guided: bump(advanced.simulation.skills.emailSecurity.guided, 40),
+            independent: bump(advanced.simulation.skills.emailSecurity.independent, 28),
+            production: bump(advanced.simulation.skills.emailSecurity.production, 12),
+          },
+          soc: {
+            ...advanced.simulation.skills.soc,
+            theory: bump(advanced.simulation.skills.soc.theory, 18),
+            guided: bump(advanced.simulation.skills.soc.guided, 20),
+            independent: bump(advanced.simulation.skills.soc.independent, 15),
+            production: bump(advanced.simulation.skills.soc.production, 8),
+          },
+          siem: {
+            ...advanced.simulation.skills.siem,
+            theory: bump(advanced.simulation.skills.siem.theory, 16),
+            guided: bump(advanced.simulation.skills.siem.guided, 18),
+            independent: bump(advanced.simulation.skills.siem.independent, 13),
+            production: bump(advanced.simulation.skills.siem.production, 7),
+          },
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 18),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 20),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 16),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 8),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 14),
+            guided: bump(advanced.simulation.skills.forensics.guided, 16),
+            independent: bump(advanced.simulation.skills.forensics.independent, 13),
+            production: bump(advanced.simulation.skills.forensics.production, 6),
+          },
+          networking: {
+            ...advanced.simulation.skills.networking,
+            theory: bump(advanced.simulation.skills.networking.theory, 12),
+            guided: bump(advanced.simulation.skills.networking.guided, 14),
+            independent: bump(advanced.simulation.skills.networking.independent, 10),
+            production: bump(advanced.simulation.skills.networking.production, 5),
+          },
+          windows: {
+            ...advanced.simulation.skills.windows,
+            theory: bump(advanced.simulation.skills.windows.theory, 10),
+            guided: bump(advanced.simulation.skills.windows.guided, 12),
+            independent: bump(advanced.simulation.skills.windows.independent, 9),
+            production: bump(advanced.simulation.skills.windows.production, 5),
+          },
+          communication: {
+            ...advanced.simulation.skills.communication,
+            theory: bump(advanced.simulation.skills.communication.theory, 9),
+            guided: bump(advanced.simulation.skills.communication.guided, 11),
+            independent: bump(advanced.simulation.skills.communication.independent, 10),
+            production: bump(advanced.simulation.skills.communication.production, 6),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'BLACKPOST-07 закрыт', `Почтовая цепочка, endpoint и OAuth разобраны. Подсказок: ${current.mailCaseHintUses}.`, 16500);
+      return {
+        ...current,
+        mailCaseComplete: true,
+        mailCaseStage: 7,
+        balance: advanced.balance + 16500,
+        factionRep: { ...current.factionRep, north: (current.factionRep.north ?? 0) + 10 },
         contractOffers: [],
         simulation,
       };
