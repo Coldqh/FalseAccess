@@ -2277,3 +2277,79 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
 }
 
 .contract-lock-reason { margin:8px 0;padding:7px 8px;border-left:2px solid var(--yellow);background:rgba(239,196,107,.04);color:#9b8b68;font-size:8px;line-height:1.4; }
+
+/* 0.5.2 — daily loop */
+.daily-summary-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px; }
+.daily-summary-grid > article { min-height:86px;padding:13px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(255,255,255,.025),rgba(255,255,255,.006)),#101318;display:grid;align-content:center;gap:6px; }
+.daily-summary-grid > article.danger { border-color:rgba(255,77,73,.35);background:rgba(255,77,73,.05); }
+.daily-summary-grid span { color:#656b74;font:700 7px var(--mono);letter-spacing:.08em;text-transform:uppercase; }
+.daily-summary-grid strong { font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.daily-summary-grid small { color:#858b94;font-size:8px;line-height:1.4; }
+.daily-layout { display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.55fr);gap:12px;align-items:start; }
+.daily-plan-panel,.daily-current-card,.daily-story-card,.daily-deadlines-card { border:1px solid var(--line);background:#111419; }
+.daily-plan-panel > header { min-height:72px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line); }
+.daily-plan-panel h3 { margin:0;font-size:20px; }
+.daily-plan-panel > header > svg { color:var(--cyan); }
+.daily-timeline { padding:10px;display:grid;gap:7px; }
+.daily-timeline article { position:relative;min-height:96px;padding:11px 11px 11px 48px;display:grid;grid-template-columns:minmax(110px,.75fr) minmax(180px,1.25fr) auto;gap:7px 10px;align-items:center;border:1px solid var(--line);background:#0c0f12; }
+.daily-timeline article.current { border-color:rgba(103,199,196,.42);background:linear-gradient(90deg,rgba(103,199,196,.08),rgba(255,255,255,.01));box-shadow:inset 3px 0 var(--cyan); }
+.daily-timeline article.done { opacity:.55; }
+.daily-period-mark { position:absolute;left:12px;top:12px;bottom:12px;width:24px;display:flex;flex-direction:column;align-items:center; }
+.daily-period-mark span { width:23px;height:23px;display:grid;place-items:center;border:1px solid var(--line-strong);border-radius:50%;font:700 8px var(--mono); }
+.daily-period-mark i { flex:1;width:1px;margin-top:5px;background:var(--line); }
+.daily-period-copy { display:grid;gap:4px; }
+.daily-period-copy strong { font-size:11px; }
+.daily-period-copy small { color:#69707a;font:600 7px var(--mono);text-transform:uppercase; }
+.daily-timeline select { min-width:0;height:38px;padding:0 9px;border:1px solid var(--line);background:#161a1f;color:#cdd0cc;font-size:10px; }
+.daily-timeline article > p { grid-column:1/3;margin:0;color:#777d86;font-size:8px;line-height:1.45; }
+.daily-timeline article > .primary-action { grid-column:3;grid-row:1/3;align-self:stretch; }
+.daily-side-column { display:grid;gap:10px; }
+.daily-current-card,.daily-story-card,.daily-deadlines-card { padding:14px; }
+.daily-current-card header,.daily-story-card header,.daily-deadlines-card header { display:flex;align-items:center;gap:8px;color:var(--cyan);font:700 8px var(--mono);letter-spacing:.08em; }
+.daily-current-card h3,.daily-story-card h3 { margin:13px 0 7px;font-size:18px; }
+.daily-current-card p,.daily-story-card p { margin:0 0 12px;color:#8c929b;font-size:9px;line-height:1.55; }
+.daily-current-card small { display:block;margin:-4px 0 12px;color:var(--yellow);font-size:8px;line-height:1.45; }
+.daily-story-card { background:linear-gradient(145deg,rgba(255,90,56,.055),rgba(255,255,255,.008)),#111419; }
+.daily-story-card header { color:var(--accent); }
+.daily-deadlines-card > div { min-height:36px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line); }
+.daily-deadlines-card > div:last-child { border-bottom:0; }
+.daily-deadlines-card strong { font-size:9px; }
+.daily-deadlines-card span { color:#747b84;font:600 8px var(--mono); }
+.daily-event-card { margin-top:12px;padding:16px;border:1px solid rgba(239,196,107,.3);background:linear-gradient(145deg,rgba(239,196,107,.07),rgba(255,255,255,.008)),#111419; }
+.daily-event-card > div { display:flex;align-items:center;gap:8px;color:var(--yellow);font:700 8px var(--mono);letter-spacing:.08em; }
+.daily-event-card h3 { margin:11px 0 6px;font-size:18px; }
+.daily-event-card > p { margin:0;color:#989da5;font-size:10px;line-height:1.55; }
+.daily-event-card footer { margin-top:13px;display:flex;gap:7px;flex-wrap:wrap; }
+.daily-event-card footer button { min-height:40px;padding:0 13px;border:1px solid rgba(239,196,107,.28);background:#0d1013;color:#d5c293;font:700 9px var(--mono);cursor:pointer; }
+.daily-event-card.resolved { border-color:rgba(157,207,116,.25); }
+.daily-event-card.resolved > div { color:var(--green); }
+.contract-board-day { min-height:42px;padding:0 12px;display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:#111419; }
+.contract-board-day > div { display:grid;gap:3px; }
+.contract-board-day strong { font-size:9px; }
+.contract-board-day span { color:#6e747d;font-size:8px; }
+.contract-card-timing { display:flex;gap:5px;flex-wrap:wrap;margin:10px 0; }
+.contract-card-timing span { min-height:27px;padding:0 7px;display:flex;align-items:center;gap:5px;border:1px solid var(--line);color:#818792;font:600 7px var(--mono); }
+.contract-card-timing .risk-high { color:var(--red);border-color:rgba(255,77,73,.25); }
+.contract-card-timing .risk-medium { color:var(--yellow);border-color:rgba(239,196,107,.25); }
+.contract-card-timing .risk-low { color:var(--green);border-color:rgba(157,207,116,.2); }
+.contract-pay { display:grid!important;grid-template-columns:auto auto;align-items:center;gap:2px 7px!important; }
+.contract-pay small { grid-column:1/3;color:#707680;font:600 7px var(--mono); }
+.contract-history article > i.late { color:var(--red); }
+.life-events i.daily,.life-events i.contract { background:var(--cyan); }
+
+@media (max-width:720px) {
+  .daily-summary-grid { grid-template-columns:1fr 1fr;gap:6px; }
+  .daily-summary-grid > article { min-height:78px;padding:10px; }
+  .daily-summary-grid strong { font-size:11px; }
+  .daily-layout { grid-template-columns:1fr; }
+  .daily-timeline { padding:7px; }
+  .daily-timeline article { min-height:132px;padding:10px 9px 10px 42px;grid-template-columns:1fr;align-items:start; }
+  .daily-period-mark { left:9px;top:10px;bottom:10px; }
+  .daily-timeline select { width:100%;height:44px;font-size:16px!important; }
+  .daily-timeline article > p { grid-column:1;margin-top:1px;font-size:11px; }
+  .daily-timeline article > .primary-action { grid-column:1;grid-row:auto;min-height:42px; }
+  .daily-current-card p,.daily-story-card p,.daily-event-card > p { font-size:12px; }
+  .daily-event-card footer { display:grid;grid-template-columns:1fr; }
+  .daily-event-card footer button { min-height:46px;font-size:11px; }
+  .contract-card-timing span { min-height:32px;font-size:8px; }
+}

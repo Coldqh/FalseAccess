@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, Banknote, BriefcaseBusiness, CheckCircle2, ChevronRight, CircleDollarSign, Code2,
-  FileSearch, Flag, Play, RefreshCw, RotateCcw, ShieldCheck, TerminalSquare, UsersRound, XCircle,
+  ArrowLeft, Banknote, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, Code2,
+  FileSearch, Flag, Play, RotateCcw, ShieldAlert, ShieldCheck, TerminalSquare, UsersRound, XCircle,
 } from 'lucide-react';
 import { contractSkillUnlocked, factions } from '../data/contracts';
 import { getContractAccess } from '../simulation/progression';
@@ -174,7 +174,7 @@ function ContractWorkspace({ contract }: { contract: GeneratedContract }) {
       <header className="contract-workspace-header">
         <button className="contract-back" onClick={abandonContract}><ArrowLeft size={16} />Доска</button>
         <div><p className="eyebrow">АКТИВНЫЙ ЗАКАЗ / {contract.factionName}</p><h2>{contract.title}</h2></div>
-        <div className="contract-pay"><Banknote size={18} /><strong>{contract.pay.toLocaleString('ru-RU')} ₽</strong></div>
+        <div className="contract-pay"><Banknote size={18} /><strong>{contract.pay.toLocaleString('ru-RU')} ₽</strong><small>до дня {contract.deadlineDay ?? "—"} · {contract.durationSlots ?? 1} период</small></div>
       </header>
 
       <div className="contract-work-grid">
@@ -216,7 +216,7 @@ function ContractWorkspace({ contract }: { contract: GeneratedContract }) {
           {checked && passed && (
             <div className="contract-pass">
               <ShieldCheck size={22} />
-              <div><strong>Факты подтверждены</strong><span>Оплата и репутация будут записаны локально.</span></div>
+              <div><strong>Факты подтверждены</strong><span>Закрытие заказа потратит {contract.durationSlots ?? 1} период. После срока оплата снижается вдвое.</span></div>
               <button onClick={() => completeContract(!hintVisible)}>Закрыть заказ</button>
             </div>
           )}
@@ -228,7 +228,7 @@ function ContractWorkspace({ contract }: { contract: GeneratedContract }) {
 }
 
 export function ContractsApp() {
-  const { progress, acceptContract, refreshContracts } = useProgress();
+  const { progress, acceptContract } = useProgress();
   const [section, setSection] = useState<'offers' | 'factions' | 'history'>('offers');
   const completedTotal = progress.completedContracts.length;
   const unlockedCount = progress.contractOffers.filter((contract) => contractSkillUnlocked(contract, progress)).length;
@@ -252,7 +252,7 @@ export function ContractsApp() {
           <>
             <header className="contracts-head">
               <div><p className="eyebrow">ПОВТОРЯЕМАЯ ПРАКТИКА</p><h2>Заказы по освоенным навыкам</h2><p>Данные и ответы меняются. Инструменты остаются теми же. Всё выполняется внутри локальной лаборатории.</p></div>
-              <button className="secondary-action" onClick={refreshContracts}><RefreshCw size={16} />Обновить</button>
+              <div className="contract-board-day"><CalendarDays size={16} /><div><strong>День {progress.simulation.clock.day}</strong><span>Новая доска появится утром</span></div></div>
             </header>
             <section className="contracts-stats">
               <div><CircleDollarSign size={18} /><span>Баланс</span><strong>{progress.balance.toLocaleString('ru-RU')} ₽</strong></div>
@@ -270,7 +270,7 @@ export function ContractsApp() {
                     <h3>{contract.title}</h3>
                     <p>{contract.summary}</p>
                     {!unlocked && <div className="contract-lock-reason">{access.reasons[0]}</div>}
-                    <div className="contract-client"><span>ЗАКАЗЧИК</span><strong>{contract.client}</strong></div>
+                    <div className="contract-card-timing"><span><Clock3 size={13} />{contract.durationSlots ?? 1} период</span><span><CalendarDays size={13} />срок: день {contract.deadlineDay ?? progress.simulation.clock.day + 2}</span><span className={`risk-${(contract.risk ?? "LOW").toLowerCase()}`}><ShieldAlert size={13} />{contract.risk ?? "LOW"}</span></div><div className="contract-client"><span>ЗАКАЗЧИК</span><strong>{contract.client}</strong></div>
                     <footer><strong>{contract.pay.toLocaleString('ru-RU')} ₽</strong><button disabled={!unlocked} onClick={() => acceptContract(contract)}>{unlocked ? 'Принять' : 'Навык закрыт'}<ChevronRight size={15} /></button></footer>
                   </article>
                 );
@@ -302,7 +302,7 @@ export function ContractsApp() {
             <section className="contract-history">
               {lastContracts.length === 0 ? <div className="contracts-empty"><BriefcaseBusiness size={36} /><strong>Пока пусто</strong><span>Закончи первый доступный заказ.</span></div> : lastContracts.map((item) => {
                 const faction = factions.find((entry) => entry.id === item.factionId);
-                return <article key={`${item.id}-${item.completedAt}`}><CheckCircle2 size={18} /><div><strong>{item.title}</strong><span>{faction?.name ?? item.factionId} · {new Date(item.completedAt).toLocaleString('ru-RU')}</span></div><b>+{item.pay.toLocaleString('ru-RU')} ₽</b><i>{item.clean ? 'CLEAN' : 'GUIDED'}</i></article>;
+                return <article key={`${item.id}-${item.completedAt}`}><CheckCircle2 size={18} /><div><strong>{item.title}</strong><span>{faction?.name ?? item.factionId} · {new Date(item.completedAt).toLocaleString('ru-RU')}</span></div><b>+{item.pay.toLocaleString('ru-RU')} ₽</b><i className={item.late ? 'late' : ''}>{item.late ? 'LATE' : item.clean ? 'CLEAN' : 'GUIDED'}</i></article>;
               })}
             </section>
           </>

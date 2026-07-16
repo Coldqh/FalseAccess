@@ -274,7 +274,7 @@ function pythonContract(seed: number, index: number): GeneratedContract {
 const builders = [authContract, dnsContract, processContract, pythonContract, secretContract, webContract] as const;
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
-  const daySeed = Number(new Date().toISOString().slice(0, 10).replaceAll('-', ''));
+  const daySeed = Number(progress.simulation.clock.dateIso.replaceAll('-', ''));
   const baseSeed = daySeed + refreshIndex * 997 + progress.completedContracts.length * 131;
   const candidates = builders.map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
@@ -283,7 +283,17 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
   const chosen = [...unlocked, ...locked].slice(0, 3);
   return chosen.map((contract) => {
     const faction = factions.find((item) => item.id === contract.factionId) ?? factions[0];
-    return { ...contract, factionName: faction.name };
+    const durationSlots = contract.difficulty === 'HARD' ? 2 : 1;
+    const deadlineOffset = contract.difficulty === 'STARTER' ? 2 : contract.difficulty === 'STANDARD' ? 2 : 3;
+    const risk = contract.factionId === 'north' ? 'HIGH' : contract.difficulty === 'HARD' ? 'MEDIUM' : 'LOW';
+    return {
+      ...contract,
+      factionName: faction.name,
+      postedDay: progress.simulation.clock.day,
+      deadlineDay: progress.simulation.clock.day + deadlineOffset,
+      durationSlots,
+      risk,
+    };
   });
 }
 

@@ -1,9 +1,23 @@
 export type DayPeriod = 'morning' | 'workday' | 'evening' | 'night';
 export type FoodPlanId = 'economy' | 'normal' | 'balanced';
 export type CareerStatus = 'unemployed' | 'employed';
-export type SimulationEventType = 'time' | 'expense' | 'income' | 'housing' | 'career' | 'risk' | 'purchase' | 'progression';
+export type SimulationEventType = 'time' | 'expense' | 'income' | 'housing' | 'career' | 'risk' | 'purchase' | 'progression' | 'daily' | 'contract';
 export type ProgressionStageId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type SpecializationId = 'blue-team' | 'red-team' | 'dfir' | 'security-engineering' | 'appsec' | 'cloud-security';
+
+export type DailyActivityId =
+  | 'free'
+  | 'sleep'
+  | 'work'
+  | 'maintenance'
+  | 'contract'
+  | 'story'
+  | 'study-linux'
+  | 'study-networking'
+  | 'study-python'
+  | 'study-soc'
+  | 'study-windows'
+  | 'study-web';
 
 export interface GameClock {
   day: number;
@@ -94,6 +108,22 @@ export interface ProgressionState {
   selectedSpecializations: SpecializationId[];
 }
 
+export interface DailyEventState {
+  id: string;
+  day: number;
+  resolvedChoiceId: string;
+}
+
+export interface DailyLoopState {
+  planDay: number;
+  plan: Partial<Record<DayPeriod, DailyActivityId>>;
+  completedKeys: string[];
+  missedShifts: number;
+  lastContractBoardDay: number;
+  event: DailyEventState | null;
+  resolvedEventIds: string[];
+}
+
 export interface SimulationEvent {
   id: string;
   day: number;
@@ -121,6 +151,7 @@ export interface SimulationState {
   heat: HeatState;
   skills: Record<SimulationSkillId, SkillTrackState>;
   progression: ProgressionState;
+  daily: DailyLoopState;
   world: WorldState;
   events: SimulationEvent[];
   settledThroughDay: number;

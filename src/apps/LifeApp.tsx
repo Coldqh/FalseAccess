@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react';
 import {
-  Activity, AlertTriangle, Banknote, BedDouble, BriefcaseBusiness, Building2, CalendarDays,
+  Activity, AlertTriangle, Banknote, BedDouble, BookOpenCheck, BriefcaseBusiness, Building2, CalendarClock, CalendarDays,
   Check, ChevronRight, Clock3, Coffee, Cpu, CreditCard, Gauge, HardDrive, HeartPulse,
-  Home, Laptop, MapPin, PackageCheck, Router, ShieldAlert, ShieldCheck, ShoppingBag,
+  FileClock, Home, Laptop, ListChecks, MapPin, PackageCheck, Play, Router, ShieldAlert, ShieldCheck, ShoppingBag,
   Smartphone, Utensils, Wifi, X,
 } from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
 import { cities, foodPlans, housingCatalog, jobsCatalog, periodLabels, storeItems } from '../simulation/catalog';
-import { getJobAccess } from '../simulation/progression';
-import type { FoodPlanId } from '../simulation/types';
+import { getCurrentStage, getJobAccess } from '../simulation/progression';
+import { activityById, dailyActivities, dayPeriods, getDailyEvent, isScheduledWorkPeriod, periodKey } from '../simulation/daily';
+import type { AppId } from '../types';
+import type { DailyActivityId, FoodPlanId } from '../simulation/types';
 
 const tabs = [
+  { id: 'today', label: 'Сегодня', icon: CalendarClock },
   { id: 'overview', label: 'Жизнь', icon: Activity },
   { id: 'housing', label: 'Жильё', icon: Home },
   { id: 'market', label: 'Магазин', icon: ShoppingBag },
@@ -49,12 +52,12 @@ function heatText(level: number) {
   ][level] ?? 'Неизвестно';
 }
 
-export function LifeApp() {
+export function LifeApp({ openApp }: { openApp: (id: AppId) => void }) {
   const {
     progress, advanceTime, rest, setFoodPlan, buyItem, changeHousing,
-    workShift, acceptJob, quitJob, secureDevices,
+    workShift, acceptJob, quitJob, secureDevices, setDayPlan, performActivity, resolveDayEvent,
   } = useProgress();
-  const [tab, setTab] = useState<TabId>('overview');
+  const [tab, setTab] = useState<TabId>('today');
   const [confirmQuit, setConfirmQuit] = useState(false);
   const sim = progress.simulation;
   const city = cities.find((entry) => entry.id === sim.world.currentCityId) ?? cities[0];
@@ -68,9 +71,61 @@ export function LifeApp() {
     resilience: Number(owned.has('ups')) + Number(owned.has('backup-drive')) + Number(owned.has('used-laptop')),
   }), [sim.inventory]);
 
-  const canWork = sim.career.status === 'employed' && sim.needs.energy >= 25 && sim.needs.focus >= 20;
+  const canWork = isScheduledWorkPeriod(sim) && sim.needs.energy >= 25 && sim.needs.focus >= 20;
   const currentJob = jobsCatalog.find((entry) => entry.id === sim.career.jobId);
+  const stage = getCurrentStage(progress);
+  const periodIndex = dayPeriods.indexOf(sim.clock.period);
+  const storyTarget: AppId = !progress.clinicWrapupComplete
+    ? 'missions'
+    : !progress.interviewComplete
+      ? 'interview'
+      : !progress.jobAccepted
+        ? 'mail'
+        : !progress.firstShiftComplete
+          ? 'firstshift'
+          : progress.criminalContactUnlocked && !progress.criminalContactResponse
+            ? 'messenger'
+            : 'missions';
+  const storyLabel = !progress.clinicWrapupComplete
+    ? 'Дело клиники'
+    : !progress.interviewComplete
+      ? 'Собеседование'
+      : !progress.jobAccepted
+        ? 'Ответить на предложение'
+        : !progress.firstShiftComplete
+          ? 'Первая смена'
+          : progress.criminalContactUnlocked && !progress.criminalContactResponse
+            ? 'Незнакомый номер'
+            : 'Текущая глава';
+  const defaultActivity: DailyActivityId = isScheduledWorkPeriod(sim)
+    ? 'work'
+    : sim.clock.period === 'night'
+      ? 'sleep'
+      : progress.activeContract
+        ? 'contract'
+        : 'study-linux';
+  const currentActivityId = sim.daily.planDay === sim.clock.day
+    ? (sim.daily.plan[sim.clock.period] ?? defaultActivity)
+    : defaultActivity;
+  const currentActivity = activityById(currentActivityId);
+  const dailyEvent = sim.daily.event ? getDailyEvent(sim.daily.event.id) : undefined;
+  const activeDeadline = progress.activeContract?.deadlineDay ?? null;
+  const daysToDeadline = activeDeadline === null ? null : activeDeadline - sim.clock.day;
+  const activityOptions = dailyActivities.filter((item) => {
+    if (item.id === 'work') return sim.career.status === 'employed';
+    if (item.id === 'contract') return Boolean(progress.activeContract);
+    if (item.id === 'study-windows') return stage >= 1;
+    if (item.id === 'study-web') return stage >= 2;
+    return true;
+  });
 
+  const currentActionBlocked = (currentActivityId === 'work' && !canWork) || (currentActivityId === 'maintenance' && progress.balance < 600);
+
+  const runCurrentActivity = () => {
+    if (currentActivityId === 'contract') { openApp('contracts'); return; }
+    if (currentActivityId === 'story') { openApp(storyTarget); return; }
+    performActivity(currentActivityId);
+  };
 
 
   return (
@@ -90,9 +145,83 @@ export function LifeApp() {
 
       <main className="life-main app-scroll">
         <header className="life-topbar">
-          <div><p className="eyebrow">SIMULATION CORE / 0.5</p><h2>{tabs.find((item) => item.id === tab)?.label}</h2></div>
+          <div><p className="eyebrow">КАЛЕНДАРЬ / ОСТРОГОРСК</p><h2>{tabs.find((item) => item.id === tab)?.label}</h2></div>
           <div className="life-clock"><CalendarDays size={17} /><div><strong>{formatDate(sim.clock.dateIso)}</strong><span>{periodLabels[sim.clock.period]}</span></div></div>
         </header>
+
+        {tab === 'today' && (
+          <>
+            <section className="daily-summary-grid">
+              <article><span>Текущий период</span><strong>{periodLabels[sim.clock.period]}</strong><small>День {sim.clock.day}</small></article>
+              <article><span>Свободные деньги</span><strong>{progress.balance.toLocaleString('ru-RU')} ₽</strong><small>Еда утром: −{foodPlan.dailyCost.toLocaleString('ru-RU')} ₽</small></article>
+              <article><span>Работа</span><strong>{sim.career.status === 'employed' ? sim.career.title : 'Нет'}</strong><small>{isScheduledWorkPeriod(sim) ? 'Смена должна быть закрыта сейчас' : `Следующая зарплата: день ${sim.career.nextPayDay}`}</small></article>
+              <article className={daysToDeadline !== null && daysToDeadline <= 0 ? 'danger' : ''}><span>Контракт</span><strong>{progress.activeContract ? `до дня ${activeDeadline}` : 'Не принят'}</strong><small>{progress.activeContract ? `${progress.activeContract.durationSlots ?? 1} период · ${daysToDeadline! < 0 ? 'просрочен' : `осталось ${daysToDeadline} дн.`}` : 'Новые заказы приходят утром'}</small></article>
+            </section>
+
+            <section className="daily-layout">
+              <div className="daily-plan-panel">
+                <header><div><p className="eyebrow">ПЛАН НА ДЕНЬ</p><h3>{formatDate(sim.clock.dateIso)}</h3></div><ListChecks size={23} /></header>
+                <div className="daily-timeline">
+                  {dayPeriods.map((period, index) => {
+                    const past = index < periodIndex;
+                    const current = period === sim.clock.period;
+                    const done = sim.daily.completedKeys.includes(periodKey(sim.clock.day, period)) || past;
+                    const fallback: DailyActivityId = period === 'workday' && sim.career.status === 'employed' ? 'work' : period === 'night' ? 'sleep' : period === sim.clock.period ? defaultActivity : 'free';
+                    const selected = sim.daily.planDay === sim.clock.day ? (sim.daily.plan[period] ?? fallback) : fallback;
+                    const definition = activityById(selected);
+                    return <article key={period} className={`${current ? 'current' : ''} ${done ? 'done' : ''}`}>
+                      <div className="daily-period-mark"><span>{index + 1}</span><i /></div>
+                      <div className="daily-period-copy"><strong>{periodLabels[period]}</strong><small>{done ? 'Завершено' : current ? 'Сейчас' : 'Запланировано'}</small></div>
+                      <select disabled={done} value={selected} onChange={(event) => setDayPlan(period, event.target.value as DailyActivityId)}>
+                        {activityOptions.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                      </select>
+                      <p>{definition.description}</p>
+                      {current && <button className="primary-action compact" disabled={currentActionBlocked} onClick={runCurrentActivity}><Play size={14} />{definition.kind === 'navigation' ? 'Открыть' : 'Выполнить'}</button>}
+                    </article>;
+                  })}
+                </div>
+              </div>
+
+              <aside className="daily-side-column">
+                <article className="daily-current-card">
+                  <header><Clock3 size={18} /><span>СЕЙЧАС</span></header>
+                  <h3>{currentActivity.label}</h3>
+                  <p>{currentActivity.description}</p>
+                  {currentActivityId === 'work' && !canWork && <small>Рабочую смену можно закрыть в рабочий период при энергии и концентрации не ниже 25.</small>}
+                  <button className="primary-action full" disabled={currentActionBlocked} onClick={runCurrentActivity}>{currentActivity.kind === 'navigation' ? 'Перейти' : 'Начать'}</button>
+                </article>
+
+                <article className="daily-story-card">
+                  <header><BookOpenCheck size={18} /><span>ОСНОВНОЕ ДЕЛО</span></header>
+                  <h3>{storyLabel}</h3>
+                  <p>Задача доступна. Можно вернуться к ней после смены или текущего заказа.</p>
+                  <button className="secondary-action full" onClick={() => openApp(storyTarget)}>Продолжить</button>
+                </article>
+
+                <article className="daily-deadlines-card">
+                  <header><FileClock size={18} /><span>БЛИЖАЙШИЕ СРОКИ</span></header>
+                  <div><strong>Аренда</strong><span>день {sim.housing.nextRentDay}</span></div>
+                  <div><strong>Зарплата</strong><span>{sim.career.status === 'employed' ? `день ${sim.career.nextPayDay}` : 'нет работы'}</span></div>
+                  <div><strong>Контракт</strong><span>{activeDeadline ? `день ${activeDeadline}` : 'нет'}</span></div>
+                  <div><strong>Пропущено смен</strong><span>{sim.daily.missedShifts}</span></div>
+                </article>
+              </aside>
+            </section>
+
+            {dailyEvent && sim.daily.event && !sim.daily.event.resolvedChoiceId && (
+              <section className="daily-event-card">
+                <div><AlertTriangle size={23} /><span>СОБЫТИЕ ДНЯ</span></div>
+                <h3>{dailyEvent.title}</h3>
+                <p>{dailyEvent.text}</p>
+                <footer>{dailyEvent.choices.map((choice) => <button key={choice.id} onClick={() => resolveDayEvent(choice.id)}>{choice.label}</button>)}</footer>
+              </section>
+            )}
+
+            {dailyEvent && sim.daily.event?.resolvedChoiceId && (
+              <section className="daily-event-card resolved"><div><Check size={20} /><span>СОБЫТИЕ ЗАКРЫТО</span></div><h3>{dailyEvent.title}</h3><p>{dailyEvent.choices.find((choice) => choice.id === sim.daily.event?.resolvedChoiceId)?.result}</p></section>
+            )}
+          </>
+        )}
 
         {tab === 'overview' && (
           <>

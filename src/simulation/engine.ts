@@ -1,6 +1,7 @@
 import { foodPlans, housingCatalog, jobsCatalog } from './catalog';
+import { activityById, createDailyEvent, getDailyEvent, isScheduledWorkPeriod, periodKey } from './daily';
 import type {
-  DayPeriod, HeatState, SimulationEvent, SimulationSkillId, SimulationState, SkillTrackState,
+  DailyActivityId, DayPeriod, HeatState, SimulationEvent, SimulationSkillId, SimulationState, SkillTrackState,
 } from './types';
 
 const PERIODS: DayPeriod[] = ['morning', 'workday', 'evening', 'night'];
@@ -62,7 +63,7 @@ function normalizeHeat(heat: HeatState): HeatState {
 
 export function createInitialSimulation(storyJob = false, firstShiftComplete = false): SimulationState {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     clock: { day: 1, dateIso: '2026-03-17', period: 'evening', elapsedSlots: 0 },
     needs: { energy: 78, stress: 16, health: 94, focus: 76 },
     foodPlanId: 'normal',
@@ -85,6 +86,15 @@ export function createInitialSimulation(storyJob = false, firstShiftComplete = f
     heat: { digitalTrace: 0, corporateSuspicion: 0, lawAttention: 0, criminalExposure: 0, wantedLevel: 0 },
     skills: createSkills(),
     progression: { passedExamIds: [], selectedSpecializations: [] },
+    daily: {
+      planDay: 1,
+      plan: { evening: 'study-linux', night: 'sleep' },
+      completedKeys: [],
+      missedShifts: 0,
+      lastContractBoardDay: 0,
+      event: null,
+      resolvedEventIds: [],
+    },
     world: { currentCityId: 'ostrogorsk', unlockedCityIds: ['ostrogorsk'] },
     events: [{ id: 'sim-start', day: 1, period: 'evening', type: 'time', title: 'Система жизни запущена', text: 'Расходы, время, жильё и работа теперь считаются отдельно от сюжета.' }],
     settledThroughDay: 1,
@@ -103,7 +113,7 @@ export function normalizeSimulation(value: unknown, storyJob: boolean, firstShif
   return {
     ...fallback,
     ...parsed,
-    schemaVersion: 2,
+    schemaVersion: 3,
     clock: { ...fallback.clock, ...(parsed.clock ?? {}) },
     needs: {
       energy: clamp(parsed.needs?.energy ?? fallback.needs.energy),
@@ -123,13 +133,24 @@ export function normalizeSimulation(value: unknown, storyJob: boolean, firstShif
       passedExamIds: Array.isArray(parsed.progression?.passedExamIds) ? parsed.progression!.passedExamIds.filter((item): item is string => typeof item === 'string') : fallback.progression.passedExamIds,
       selectedSpecializations: Array.isArray(parsed.progression?.selectedSpecializations) ? parsed.progression!.selectedSpecializations.slice(0, 2) : fallback.progression.selectedSpecializations,
     },
+    daily: {
+      ...fallback.daily,
+      ...(parsed.daily ?? {}),
+      planDay: Number.isFinite(Number(parsed.daily?.planDay)) ? Number(parsed.daily?.planDay) : fallback.daily.planDay,
+      plan: parsed.daily?.plan && typeof parsed.daily.plan === 'object' ? parsed.daily.plan : fallback.daily.plan,
+      completedKeys: Array.isArray(parsed.daily?.completedKeys) ? parsed.daily!.completedKeys.filter((item): item is string => typeof item === 'string').slice(-40) : fallback.daily.completedKeys,
+      missedShifts: Number.isFinite(Number(parsed.daily?.missedShifts)) ? Number(parsed.daily?.missedShifts) : 0,
+      lastContractBoardDay: Number.isFinite(Number(parsed.daily?.lastContractBoardDay)) ? Number(parsed.daily?.lastContractBoardDay) : 0,
+      event: parsed.daily?.event && typeof parsed.daily.event === 'object' ? parsed.daily.event : null,
+      resolvedEventIds: Array.isArray(parsed.daily?.resolvedEventIds) ? parsed.daily!.resolvedEventIds.filter((item): item is string => typeof item === 'string').slice(-30) : [],
+    },
     world: { ...fallback.world, ...(parsed.world ?? {}), unlockedCityIds: Array.isArray(parsed.world?.unlockedCityIds) ? parsed.world!.unlockedCityIds : fallback.world.unlockedCityIds },
     events: Array.isArray(parsed.events) ? parsed.events.slice(0, 60) : fallback.events,
     settledThroughDay: Number.isFinite(Number(parsed.settledThroughDay)) ? Number(parsed.settledThroughDay) : fallback.settledThroughDay,
   };
 }
 
-function event(sim: SimulationState, type: SimulationEvent['type'], title: string, text: string, amount?: number) {
+export function recordSimulationEvent(sim: SimulationState, type: SimulationEvent['type'], title: string, text: string, amount?: number) {
   const nextEvent: SimulationEvent = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     day: sim.clock.day,
@@ -161,7 +182,7 @@ function settleNewDay(simulation: SimulationState, balance: number) {
   let nextBalance = balance;
   const plan = foodPlans.find((item) => item.id === sim.foodPlanId) ?? foodPlans[1];
   nextBalance -= plan.dailyCost;
-  sim = event(sim, 'expense', 'Еда', `${plan.name}: списано ${plan.dailyCost.toLocaleString('ru-RU')} ₽.`, -plan.dailyCost);
+  sim = recordSimulationEvent(sim, 'expense', 'Еда', `${plan.name}: списано ${plan.dailyCost.toLocaleString('ru-RU')} ₽.`, -plan.dailyCost);
   sim = {
     ...sim,
     needs: {
@@ -176,7 +197,7 @@ function settleNewDay(simulation: SimulationState, balance: number) {
     const housing = housingCatalog.find((item) => item.id === sim.housing.currentHousingId) ?? housingCatalog[0];
     if (housing.rent > 0) {
       nextBalance -= housing.rent;
-      sim = event(sim, 'expense', 'Аренда', `${housing.name}: списано ${housing.rent.toLocaleString('ru-RU')} ₽.`, -housing.rent);
+      sim = recordSimulationEvent(sim, 'expense', 'Аренда', `${housing.name}: списано ${housing.rent.toLocaleString('ru-RU')} ₽.`, -housing.rent);
       if (nextBalance < 0) sim = { ...sim, needs: { ...sim.needs, stress: clamp(sim.needs.stress + 12) } };
     }
     sim = { ...sim, housing: { ...sim.housing, nextRentDay: sim.housing.nextRentDay + 30 } };
@@ -184,17 +205,64 @@ function settleNewDay(simulation: SimulationState, balance: number) {
 
   if (sim.career.status === 'employed' && sim.clock.day >= sim.career.nextPayDay) {
     nextBalance += sim.career.monthlySalary;
-    sim = event(sim, 'income', 'Зарплата', `${sim.career.title}: зачислено ${sim.career.monthlySalary.toLocaleString('ru-RU')} ₽.`, sim.career.monthlySalary);
+    sim = recordSimulationEvent(sim, 'income', 'Зарплата', `${sim.career.title}: зачислено ${sim.career.monthlySalary.toLocaleString('ru-RU')} ₽.`, sim.career.monthlySalary);
     sim = { ...sim, career: { ...sim.career, nextPayDay: sim.career.nextPayDay + 30 } };
   }
 
+  sim = {
+    ...sim,
+    daily: {
+      ...sim.daily,
+      planDay: sim.clock.day,
+      plan: {},
+      event: null,
+    },
+  };
+  sim = { ...sim, daily: { ...sim.daily, event: createDailyEvent(sim, nextBalance) } };
   return { simulation: { ...sim, settledThroughDay: sim.clock.day }, balance: nextBalance };
 }
 
-export function advanceSlots(simulation: SimulationState, balance: number, slots: number, mode: 'free' | 'rest' | 'work' | 'maintenance' = 'free') {
+export type TimeAdvanceMode = 'free' | 'rest' | 'work' | 'maintenance' | 'study' | 'contract';
+
+function applyMissedShift(simulation: SimulationState, mode: TimeAdvanceMode) {
+  if (!isScheduledWorkPeriod(simulation) || mode === 'work') return simulation;
+  const nextWarnings = simulation.career.warnings + 1;
+  let sim: SimulationState = {
+    ...simulation,
+    career: {
+      ...simulation.career,
+      performance: clamp(simulation.career.performance - 5),
+      warnings: nextWarnings,
+    },
+    reputation: {
+      ...simulation.reputation,
+      reliability: clamp(simulation.reputation.reliability - 2),
+      professional: clamp(simulation.reputation.professional - 1),
+    },
+    needs: { ...simulation.needs, stress: clamp(simulation.needs.stress + 7) },
+    daily: { ...simulation.daily, missedShifts: simulation.daily.missedShifts + 1 },
+  };
+  sim = recordSimulationEvent(sim, 'career', 'Пропущена смена', 'Рабочий период закончился без выхода на смену.');
+  return sim;
+}
+
+function markPeriodCompleted(simulation: SimulationState) {
+  const key = periodKey(simulation.clock.day, simulation.clock.period);
+  if (simulation.daily.completedKeys.includes(key)) return simulation;
+  return {
+    ...simulation,
+    daily: {
+      ...simulation.daily,
+      completedKeys: [...simulation.daily.completedKeys, key].slice(-40),
+    },
+  };
+}
+
+export function advanceSlots(simulation: SimulationState, balance: number, slots: number, mode: TimeAdvanceMode = 'free') {
   let sim = simulation;
   let nextBalance = balance;
   for (let i = 0; i < slots; i += 1) {
+    sim = markPeriodCompleted(applyMissedShift(sim, mode));
     const previousDay = sim.clock.day;
     sim = { ...sim, clock: nextClock(sim.clock) };
     if (sim.clock.day > previousDay) {
@@ -204,13 +272,18 @@ export function advanceSlots(simulation: SimulationState, balance: number, slots
     }
   }
 
+  const scale = Math.max(1, slots);
   const deltas = mode === 'rest'
-    ? { energy: 48, stress: -16, health: 2, focus: 24 }
+    ? { energy: 20 * scale, stress: -8 * scale, health: 1 * scale, focus: 12 * scale }
     : mode === 'work'
-      ? { energy: -28, stress: 13, health: -1, focus: -16 }
+      ? { energy: -24 * scale, stress: 11 * scale, health: 0, focus: -13 * scale }
       : mode === 'maintenance'
-        ? { energy: -7, stress: -3, health: 0, focus: -5 }
-        : { energy: -8 * slots, stress: 2 * slots, health: 0, focus: -6 * slots };
+        ? { energy: -7 * scale, stress: -3 * scale, health: 0, focus: -5 * scale }
+        : mode === 'study'
+          ? { energy: -13 * scale, stress: 5 * scale, health: 0, focus: -11 * scale }
+          : mode === 'contract'
+            ? { energy: -17 * scale, stress: 7 * scale, health: 0, focus: -13 * scale }
+            : { energy: -8 * scale, stress: 2 * scale, health: 0, focus: -6 * scale };
 
   sim = {
     ...sim,
@@ -228,13 +301,13 @@ export function restUntilMorning(simulation: SimulationState, balance: number) {
   const current = PERIODS.indexOf(simulation.clock.period);
   const slots = current === 0 ? 4 : PERIODS.length - current;
   const result = advanceSlots(simulation, balance, slots, 'rest');
-  result.simulation = event(result.simulation, 'time', 'Сон', 'Илья отдохнул до утра.');
+  result.simulation = recordSimulationEvent(result.simulation, 'time', 'Сон', 'Илья отдохнул до утра.');
   return result;
 }
 
 export function workCompanyShift(simulation: SimulationState, balance: number) {
-  if (simulation.career.status !== 'employed') return { simulation, balance };
-  const result = advanceSlots(simulation, balance, 2, 'work');
+  if (!isScheduledWorkPeriod(simulation)) return { simulation, balance };
+  const result = advanceSlots(simulation, balance, 1, 'work');
   let sim = result.simulation;
   const badState = simulation.needs.energy < 30 || simulation.needs.focus < 25;
   sim = {
@@ -256,14 +329,14 @@ export function workCompanyShift(simulation: SimulationState, balance: number) {
       communication: { ...sim.skills.communication, production: clamp(sim.skills.communication.production + 1) },
     },
   };
-  sim = event(sim, 'career', 'Рабочая смена', badState ? 'Смена закрыта тяжело. Низкая концентрация ухудшила результат.' : 'Смена закрыта без серьёзных ошибок.');
+  sim = recordSimulationEvent(sim, 'career', 'Рабочая смена', badState ? 'Смена закрыта тяжело. Низкая концентрация ухудшила результат.' : 'Смена закрыта без серьёзных ошибок.');
   return { ...result, simulation: sim };
 }
 
 export function takeJob(simulation: SimulationState, jobId: string) {
   const job = jobsCatalog.find((item) => item.id === jobId);
   if (!job) return simulation;
-  return event({
+  return recordSimulationEvent({
     ...simulation,
     career: {
       status: 'employed', jobId: job.id, employerId: job.employerId, title: job.title,
@@ -278,7 +351,7 @@ export function takeJob(simulation: SimulationState, jobId: string) {
 export function quitCurrentJob(simulation: SimulationState) {
   if (simulation.career.status !== 'employed') return simulation;
   const oldTitle = simulation.career.title;
-  return event({
+  return recordSimulationEvent({
     ...simulation,
     career: {
       ...simulation.career,
@@ -300,7 +373,7 @@ export function reduceDigitalRisk(simulation: SimulationState, balance: number) 
       corporateSuspicion: advanced.simulation.heat.corporateSuspicion - 3,
     }),
   };
-  sim = event(sim, 'risk', 'Проверка устройств', 'Обновлены пароли, закрыты старые сессии, резервная копия проверена.', -600);
+  sim = recordSimulationEvent(sim, 'risk', 'Проверка устройств', 'Обновлены пароли, закрыты старые сессии, резервная копия проверена.', -600);
   return { simulation: sim, balance: advanced.balance };
 }
 
@@ -314,7 +387,7 @@ export function moveToHousing(simulation: SimulationState, balance: number, hous
     housing: { currentHousingId: target.id, nextRentDay: simulation.clock.day + 30, movedAtDay: simulation.clock.day },
     needs: { ...simulation.needs, stress: clamp(simulation.needs.stress + 5), energy: clamp(simulation.needs.energy - 8) },
   };
-  sim = event(sim, 'housing', 'Переезд', `${target.name}. Оплачены первый месяц и залог.`, -cost);
+  sim = recordSimulationEvent(sim, 'housing', 'Переезд', `${target.name}. Оплачены первый месяц и залог.`, -cost);
   return { simulation: sim, balance: balance - cost };
 }
 
@@ -324,8 +397,111 @@ export function buyStoreItem(simulation: SimulationState, balance: number, itemI
     ...simulation,
     inventory: [...simulation.inventory, { itemId, quantity: 1, condition: 100 }],
   };
-  sim = event(sim, 'purchase', 'Покупка', `Оборудование добавлено в инвентарь.`, -price);
+  sim = recordSimulationEvent(sim, 'purchase', 'Покупка', `Оборудование добавлено в инвентарь.`, -price);
   return { simulation: sim, balance: balance - price };
+}
+
+
+export function setPlannedActivity(simulation: SimulationState, period: DayPeriod, activityId: DailyActivityId) {
+  const plan = simulation.daily.planDay === simulation.clock.day ? simulation.daily.plan : {};
+  return {
+    ...simulation,
+    daily: {
+      ...simulation.daily,
+      planDay: simulation.clock.day,
+      plan: { ...plan, [period]: activityId },
+    },
+  };
+}
+
+export function markContractBoardDay(simulation: SimulationState, day: number) {
+  return { ...simulation, daily: { ...simulation.daily, lastContractBoardDay: day } };
+}
+
+export function performDailyActivity(simulation: SimulationState, balance: number, activityId: DailyActivityId) {
+  if (activityId === 'work') return workCompanyShift(simulation, balance);
+  if (activityId === 'maintenance') return reduceDigitalRisk(simulation, balance);
+  if (activityId === 'sleep') {
+    const result = advanceSlots(simulation, balance, 1, 'rest');
+    return { ...result, simulation: recordSimulationEvent(result.simulation, 'time', 'Отдых', 'Илья выключил уведомления и отдохнул один период.') };
+  }
+  const definition = activityById(activityId);
+  if (definition.kind === 'study' && definition.skillId) {
+    const result = advanceSlots(simulation, balance, 1, 'study');
+    const current = result.simulation.skills[definition.skillId];
+    const lowFocus = simulation.needs.focus < 30;
+    const gain = lowFocus ? 1 : 3;
+    let sim: SimulationState = {
+      ...result.simulation,
+      skills: {
+        ...result.simulation.skills,
+        [definition.skillId]: {
+          ...current,
+          theory: clamp(current.theory + gain),
+          guided: clamp(current.guided + Math.max(1, gain - 1)),
+        },
+      },
+    };
+    sim = recordSimulationEvent(sim, 'progression', definition.label, lowFocus ? 'Из-за усталости занятие дало мало результата.' : 'Закрыт один учебный блок с практикой.');
+    return { ...result, simulation: sim };
+  }
+  const result = advanceSlots(simulation, balance, 1, 'free');
+  return { ...result, simulation: recordSimulationEvent(result.simulation, 'time', 'Свободный период', 'Илья не ставил отдельную задачу на этот период.') };
+}
+
+export function resolveDailyEvent(simulation: SimulationState, balance: number, choiceId: string) {
+  const current = simulation.daily.event;
+  if (!current || current.resolvedChoiceId) return { simulation, balance };
+  const definition = getDailyEvent(current.id);
+  if (!definition || !definition.choices.some((choice) => choice.id === choiceId)) return { simulation, balance };
+  let sim = simulation;
+  let nextBalance = balance;
+
+  if (current.id === 'account-alert') {
+    if (choiceId === 'secure' && balance >= 250) {
+      nextBalance -= 250;
+      sim = { ...sim, heat: normalizeHeat({ ...sim.heat, digitalTrace: sim.heat.digitalTrace - 7 }) };
+    } else if (choiceId === 'ignore') {
+      sim = { ...sim, heat: normalizeHeat({ ...sim.heat, digitalTrace: sim.heat.digitalTrace + 7 }) };
+    }
+  }
+  if (current.id === 'extra-shift') {
+    if (choiceId === 'accept') {
+      nextBalance += 900;
+      sim = {
+        ...sim,
+        needs: { ...sim.needs, energy: clamp(sim.needs.energy - 13), stress: clamp(sim.needs.stress + 8) },
+        career: { ...sim.career, performance: clamp(sim.career.performance + 2) },
+      };
+    }
+  }
+  if (current.id === 'router-failure') {
+    if (choiceId === 'repair' && balance >= 500) nextBalance -= 500;
+    if (choiceId === 'postpone') sim = { ...sim, needs: { ...sim.needs, stress: clamp(sim.needs.stress + 5), focus: clamp(sim.needs.focus - 5) } };
+  }
+  if (current.id === 'family-errand') {
+    if (choiceId === 'help') {
+      sim = {
+        ...sim,
+        needs: { ...sim.needs, energy: clamp(sim.needs.energy - 6), stress: clamp(sim.needs.stress - 3) },
+        reputation: { ...sim.reputation, reliability: clamp(sim.reputation.reliability + 1) },
+      };
+    } else {
+      sim = { ...sim, needs: { ...sim.needs, stress: clamp(sim.needs.stress + 4) } };
+    }
+  }
+
+  const choice = definition.choices.find((item) => item.id === choiceId)!;
+  sim = {
+    ...sim,
+    daily: {
+      ...sim.daily,
+      event: { ...current, resolvedChoiceId: choiceId },
+      resolvedEventIds: [...sim.daily.resolvedEventIds, `${current.day}:${current.id}:${choiceId}`].slice(-30),
+    },
+  };
+  sim = recordSimulationEvent(sim, 'daily', definition.title, choice.result, nextBalance - balance || undefined);
+  return { simulation: sim, balance: nextBalance };
 }
 
 export function syncStoryProgress(simulation: SimulationState, story: {

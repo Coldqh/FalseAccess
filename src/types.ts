@@ -33,6 +33,7 @@ export interface Objective {
 
 export type ContractSkill = 'linux' | 'networking' | 'python' | 'soc' | 'web';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
+export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
 export interface ContractFile {
   name: string;
@@ -64,6 +65,11 @@ export interface GeneratedContract {
   hint: string;
   starterCode?: string;
   expectedOutput?: string;
+  postedDay?: number;
+  deadlineDay?: number;
+  durationSlots?: number;
+  risk?: ContractRisk;
+  acceptedDay?: number;
 }
 
 export interface CompletedContract {
@@ -74,6 +80,9 @@ export interface CompletedContract {
   pay: number;
   completedAt: string;
   clean: boolean;
+  completedDay?: number;
+  deadlineDay?: number;
+  late?: boolean;
 }
 
 export interface ProgressState {

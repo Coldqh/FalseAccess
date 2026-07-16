@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpenCheck, BriefcaseBusiness, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
+  Bell, BookOpenCheck, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
   Globe2, HeartPulse, Mail, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
   Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
@@ -61,7 +61,7 @@ const apps: RuntimeAppDefinition[] = [
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
   switch (id) {
-    case 'life': return <LifeApp />;
+    case 'life': return <LifeApp openApp={openApp} />;
     case 'career': return <CareerApp />;
     case 'missions': return <MissionsApp openApp={openApp} />;
     case 'contracts': return <ContractsApp />;
@@ -154,7 +154,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>PROGRESSION BUILD / {APP_VERSION}</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>DAILY LOOP BUILD / {APP_VERSION}</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -239,7 +239,7 @@ export function Desktop() {
         ) : (
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
-            <div className="mobile-alert" onClick={() => openApp('career')}><ChartNoAxesCombined size={20} /><div><strong>ПРОГРЕСС</strong><span>Навыки, этапы и доступные вакансии</span></div><ChevronUp size={17} /></div>
+            <div className="mobile-alert" onClick={() => openApp('life')}><CalendarClock size={20} /><div><strong>ПРОГРЕСС</strong><span>План дня, смены и дедлайны</span></div><ChevronUp size={17} /></div>
             <UpdateButton />
             <div className="mobile-grid">{visibleApps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={`${locked ? 'locked' : ''} ${app.kind === 'temporary' ? 'temporary-app' : ''}`} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong>{app.kind === 'temporary' && <i>STORY</i>}</button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
