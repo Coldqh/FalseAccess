@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { useProgress } from '../system/ProgressContext';
 import { cities, foodPlans, housingCatalog, jobsCatalog, periodLabels, storeItems } from '../simulation/catalog';
-import { skillMeets } from '../simulation/engine';
-import type { FoodPlanId, SimulationSkillId } from '../simulation/types';
+import { getJobAccess } from '../simulation/progression';
+import type { FoodPlanId } from '../simulation/types';
 
 const tabs = [
   { id: 'overview', label: 'Жизнь', icon: Activity },
@@ -71,12 +71,7 @@ export function LifeApp() {
   const canWork = sim.career.status === 'employed' && sim.needs.energy >= 25 && sim.needs.focus >= 20;
   const currentJob = jobsCatalog.find((entry) => entry.id === sim.career.jobId);
 
-  const jobAvailable = (jobId: string, requiredProfessional: number, skills?: Partial<Record<SimulationSkillId, number>>, storyOnly?: boolean) => {
-    if (storyOnly && !progress.jobAccepted) return false;
-    if (jobId === sim.career.jobId) return false;
-    if (sim.reputation.professional < requiredProfessional) return false;
-    return Object.entries(skills ?? {}).every(([id, value]) => skillMeets(sim.skills[id as SimulationSkillId], Number(value)));
-  };
+
 
   return (
     <div className="life-app">
@@ -180,9 +175,10 @@ export function LifeApp() {
 
             <section className="life-section-head"><div><h3>Вакансии</h3><p>Навыки и репутация проверяются по фактически выполненным задачам.</p></div><BriefcaseBusiness size={24} /></section>
             <section className="job-grid">{jobsCatalog.map((job) => {
-              const available = jobAvailable(job.id, job.requiredProfessional, job.requiredSkills, job.storyOnly);
+              const access = getJobAccess(progress, job);
+              const available = access.available && job.id !== sim.career.jobId;
               const current = job.id === sim.career.jobId;
-              return <article key={job.id} className={`${available ? '' : 'locked'} ${current ? 'current' : ''}`}><header><span>{job.employer}</span><strong>{job.monthlySalary.toLocaleString('ru-RU')} ₽</strong></header><h3>{job.title}</h3><p>{job.description}</p><dl><div><dt>Город</dt><dd>{cities.find((entry) => entry.id === job.cityId)?.name}</dd></div><div><dt>График</dt><dd>{job.schedule}</dd></div><div><dt>Репутация</dt><dd>{job.requiredProfessional}</dd></div></dl><button disabled={!available || current || sim.career.status === 'employed'} onClick={() => acceptJob(job.id)}>{current ? 'Текущая работа' : sim.career.status === 'employed' ? 'Сначала уволься' : available ? 'Принять предложение' : 'Требования не выполнены'}</button></article>;
+              return <article key={job.id} className={`${available ? '' : 'locked'} ${current ? 'current' : ''}`}><header><span>{job.employer}</span><strong>{job.monthlySalary.toLocaleString('ru-RU')} ₽</strong></header><h3>{job.title}</h3><p>{job.description}</p><dl><div><dt>Город</dt><dd>{cities.find((entry) => entry.id === job.cityId)?.name}</dd></div><div><dt>График</dt><dd>{job.schedule}</dd></div><div><dt>Этап</dt><dd>{job.requiredStage ?? 0}</dd></div></dl>{!access.available && <div className="job-lock-reason">{access.reasons[0]}</div>}<button disabled={!available || current || sim.career.status === 'employed'} onClick={() => acceptJob(job.id)}>{current ? 'Текущая работа' : sim.career.status === 'employed' ? 'Сначала уволься' : available ? 'Принять предложение' : 'Требования не выполнены'}</button></article>;
             })}</section>
           </>
         )}

@@ -9,14 +9,26 @@ export interface MasteryRequirement {
 }
 
 export const middleReadinessRequirements: MasteryRequirement[] = [
+  { id: 'computer', theory: 80, guided: 75, independent: 65, production: 40 },
   { id: 'linux', theory: 75, guided: 70, independent: 65, production: 45 },
+  { id: 'bash', theory: 65, guided: 60, independent: 55, production: 35 },
+  { id: 'windows', theory: 70, guided: 65, independent: 55, production: 40 },
+  { id: 'powershell', theory: 60, guided: 55, independent: 50, production: 30 },
   { id: 'networking', theory: 75, guided: 70, independent: 60, production: 45 },
   { id: 'python', theory: 70, guided: 65, independent: 60, production: 40 },
-  { id: 'soc', theory: 80, guided: 75, independent: 65, production: 55 },
-  { id: 'windows', theory: 70, guided: 65, independent: 55, production: 40 },
   { id: 'web', theory: 65, guided: 60, independent: 55, production: 35 },
+  { id: 'sql', theory: 55, guided: 50, independent: 45, production: 25 },
+  { id: 'soc', theory: 80, guided: 75, independent: 65, production: 55 },
+  { id: 'siem', theory: 70, guided: 65, independent: 55, production: 45 },
+  { id: 'incidentResponse', theory: 70, guided: 65, independent: 55, production: 45 },
   { id: 'forensics', theory: 65, guided: 60, independent: 50, production: 35 },
+  { id: 'threatHunting', theory: 60, guided: 55, independent: 50, production: 35 },
+  { id: 'securityEngineering', theory: 65, guided: 60, independent: 55, production: 40 },
+  { id: 'appsec', theory: 55, guided: 50, independent: 45, production: 30 },
+  { id: 'cloud', theory: 55, guided: 50, independent: 45, production: 30 },
+  { id: 'activeDirectory', theory: 60, guided: 55, independent: 50, production: 35 },
   { id: 'communication', theory: 60, guided: 65, independent: 60, production: 50 },
+  { id: 'operationalPlanning', theory: 60, guided: 55, independent: 50, production: 35 },
 ];
 
 function ratio(value: number, target: number) {

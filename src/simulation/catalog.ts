@@ -1,4 +1,4 @@
-import type { FoodPlanId, SimulationSkillId } from './types';
+import type { FoodPlanId, ProgressionStageId, SimulationSkillId, SkillTrackState } from './types';
 
 export interface CityDefinition {
   id: string;
@@ -54,6 +54,8 @@ export interface JobDefinition {
   description: string;
   requiredProfessional: number;
   requiredSkills?: Partial<Record<SimulationSkillId, number>>;
+  requiredStage?: ProgressionStageId;
+  requiredTracks?: Partial<Record<SimulationSkillId, Partial<SkillTrackState>>>;
   storyOnly?: boolean;
 }
 
@@ -113,20 +115,35 @@ export const jobsCatalog: JobDefinition[] = [
     id: 'sfera-junior-soc', employerId: 'sfera', employer: 'Сфера-Интеграция', cityId: 'ostrogorsk',
     title: 'Младший аналитик SOC', monthlySalary: 52_000, schedule: '5/2 · 09:00–18:00',
     description: 'Очередь алертов, отчёты, звонки клиентам и постоянный контроль Анны.',
-    requiredProfessional: 0, storyOnly: true,
+    requiredProfessional: 0, requiredStage: 1, requiredTracks: { soc: { guided: 8 }, communication: { guided: 4 } }, storyOnly: true,
   },
   {
     id: 'helpdesk-techline', employerId: 'techline', employer: 'ТехЛиния', cityId: 'ostrogorsk',
     title: 'Специалист поддержки', monthlySalary: 38_000, schedule: '2/2 · 08:00–20:00',
     description: 'Пользователи, учётные записи, принтеры, сеть и первые задачи системного администратора.',
-    requiredProfessional: 0,
+    requiredProfessional: 0, requiredStage: 0, requiredTracks: { computer: { guided: 6 } },
   },
   {
     id: 'factory-admin-trainee', employerId: 'promservis', employer: 'ПромСервис', cityId: 'ostrogorsk',
     title: 'Стажёр системного администратора', monthlySalary: 45_000, schedule: '5/2 · 08:00–17:00',
     description: 'Рабочие станции, домен, резервные копии и старые серверы предприятия.',
-    requiredProfessional: 4,
+    requiredProfessional: 4, requiredStage: 1,
     requiredSkills: { linux: 5, networking: 4 },
+    requiredTracks: { linux: { guided: 10 }, networking: { theory: 6 } },
+  },
+  {
+    id: 'sfera-soc-analyst', employerId: 'sfera', employer: 'Сфера-Интеграция', cityId: 'ostrogorsk',
+    title: 'Аналитик SOC', monthlySalary: 78_000, schedule: '2/2 · 08:00–20:00',
+    description: 'Самостоятельный triage, расследования, запросы клиентам и контроль младших аналитиков.',
+    requiredProfessional: 14, requiredStage: 3,
+    requiredTracks: { soc: { independent: 22, production: 12 }, siem: { guided: 20 }, communication: { independent: 12 } },
+  },
+  {
+    id: 'regional-security-engineer', employerId: 'volna', employer: 'Волна Телеком', cityId: 'ostrogorsk',
+    title: 'Инженер ИБ', monthlySalary: 92_000, schedule: '5/2 · 09:00–18:00',
+    description: 'Доступы, сегментация, VPN, мониторинг и безопасные конфигурации региональной сети.',
+    requiredProfessional: 20, requiredStage: 4,
+    requiredTracks: { networking: { independent: 28 }, securityEngineering: { guided: 25 }, windows: { independent: 18 } },
   },
 ];
 

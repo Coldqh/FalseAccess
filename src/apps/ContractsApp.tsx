@@ -4,6 +4,7 @@ import {
   FileSearch, Flag, Play, RefreshCw, RotateCcw, ShieldCheck, TerminalSquare, UsersRound, XCircle,
 } from 'lucide-react';
 import { contractSkillUnlocked, factions } from '../data/contracts';
+import { getContractAccess } from '../simulation/progression';
 import type { GeneratedContract } from '../types';
 import { useProgress } from '../system/ProgressContext';
 
@@ -260,6 +261,7 @@ export function ContractsApp() {
             </section>
             <section className="contract-offers">
               {progress.contractOffers.map((contract) => {
+                const access = getContractAccess(contract, progress);
                 const unlocked = contractSkillUnlocked(contract, progress);
                 return (
                   <article key={contract.id} className={unlocked ? '' : 'locked'}>
@@ -267,6 +269,7 @@ export function ContractsApp() {
                     <div className="contract-card-skill">{contract.skill.toUpperCase()}</div>
                     <h3>{contract.title}</h3>
                     <p>{contract.summary}</p>
+                    {!unlocked && <div className="contract-lock-reason">{access.reasons[0]}</div>}
                     <div className="contract-client"><span>ЗАКАЗЧИК</span><strong>{contract.client}</strong></div>
                     <footer><strong>{contract.pay.toLocaleString('ru-RU')} ₽</strong><button disabled={!unlocked} onClick={() => acceptContract(contract)}>{unlocked ? 'Принять' : 'Навык закрыт'}<ChevronRight size={15} /></button></footer>
                   </article>

@@ -12,8 +12,26 @@ function blankSkill(): SkillTrackState {
 
 function createSkills(): Record<SimulationSkillId, SkillTrackState> {
   return {
-    linux: blankSkill(), networking: blankSkill(), python: blankSkill(), soc: blankSkill(),
-    windows: blankSkill(), web: blankSkill(), forensics: blankSkill(), communication: blankSkill(),
+    computer: blankSkill(),
+    linux: blankSkill(),
+    bash: blankSkill(),
+    windows: blankSkill(),
+    powershell: blankSkill(),
+    networking: blankSkill(),
+    python: blankSkill(),
+    web: blankSkill(),
+    sql: blankSkill(),
+    soc: blankSkill(),
+    siem: blankSkill(),
+    incidentResponse: blankSkill(),
+    forensics: blankSkill(),
+    threatHunting: blankSkill(),
+    securityEngineering: blankSkill(),
+    appsec: blankSkill(),
+    cloud: blankSkill(),
+    activeDirectory: blankSkill(),
+    communication: blankSkill(),
+    operationalPlanning: blankSkill(),
   };
 }
 
@@ -44,7 +62,7 @@ function normalizeHeat(heat: HeatState): HeatState {
 
 export function createInitialSimulation(storyJob = false, firstShiftComplete = false): SimulationState {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     clock: { day: 1, dateIso: '2026-03-17', period: 'evening', elapsedSlots: 0 },
     needs: { energy: 78, stress: 16, health: 94, focus: 76 },
     foodPlanId: 'normal',
@@ -66,6 +84,7 @@ export function createInitialSimulation(storyJob = false, firstShiftComplete = f
     reputation: { professional: firstShiftComplete ? 3 : 0, reliability: 2, underground: 0, notoriety: 0 },
     heat: { digitalTrace: 0, corporateSuspicion: 0, lawAttention: 0, criminalExposure: 0, wantedLevel: 0 },
     skills: createSkills(),
+    progression: { passedExamIds: [], selectedSpecializations: [] },
     world: { currentCityId: 'ostrogorsk', unlockedCityIds: ['ostrogorsk'] },
     events: [{ id: 'sim-start', day: 1, period: 'evening', type: 'time', title: 'Система жизни запущена', text: 'Расходы, время, жильё и работа теперь считаются отдельно от сюжета.' }],
     settledThroughDay: 1,
@@ -84,7 +103,7 @@ export function normalizeSimulation(value: unknown, storyJob: boolean, firstShif
   return {
     ...fallback,
     ...parsed,
-    schemaVersion: 1,
+    schemaVersion: 2,
     clock: { ...fallback.clock, ...(parsed.clock ?? {}) },
     needs: {
       energy: clamp(parsed.needs?.energy ?? fallback.needs.energy),
@@ -98,6 +117,12 @@ export function normalizeSimulation(value: unknown, storyJob: boolean, firstShif
     reputation: { ...fallback.reputation, ...(parsed.reputation ?? {}) },
     heat,
     skills,
+    progression: {
+      ...fallback.progression,
+      ...(parsed.progression ?? {}),
+      passedExamIds: Array.isArray(parsed.progression?.passedExamIds) ? parsed.progression!.passedExamIds.filter((item): item is string => typeof item === 'string') : fallback.progression.passedExamIds,
+      selectedSpecializations: Array.isArray(parsed.progression?.selectedSpecializations) ? parsed.progression!.selectedSpecializations.slice(0, 2) : fallback.progression.selectedSpecializations,
+    },
     world: { ...fallback.world, ...(parsed.world ?? {}), unlockedCityIds: Array.isArray(parsed.world?.unlockedCityIds) ? parsed.world!.unlockedCityIds : fallback.world.unlockedCityIds },
     events: Array.isArray(parsed.events) ? parsed.events.slice(0, 60) : fallback.events,
     settledThroughDay: Number.isFinite(Number(parsed.settledThroughDay)) ? Number(parsed.settledThroughDay) : fallback.settledThroughDay,
@@ -323,10 +348,20 @@ export function syncStoryProgress(simulation: SimulationState, story: {
   const terminalProgress = Math.min(18, story.terminalObjectives.length * 3);
   const nextSkills = {
     ...sim.skills,
+    computer: {
+      ...sim.skills.computer,
+      theory: Math.max(sim.skills.computer.theory, story.terminalObjectives.length >= 3 ? 12 : 0),
+      guided: Math.max(sim.skills.computer.guided, story.terminalObjectives.length >= 3 ? 12 : 0),
+    },
     linux: {
       ...sim.skills.linux,
       theory: Math.max(sim.skills.linux.theory, terminalProgress),
       guided: Math.max(sim.skills.linux.guided, terminalProgress),
+    },
+    bash: {
+      ...sim.skills.bash,
+      theory: Math.max(sim.skills.bash.theory, Math.min(10, story.terminalObjectives.length * 2)),
+      guided: Math.max(sim.skills.bash.guided, Math.min(12, story.terminalObjectives.length * 2)),
     },
     python: {
       ...sim.skills.python,
@@ -338,6 +373,16 @@ export function syncStoryProgress(simulation: SimulationState, story: {
       theory: Math.max(sim.skills.soc.theory, story.alertReviewed ? 10 : 0),
       guided: Math.max(sim.skills.soc.guided, story.alertReviewed ? 12 : 0),
     },
+    siem: {
+      ...sim.skills.siem,
+      theory: Math.max(sim.skills.siem.theory, story.alertReviewed ? 8 : 0),
+      guided: Math.max(sim.skills.siem.guided, story.alertReviewed ? 10 : 0),
+    },
+    incidentResponse: {
+      ...sim.skills.incidentResponse,
+      theory: Math.max(sim.skills.incidentResponse.theory, story.alertReviewed ? 6 : 0),
+      guided: Math.max(sim.skills.incidentResponse.guided, story.alertReviewed ? 6 : 0),
+    },
     communication: {
       ...sim.skills.communication,
       guided: Math.max(sim.skills.communication.guided, story.interviewScore * 2),
@@ -346,6 +391,11 @@ export function syncStoryProgress(simulation: SimulationState, story: {
       ...sim.skills.windows,
       theory: Math.max(sim.skills.windows.theory, story.powershellComplete ? 10 : 0),
       guided: Math.max(sim.skills.windows.guided, story.powershellComplete ? 12 : 0),
+    },
+    powershell: {
+      ...sim.skills.powershell,
+      theory: Math.max(sim.skills.powershell.theory, story.powershellComplete ? 6 : 0),
+      guided: Math.max(sim.skills.powershell.guided, story.powershellComplete ? 7 : 0),
     },
     networking: {
       ...sim.skills.networking,
@@ -367,8 +417,11 @@ export function syncStoryProgress(simulation: SimulationState, story: {
       skills: {
         ...sim.skills,
         soc: { ...sim.skills.soc, guided: Math.max(12, sim.skills.soc.guided), production: Math.max(4, sim.skills.soc.production) },
+        siem: { ...sim.skills.siem, guided: Math.max(10, sim.skills.siem.guided), production: Math.max(3, sim.skills.siem.production) },
+        incidentResponse: { ...sim.skills.incidentResponse, guided: Math.max(7, sim.skills.incidentResponse.guided), production: Math.max(2, sim.skills.incidentResponse.production) },
         windows: { ...sim.skills.windows, guided: Math.max(8, sim.skills.windows.guided) },
         networking: { ...sim.skills.networking, guided: Math.max(8, sim.skills.networking.guided) },
+        communication: { ...sim.skills.communication, guided: Math.max(8, sim.skills.communication.guided), production: Math.max(2, sim.skills.communication.production) },
       },
     };
   }

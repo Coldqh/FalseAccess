@@ -1,4 +1,5 @@
 import type { ContractDifficulty, ContractSkill, GeneratedContract, ProgressState } from '../types';
+import { getContractAccess } from '../simulation/progression';
 
 export const factions = [
   {
@@ -152,7 +153,7 @@ function secretContract(seed: number, index: number): GeneratedContract {
     difficulty,
     pay: payFor(difficulty, random),
     summary: `В архиве проекта ${repo} нашли конфигурационный файл. Проверь, есть ли в нём секрет, и укажи правильное первое действие.`,
-    constraint: 'Не используй найденный секрет. Сразу подготовь его отзыв и замену.',
+    constraint: 'Не используй найденные данные. Анализ проводится на учебной копии.',
     files: [
       { name: '.env', content: `APP_ENV=production\nAPI_URL=https://api.${repo}.local\n${secretName}=${secretValue}\nLOG_LEVEL=info` },
       { name: '.gitignore', content: `node_modules/\ndist/\n*.log` },
@@ -272,22 +273,13 @@ function pythonContract(seed: number, index: number): GeneratedContract {
 
 const builders = [authContract, dnsContract, processContract, pythonContract, secretContract, webContract] as const;
 
-function isSkillUnlocked(skill: ContractSkill, progress: ProgressState) {
-  if (skill === 'linux') return progress.terminalObjectives.length >= 3;
-  if (skill === 'python') return progress.pythonComplete;
-  if (skill === 'networking') return progress.terminalObjectives.includes('inspect-processes');
-  if (skill === 'soc') return progress.alertReviewed;
-  if (skill === 'web') return progress.reportSubmitted;
-  return false;
-}
-
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
   const daySeed = Number(new Date().toISOString().slice(0, 10).replaceAll('-', ''));
   const baseSeed = daySeed + refreshIndex * 997 + progress.completedContracts.length * 131;
   const candidates = builders.map((builder, index) => builder(baseSeed + index * 7919, index + refreshIndex));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
-  const unlocked = ordered.filter((contract) => isSkillUnlocked(contract.skill, progress));
-  const locked = ordered.filter((contract) => !isSkillUnlocked(contract.skill, progress));
+  const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
+  const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);
   const chosen = [...unlocked, ...locked].slice(0, 3);
   return chosen.map((contract) => {
     const faction = factions.find((item) => item.id === contract.factionId) ?? factions[0];
@@ -296,5 +288,5 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
 }
 
 export function contractSkillUnlocked(contract: GeneratedContract, progress: ProgressState) {
-  return isSkillUnlocked(contract.skill, progress);
+  return getContractAccess(contract, progress).available;
 }

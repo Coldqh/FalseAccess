@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CompletedContract, GeneratedContract, ProgressState } from '../types';
-import type { FoodPlanId, SimulationSkillId } from '../simulation/types';
+import type { FoodPlanId, SimulationSkillId, SpecializationId } from '../simulation/types';
 import { createInitialProgress } from '../data/content';
 import { generateContractOffers } from '../data/contracts';
-import { storeItems } from '../simulation/catalog';
+import { jobsCatalog, storeItems } from '../simulation/catalog';
+import { getContractAccess, getJobAccess } from '../simulation/progression';
 import {
   advanceSlots, buyStoreItem, calculateWantedLevel, moveToHousing, normalizeSimulation,
   quitCurrentJob, reduceDigitalRisk, restUntilMorning, syncStoryProgress, takeJob, workCompanyShift,
@@ -32,12 +33,14 @@ interface ProgressContextValue {
   acceptJob: (id: string) => void;
   quitJob: () => void;
   secureDevices: () => void;
+  toggleSpecialization: (id: SpecializationId) => void;
+  completeProgressionExam: (id: string) => void;
   saveNow: () => string;
   importProgress: (value: unknown) => boolean;
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v5';
+const STORAGE_KEY = 'false-access-progress-v6';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -98,15 +101,17 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v5Raw = localStorage.getItem('false-access-progress-v5');
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v5Raw
       ?? v4Raw
       ?? v3Raw
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -198,7 +203,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       factionRep: { ...current.factionRep, sfera: (current.factionRep.sfera ?? 0) + Math.max(1, 3 - mistakes) },
       contractOffers: [],
     })),
-    acceptContract: (contract) => setProgress((current) => ({ ...current, activeContract: contract })),
+    acceptContract: (contract) => setProgress((current) => getContractAccess(contract, current).available ? ({ ...current, activeContract: contract }) : current),
     abandonContract: () => setProgress((current) => ({ ...current, activeContract: null })),
     completeContract: (clean) => setProgress((current) => {
       const contract = current.activeContract;
@@ -255,12 +260,39 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       const result = workCompanyShift(current.simulation, current.balance);
       return { ...current, simulation: result.simulation, balance: result.balance };
     }),
-    acceptJob: (id) => setProgress((current) => ({ ...current, simulation: takeJob(current.simulation, id) })),
+    acceptJob: (id) => setProgress((current) => {
+      const job = jobsCatalog.find((entry) => entry.id === id);
+      if (!job || !getJobAccess(current, job).available) return current;
+      return { ...current, simulation: takeJob(current.simulation, id) };
+    }),
     quitJob: () => setProgress((current) => ({ ...current, simulation: quitCurrentJob(current.simulation) })),
     secureDevices: () => setProgress((current) => {
       const result = reduceDigitalRisk(current.simulation, current.balance);
       return { ...current, simulation: result.simulation, balance: result.balance };
     }),
+    toggleSpecialization: (id) => setProgress((current) => {
+      const selected = current.simulation.progression.selectedSpecializations;
+      const next = selected.includes(id)
+        ? selected.filter((item) => item !== id)
+        : selected.length < 2 ? [...selected, id] : selected;
+      return {
+        ...current,
+        simulation: {
+          ...current.simulation,
+          progression: { ...current.simulation.progression, selectedSpecializations: next },
+        },
+      };
+    }),
+    completeProgressionExam: (id) => setProgress((current) => current.simulation.progression.passedExamIds.includes(id) ? current : ({
+      ...current,
+      simulation: {
+        ...current.simulation,
+        progression: {
+          ...current.simulation.progression,
+          passedExamIds: [...current.simulation.progression.passedExamIds, id],
+        },
+      },
+    })),
     saveNow: () => persist(progress),
     importProgress: (raw) => {
       const next = normalizeProgress(raw);

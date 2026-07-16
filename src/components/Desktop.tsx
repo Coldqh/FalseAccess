@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpenCheck, BriefcaseBusiness, ChevronUp, CircleUserRound, Code2,
-  Globe2, Mail, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X, HeartPulse,
+  Bell, BookOpenCheck, BriefcaseBusiness, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
+  Globe2, HeartPulse, Mail, Menu, MessageSquare, Minus, NotebookPen, Radar, Search,
+  Settings as SettingsIcon, Shield, ShieldCheck, Signal, TerminalSquare, UserRoundCheck, Wifi, X,
 } from 'lucide-react';
-import type { AppDefinition, AppId, WindowState } from '../types';
+import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
 import { MissionsApp } from '../apps/MissionsApp';
 import { TerminalApp } from '../apps/TerminalApp';
@@ -20,30 +20,49 @@ import { InterviewApp } from '../apps/InterviewApp';
 import { FirstShiftApp } from '../apps/FirstShiftApp';
 import { SettingsApp } from '../apps/SettingsApp';
 import { LifeApp } from '../apps/LifeApp';
+import { CareerApp } from '../apps/CareerApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
 
-const apps: AppDefinition[] = [
-  { id: 'life', title: 'Life', shortTitle: 'Life', icon: HeartPulse, width: 1180, height: 740, accent: '#67c7c4' },
-  { id: 'missions', title: 'Missions', shortTitle: 'Missions', icon: BookOpenCheck, width: 920, height: 670, accent: '#ff5a38' },
-  { id: 'contracts', title: 'Work Queue', shortTitle: 'Contracts', icon: BriefcaseBusiness, width: 1180, height: 720, accent: '#efc46b' },
-  { id: 'terminal', title: 'Terminal', shortTitle: 'Terminal', icon: TerminalSquare, width: 1080, height: 690, accent: '#9dcf74' },
-  { id: 'code', title: 'Code Editor', shortTitle: 'Code', icon: Code2, width: 1180, height: 720, accent: '#70a5d8' },
-  { id: 'mail', title: 'Mail', shortTitle: 'Mail', icon: Mail, width: 1080, height: 680, accent: '#efc46b' },
-  { id: 'messenger', title: 'Messenger', shortTitle: 'Wire', icon: MessageSquare, width: 950, height: 650, accent: '#67c7c4' },
-  { id: 'browser', title: 'Browser', shortTitle: 'Browser', icon: Globe2, width: 1080, height: 700, accent: '#b58bd8' },
-  { id: 'siem', title: 'SIEM', shortTitle: 'SIEM', icon: Radar, width: 1080, height: 690, accent: '#ff5a38' },
-  { id: 'interview', title: 'Technical Interview', shortTitle: 'Interview', icon: UserRoundCheck, width: 1080, height: 700, accent: '#efc46b' },
-  { id: 'firstshift', title: 'First Shift', shortTitle: 'First Shift', icon: ShieldCheck, width: 1120, height: 720, accent: '#67c7c4' },
-  { id: 'skills', title: 'Skills', shortTitle: 'Skills', icon: Shield, width: 900, height: 650, accent: '#9dcf74' },
-  { id: 'notes', title: 'Notes / Report', shortTitle: 'Notes', icon: NotebookPen, width: 1000, height: 680, accent: '#efc46b' },
-  { id: 'settings', title: 'Settings', shortTitle: 'Settings', icon: SettingsIcon, width: 960, height: 700, accent: '#8f949e' },
+interface RuntimeAppDefinition extends AppDefinition {
+  kind: 'core' | 'temporary';
+  visible: (progress: ProgressState) => boolean;
+  locked?: (progress: ProgressState) => boolean;
+}
+
+const always = () => true;
+
+const apps: RuntimeAppDefinition[] = [
+  { id: 'life', title: 'Life', shortTitle: 'Life', icon: HeartPulse, width: 1180, height: 740, accent: '#67c7c4', kind: 'core', visible: always },
+  { id: 'career', title: 'Career', shortTitle: 'Career', icon: ChartNoAxesCombined, width: 1180, height: 740, accent: '#9dcf74', kind: 'core', visible: always },
+  { id: 'missions', title: 'Missions', shortTitle: 'Missions', icon: BookOpenCheck, width: 920, height: 670, accent: '#ff5a38', kind: 'core', visible: always },
+  { id: 'contracts', title: 'Work Queue', shortTitle: 'Contracts', icon: BriefcaseBusiness, width: 1180, height: 720, accent: '#efc46b', kind: 'core', visible: always },
+  { id: 'terminal', title: 'Terminal', shortTitle: 'Terminal', icon: TerminalSquare, width: 1080, height: 690, accent: '#9dcf74', kind: 'core', visible: always },
+  { id: 'code', title: 'Code Editor', shortTitle: 'Code', icon: Code2, width: 1180, height: 720, accent: '#70a5d8', kind: 'core', visible: always },
+  { id: 'mail', title: 'Mail', shortTitle: 'Mail', icon: Mail, width: 1080, height: 680, accent: '#efc46b', kind: 'core', visible: always },
+  { id: 'messenger', title: 'Messenger', shortTitle: 'Wire', icon: MessageSquare, width: 950, height: 650, accent: '#67c7c4', kind: 'core', visible: always },
+  { id: 'browser', title: 'Browser', shortTitle: 'Browser', icon: Globe2, width: 1080, height: 700, accent: '#b58bd8', kind: 'core', visible: always },
+  { id: 'siem', title: 'SIEM', shortTitle: 'SIEM', icon: Radar, width: 1080, height: 690, accent: '#ff5a38', kind: 'core', visible: always, locked: (progress) => !progress.pythonComplete },
+  { id: 'skills', title: 'Skills', shortTitle: 'Skills', icon: Shield, width: 900, height: 650, accent: '#9dcf74', kind: 'core', visible: always },
+  { id: 'notes', title: 'Notes / Report', shortTitle: 'Notes', icon: NotebookPen, width: 1000, height: 680, accent: '#efc46b', kind: 'core', visible: always },
+  { id: 'settings', title: 'Settings', shortTitle: 'Settings', icon: SettingsIcon, width: 960, height: 700, accent: '#8f949e', kind: 'core', visible: always },
+  {
+    id: 'interview', title: 'Technical Interview', shortTitle: 'Interview', icon: UserRoundCheck,
+    width: 1080, height: 700, accent: '#efc46b', kind: 'temporary',
+    visible: (progress) => progress.clinicWrapupComplete && !progress.interviewComplete,
+  },
+  {
+    id: 'firstshift', title: 'First Shift', shortTitle: 'First Shift', icon: ShieldCheck,
+    width: 1120, height: 720, accent: '#67c7c4', kind: 'temporary',
+    visible: (progress) => progress.jobAccepted && !progress.firstShiftComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
   switch (id) {
     case 'life': return <LifeApp />;
+    case 'career': return <CareerApp />;
     case 'missions': return <MissionsApp openApp={openApp} />;
     case 'contracts': return <ContractsApp />;
     case 'terminal': return <TerminalApp openApp={openApp} />;
@@ -78,10 +97,16 @@ export function Desktop() {
   const [mobileApp, setMobileApp] = useState<AppId | null>(null);
   const time = useClock();
 
+  const visibleApps = useMemo(() => apps.filter((app) => app.visible(progress)), [progress]);
+  const visibleIds = useMemo(() => new Set(visibleApps.map((app) => app.id)), [visibleApps]);
+  const visibleKey = visibleApps.map((app) => app.id).join('|');
   const activeWindowId = useMemo(() => [...windows].filter((win) => !win.minimized).sort((a, b) => b.z - a.z)[0]?.id, [windows]);
-  const isLocked = (id: AppId) => (id === 'siem' && !progress.pythonComplete)
-    || (id === 'interview' && !progress.clinicWrapupComplete)
-    || (id === 'firstshift' && !progress.jobAccepted);
+  const isLocked = (id: AppId) => Boolean(apps.find((app) => app.id === id)?.locked?.(progress));
+
+  useEffect(() => {
+    setWindows((current) => current.filter((windowState) => visibleIds.has(windowState.id)));
+    setMobileApp((current) => current && !visibleIds.has(current) ? null : current);
+  }, [visibleKey]);
 
   const focusWindow = (id: AppId) => {
     setZCounter((value) => value + 1);
@@ -89,12 +114,12 @@ export function Desktop() {
   };
 
   const openApp = (id: AppId) => {
-    if (isLocked(id)) return;
+    const app = visibleApps.find((item) => item.id === id);
+    if (!app || isLocked(id)) return;
     if (window.matchMedia('(max-width: 720px)').matches) {
       setMobileApp(id);
       return;
     }
-    const app = apps.find((item) => item.id === id)!;
     setZCounter((value) => value + 1);
     setWindows((current) => {
       const existing = current.find((win) => win.id === id);
@@ -129,7 +154,7 @@ export function Desktop() {
       <div className="desktop-background">
         <div className="city-silhouette" />
         <div className="grid-horizon" />
-        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>SIMULATION BUILD / {APP_VERSION}</i></div>
+        <div className="desktop-brand"><span>FALSE</span><strong>ACCESS</strong><i>PROGRESSION BUILD / {APP_VERSION}</i></div>
         <div className="background-data"><span>OSTROGORSK</span><span>54.8121 N</span><span>LOCAL VAULT: ONLINE</span></div>
       </div>
 
@@ -139,13 +164,14 @@ export function Desktop() {
       </header>
 
       <section className="desktop-icons">
-        {apps.map((app) => {
+        {visibleApps.map((app) => {
           const Icon = app.icon;
           const locked = isLocked(app.id);
           return (
-            <button key={app.id} onDoubleClick={() => !locked && openApp(app.id)} onClick={() => !locked && openApp(app.id)} className={locked ? 'locked' : ''}>
+            <button key={app.id} onDoubleClick={() => !locked && openApp(app.id)} onClick={() => !locked && openApp(app.id)} className={`${locked ? 'locked' : ''} ${app.kind === 'temporary' ? 'temporary-app' : ''}`}>
               <span className="desktop-icon" style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={27} strokeWidth={1.45} /></span>
               <strong>{app.shortTitle}</strong>
+              {app.kind === 'temporary' && <i className="temporary-badge">STORY</i>}
               {app.id === 'mail' && progress.jobOfferUnlocked && !progress.readMail.includes('job-offer') && <i className="icon-badge">1</i>}
             </button>
           );
@@ -153,7 +179,8 @@ export function Desktop() {
       </section>
 
       {windows.map((windowState) => {
-        const app = apps.find((item) => item.id === windowState.id)!;
+        const app = visibleApps.find((item) => item.id === windowState.id);
+        if (!app) return null;
         return (
           <WindowFrame
             key={windowState.id}
@@ -175,7 +202,8 @@ export function Desktop() {
         <button className={`launcher-button ${launcherOpen ? 'active' : ''}`} onClick={() => setLauncherOpen((value) => !value)}><Menu size={20} /><span>FA</span></button>
         <div className="taskbar-running">
           {windows.map((windowState) => {
-            const app = apps.find((item) => item.id === windowState.id)!;
+            const app = visibleApps.find((item) => item.id === windowState.id);
+            if (!app) return null;
             const Icon = app.icon;
             return <button key={windowState.id} className={activeWindowId === windowState.id && !windowState.minimized ? 'active' : ''} title={app.title} onClick={() => windowState.minimized ? focusWindow(windowState.id) : activeWindowId === windowState.id ? updateWindow(windowState.id, { minimized: true }) : focusWindow(windowState.id)}><Icon size={18} /><span>{app.shortTitle}</span></button>;
           })}
@@ -187,7 +215,7 @@ export function Desktop() {
         <section className="launcher-panel">
           <header><div><CircleUserRound size={30} /><div><strong>Илья Воронцов</strong><span>Local profile</span></div></div><button onClick={() => setLauncherOpen(false)}><X size={17} /></button></header>
           <div className="launcher-search"><Search size={17} /><input autoFocus placeholder="Найти приложение" /></div>
-          <div className="launcher-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={locked ? 'locked' : ''} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong></button>; })}</div>
+          <div className="launcher-grid">{visibleApps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} disabled={locked} className={`${locked ? 'locked' : ''} ${app.kind === 'temporary' ? 'temporary-app' : ''}`} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={22} /></span><strong>{app.title}</strong>{app.kind === 'temporary' && <small>Сюжетный этап</small>}</button>; })}</div>
           <footer><button onClick={() => openApp('settings')}><SettingsIcon size={16} />Настройки</button><span>FALSE ACCESS {APP_VERSION}</span></footer>
         </section>
       )}
@@ -205,20 +233,19 @@ export function Desktop() {
         <header className="mobile-status"><span>{clock}</span><strong>FALSE ACCESS</strong><div><Signal size={13} /><Wifi size={13} /><Shield size={13} /></div></header>
         {mobileApp ? (
           <div className="mobile-app-view">
-            <header><button onClick={() => setMobileApp(null)}><ChevronUp size={18} /></button><strong>{apps.find((app) => app.id === mobileApp)?.title}</strong><button onClick={() => setMobileApp(null)}><Minus size={18} /></button></header>
+            <header><button onClick={() => setMobileApp(null)}><ChevronUp size={18} /></button><strong>{visibleApps.find((app) => app.id === mobileApp)?.title}</strong><button onClick={() => setMobileApp(null)}><Minus size={18} /></button></header>
             <div>{appContent(mobileApp, openApp)}</div>
           </div>
         ) : (
           <>
             <div className="mobile-hero"><p>ОСТРОГОРСК</p><strong>{clock}</strong><span>{date}</span></div>
-            <div className="mobile-alert" onClick={() => openApp('life')}><HeartPulse size={20} /><div><strong>ЖИЗНЬ</strong><span>День {progress.simulation.clock.day} · {progress.simulation.career.status === 'employed' ? progress.simulation.career.title : 'без работы'}</span></div><ChevronUp size={17} /></div>
+            <div className="mobile-alert" onClick={() => openApp('career')}><ChartNoAxesCombined size={20} /><div><strong>ПРОГРЕСС</strong><span>Навыки, этапы и доступные вакансии</span></div><ChevronUp size={17} /></div>
             <UpdateButton />
-            <div className="mobile-grid">{apps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={locked ? 'locked' : ''} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong></button>; })}</div>
+            <div className="mobile-grid">{visibleApps.map((app) => { const Icon = app.icon; const locked = isLocked(app.id); return <button key={app.id} className={`${locked ? 'locked' : ''} ${app.kind === 'temporary' ? 'temporary-app' : ''}`} disabled={locked} onClick={() => !locked && openApp(app.id)}><span style={{ '--app-accent': app.accent } as React.CSSProperties}><Icon size={23} /></span><strong>{app.shortTitle}</strong>{app.kind === 'temporary' && <i>STORY</i>}</button>; })}</div>
             <footer className="mobile-dock"><button onClick={() => openApp('messenger')}><MessageSquare size={22} /></button><button onClick={() => openApp('browser')}><Globe2 size={22} /></button><button onClick={() => openApp('terminal')}><TerminalSquare size={22} /></button><button onClick={() => openApp('mail')}><Mail size={22} /></button></footer>
           </>
         )}
       </section>
-
     </main>
   );
 }

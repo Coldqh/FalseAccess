@@ -1,7 +1,9 @@
 export type DayPeriod = 'morning' | 'workday' | 'evening' | 'night';
 export type FoodPlanId = 'economy' | 'normal' | 'balanced';
 export type CareerStatus = 'unemployed' | 'employed';
-export type SimulationEventType = 'time' | 'expense' | 'income' | 'housing' | 'career' | 'risk' | 'purchase';
+export type SimulationEventType = 'time' | 'expense' | 'income' | 'housing' | 'career' | 'risk' | 'purchase' | 'progression';
+export type ProgressionStageId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type SpecializationId = 'blue-team' | 'red-team' | 'dfir' | 'security-engineering' | 'appsec' | 'cloud-security';
 
 export interface GameClock {
   day: number;
@@ -66,14 +68,31 @@ export interface SkillTrackState {
 }
 
 export type SimulationSkillId =
+  | 'computer'
   | 'linux'
+  | 'bash'
+  | 'windows'
+  | 'powershell'
   | 'networking'
   | 'python'
-  | 'soc'
-  | 'windows'
   | 'web'
+  | 'sql'
+  | 'soc'
+  | 'siem'
+  | 'incidentResponse'
   | 'forensics'
-  | 'communication';
+  | 'threatHunting'
+  | 'securityEngineering'
+  | 'appsec'
+  | 'cloud'
+  | 'activeDirectory'
+  | 'communication'
+  | 'operationalPlanning';
+
+export interface ProgressionState {
+  passedExamIds: string[];
+  selectedSpecializations: SpecializationId[];
+}
 
 export interface SimulationEvent {
   id: string;
@@ -101,6 +120,7 @@ export interface SimulationState {
   reputation: ReputationState;
   heat: HeatState;
   skills: Record<SimulationSkillId, SkillTrackState>;
+  progression: ProgressionState;
   world: WorldState;
   events: SimulationEvent[];
   settledThroughDay: number;
