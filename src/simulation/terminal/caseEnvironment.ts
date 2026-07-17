@@ -7,6 +7,21 @@ export interface CaseFile {
   writable?: boolean;
 }
 
+export interface CaseCustomCommandInput {
+  tool: string;
+  args: string[];
+  stdin: string[] | null;
+  cwd: string;
+}
+
+export interface CaseCustomCommandResult {
+  stdout: string[];
+  stderr: string[];
+  exitCode: number;
+  cwd?: string;
+  openedArtifactIds?: string[];
+}
+
 export interface CaseEnvironment {
   seed: number;
   home: string;
@@ -16,6 +31,7 @@ export interface CaseEnvironment {
   networkOutput?: string[];
   facts: Record<string, string | number | boolean>;
   detectFinding?: (input: { raw: string; stdout: string[]; tools: string[] }) => string | undefined;
+  customCommand?: (input: CaseCustomCommandInput) => CaseCustomCommandResult | null;
 }
 
 export interface CaseCommandResult {
@@ -112,6 +128,8 @@ function readFile(environment: CaseEnvironment, cwd: string, raw: string | undef
 function executeStage(environment: CaseEnvironment, cwd: string, raw: string, stdin: string[] | null): StageResult {
   const [name = '', ...args] = commandParts(raw);
   const tool = name.toLowerCase();
+  const custom = environment.customCommand?.({ tool, args, stdin, cwd });
+  if (custom) return { tool, ...custom };
   if (tool === 'help') return { tool, stdout: [
     'pwd · ls [-la] · cd <path> · cat/head/tail <file>',
     'grep [-i|-v|-c] <pattern> [file] · wc -l [file]',

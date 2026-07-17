@@ -9,6 +9,9 @@ import { ChapterZeroMastery } from './components/ChapterZeroMastery';
 import { ChapterOneOrientation } from './components/ChapterOneOrientation';
 import { ChapterOneContracts, act1ContractIds } from './components/ChapterOneContracts';
 import { ChapterOneMastery } from './components/ChapterOneMastery';
+import { ChapterTwoRoute } from './components/ChapterTwoRoute';
+import { ChapterTwoContracts, act2ContractIds } from './components/ChapterTwoContracts';
+import { ChapterTwoMastery } from './components/ChapterTwoMastery';
 import { Desktop } from './components/Desktop';
 import { useProgress } from './system/ProgressContext';
 import { useMissionRuntime } from './system/MissionRuntimeContext';
@@ -17,6 +20,7 @@ import './styles/chapterZero.css';
 import './styles/chapterZeroLogs.css';
 import './styles/chapterZeroAct.css';
 import './styles/chapterOne.css';
+import './styles/chapterTwo.css';
 
 export default function App() {
   const { progress } = useProgress();
@@ -27,6 +31,8 @@ export default function App() {
   const foundation = store.missions['foundation-check-01'];
   const sferaOrientation = store.missions['sfera-orientation-01'];
   const sferaShift = store.missions['sfera-shift-check-01'];
+  const marshrut = store.missions['marshrut-investigation-01'];
+  const marshrutCheck = store.missions['marshrut-check-01'];
 
   const workspaceComplete = workspace?.status === 'completed';
   const logsComplete = logs?.status === 'completed';
@@ -36,6 +42,9 @@ export default function App() {
   const sferaOrientationComplete = sferaOrientation?.status === 'completed';
   const act1ContractsComplete = act1ContractIds.every((id) => store.missions[id]?.status === 'completed');
   const sferaShiftComplete = sferaShift?.status === 'completed';
+  const marshrutComplete = marshrut?.status === 'completed';
+  const act2ContractsComplete = act2ContractIds.every((id) => store.missions[id]?.status === 'completed');
+  const marshrutCheckComplete = marshrutCheck?.status === 'completed';
   const workspaceIntakeOpened = workspace?.openedArtifacts.includes('artifact.workspace.intake') ?? false;
 
   useEffect(() => {
@@ -64,15 +73,30 @@ export default function App() {
     }
     if (act1ContractIds.includes(store.activeMissionId as any)) return;
     if (!sferaShiftComplete) { ensureMission('sfera-shift-check-01'); return; }
+    if (!progress.firstShiftComplete) return;
+    if (!marshrutComplete) { ensureMission('marshrut-investigation-01'); return; }
+    if (store.activeMissionId === 'marshrut-investigation-01') return;
+    if (!act2ContractsComplete) {
+      if (act2ContractIds.includes(store.activeMissionId as any)) return;
+      const next = act2ContractIds.find((id) => store.missions[id]?.status !== 'completed') ?? act2ContractIds[0];
+      ensureMission(next);
+      return;
+    }
+    if (act2ContractIds.includes(store.activeMissionId as any)) return;
+    if (!marshrutCheckComplete) { ensureMission('marshrut-check-01'); return; }
   }, [
     act0ContractsComplete,
     act1ContractsComplete,
+    act2ContractsComplete,
     clinicComplete,
     ensureMission,
     foundationComplete,
     logsComplete,
+    marshrutCheckComplete,
+    marshrutComplete,
     progress.booted,
     progress.clinicWrapupComplete,
+    progress.firstShiftComplete,
     sferaOrientationComplete,
     sferaShiftComplete,
     store.activeMissionId,
@@ -98,6 +122,9 @@ export default function App() {
   else if (!sferaOrientationComplete || store.activeMissionId === 'sfera-orientation-01') content = <ChapterOneOrientation />;
   else if (!act1ContractsComplete || act1ContractIds.includes(store.activeMissionId as any)) content = <ChapterOneContracts />;
   else if (!sferaShiftComplete || !progress.firstShiftComplete) content = <ChapterOneMastery />;
+  else if (!marshrutComplete || store.activeMissionId === 'marshrut-investigation-01') content = <ChapterTwoRoute />;
+  else if (!act2ContractsComplete || act2ContractIds.includes(store.activeMissionId as any)) content = <ChapterTwoContracts />;
+  else if (!marshrutCheckComplete || !progress.routeCaseComplete) content = <ChapterTwoMastery />;
   else content = <Desktop />;
 
   return <>{content}<UpdateBanner /></>;

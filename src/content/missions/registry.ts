@@ -8,6 +8,9 @@ import { foundationCheck01Definition } from './foundationCheck01/definition';
 import { sferaOrientation01Definition } from './sferaOrientation01/definition';
 import { act1ContractDefinitions } from '../contracts/act1/definitions';
 import { sferaShiftCheck01Definition } from './sferaShiftCheck01/definition';
+import { marshrutInvestigation01Definition } from './marshrutInvestigation01/definition';
+import { act2ContractDefinitions } from '../contracts/act2/definitions';
+import { marshrutCheck01Definition } from './marshrutCheck01/definition';
 
 const definitions = [
   workspace01Definition,
@@ -18,6 +21,9 @@ const definitions = [
   sferaOrientation01Definition,
   ...act1ContractDefinitions,
   sferaShiftCheck01Definition,
+  marshrutInvestigation01Definition,
+  ...act2ContractDefinitions,
+  marshrutCheck01Definition,
 ] as const;
 
 export const missionRegistry: Readonly<Record<string, MissionDefinition>> = Object.freeze(
