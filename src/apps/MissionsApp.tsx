@@ -91,10 +91,11 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   const runtime = useMissionRuntime();
   const clinic = getClinicStage(rawProgress);
   const workspace = runtime.store.missions['workspace-01'];
+  const logsChapter = runtime.store.missions['logs-01'];
   const clinicComplete = clinic.id === 'complete';
 
   const current: CurrentMission = !clinicComplete ? {
-    id: clinic.id === 'terminal' ? 'CLINIC-01 / 0.2' : clinic.id === 'code' ? 'CLINIC-01 / 0.3' : 'CLINIC-01',
+    id: clinic.id === 'terminal' || clinic.id === 'code' ? 'CLINIC-01 / 0.3' : 'CLINIC-01',
     act: 'АКТ 0 / НЕТ ДОСТУПА',
     time: '14 МАРТА / ЛОКАЛЬНАЯ КОПИЯ',
     title: clinic.title,
@@ -109,8 +110,8 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
 
   const campaign: CampaignEntry[] = [
     { id:'0.1', act:'АКТ 0', title:'Рабочее место', subtitle:'filesystem · paths · evidence', target:'missions', icon:BookOpenCheck, complete:workspace?.status === 'completed', available:true },
-    { id:'0.2', act:'АКТ 0', title:'Журналы и процессы', subtitle:'auth.log · process snapshot', target:'terminal', icon:ServerCog, complete:progress.terminalObjectives?.includes('inspect-processes'), available:workspace?.status === 'completed' },
-    { id:'0.3', act:'АКТ 0', title:'Автоматизация', subtitle:'Python · errors · repeatability', target:'code', icon:Braces, complete:progress.pythonComplete, available:progress.terminalObjectives?.includes('inspect-processes') },
+    { id:'0.2', act:'АКТ 0', title:'Shell, логи и время', subtitle:'pipelines · CSV · JSONL · UTC', target:'missions', icon:ServerCog, complete:logsChapter?.status === 'completed', available:workspace?.status === 'completed' },
+    { id:'0.3', act:'АКТ 0', title:'CLINIC-01', subtitle:'processes · Python · hypotheses · report', target:'terminal', icon:Braces, complete:progress.reportSubmitted, available:logsChapter?.status === 'completed' },
     { id:'1', act:'АКТ 1', title:'Сфера', subtitle:'SOC · telemetry · first shift', target:'firstshift', icon:ShieldCheck, complete:progress.firstShiftComplete, available:progress.jobAccepted },
     { id:'2', act:'АКТ 2', title:'Маршрут', subtitle:'HTTP · JSONL · timeline', target:'routecase', icon:FileSearch, complete:progress.routeCaseComplete, available:progress.routeCaseAccepted },
     { id:'3', act:'АКТ 3', title:'Хосты и сети', subtitle:'Windows · Linux · Network', target:'windowscase', icon:Router, complete:progress.networkCaseComplete, available:progress.routeCaseComplete },

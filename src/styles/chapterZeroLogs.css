@@ -1,0 +1,123 @@
+.chapter-zero-logs-start .chapter-zero-start-card {
+  max-width: 980px;
+}
+
+.chapter-zero-logs-workspace {
+  background:
+    radial-gradient(circle at 68% 18%, rgba(80, 128, 152, .11), transparent 31%),
+    #080a0c;
+}
+
+.chapter-zero-logs-layout {
+  grid-template-columns: minmax(250px, .72fr) minmax(520px, 1.65fr) minmax(270px, .78fr);
+}
+
+.chapter-zero-progress-eight {
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+}
+
+.logs-format-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.logs-format-strip span {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.025);
+  color: #9ea7ad;
+  font: 700 10px/1 IBM Plex Mono, monospace;
+  letter-spacing: .08em;
+}
+
+.chapter-zero-terminal-event small.exit-ok,
+.chapter-zero-terminal-event small.exit-bad {
+  display: inline-block;
+  margin-top: 4px;
+  font: 700 10px/1 IBM Plex Mono, monospace;
+}
+
+.chapter-zero-terminal-event small.exit-ok { color: #82b97b; }
+.chapter-zero-terminal-event small.exit-bad { color: #d76c5f; }
+
+.chapter-zero-evidence-actions {
+  display: grid;
+  gap: 7px;
+  padding-top: 10px;
+}
+
+.chapter-zero-evidence-actions button {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(255,255,255,.035);
+  color: #d4d7d5;
+  text-align: left;
+  font: 650 11px/1.25 IBM Plex Sans, sans-serif;
+}
+
+.chapter-zero-evidence-actions button:hover:not(:disabled) {
+  border-color: rgba(255,90,56,.55);
+  background: rgba(255,90,56,.08);
+}
+
+.chapter-zero-evidence-actions button.linked {
+  color: #93c88c;
+  border-color: rgba(126,181,116,.28);
+  background: rgba(126,181,116,.07);
+}
+
+.logs-facts-panel {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.chapter-zero-complete-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.chapter-zero-logs-complete .secondary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 1180px) {
+  .chapter-zero-logs-layout {
+    grid-template-columns: 270px minmax(0, 1fr);
+  }
+  .chapter-zero-logs-layout .chapter-zero-right-column {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .chapter-zero-logs-layout,
+  .chapter-zero-logs-layout .chapter-zero-right-column {
+    display: block;
+  }
+  .logs-format-strip {
+    grid-template-columns: 1fr;
+  }
+  .chapter-zero-progress-eight {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

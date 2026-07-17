@@ -32,6 +32,7 @@ interface MissionRuntimeContextValue {
   store: LearningRuntimeStore;
   activeMission: MissionRuntimeState | null;
   ensureMission: (missionId: string, seed?: number) => void;
+  restartMission: (missionId: string, seed?: number) => void;
   activateMission: (missionId: string) => void;
   recordAction: (action: MissionActionInput) => void;
   markArtifactOpened: (artifactId: string, source?: string) => void;
@@ -91,6 +92,17 @@ export function MissionRuntimeProvider({ children }: { children: ReactNode }) {
         ? current
         : { ...current, activeMissionId: missionId };
       const runtime = createMissionRuntime(definition, seed ?? seedForMission(missionId));
+      return {
+        ...current,
+        activeMissionId: missionId,
+        missions: { ...current.missions, [missionId]: runtime },
+      };
+    }),
+    restartMission: (missionId, seed) => setStore((current) => {
+      const definition = getMissionDefinition(missionId);
+      if (!definition) return current;
+      const previousSeed = current.missions[missionId]?.seed ?? seedForMission(missionId);
+      const runtime = createMissionRuntime(definition, seed ?? ((previousSeed + 1) >>> 0));
       return {
         ...current,
         activeMissionId: missionId,

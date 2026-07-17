@@ -11,7 +11,6 @@ import {
 } from '../content/missions/workspace01/environment';
 import { useMissionRuntime } from '../system/MissionRuntimeContext';
 import type { MissionEvent } from '../core/scenario/types';
-import { useProgress } from '../system/ProgressContext';
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
@@ -33,7 +32,6 @@ const hintCopy = [
 
 export function ChapterZeroWorkspace() {
   const runtime = useMissionRuntime();
-  const { progress, setFlag } = useProgress();
   const mission = runtime.activeMission;
   const environment = useMemo(() => createWorkspaceEnvironment(mission?.seed ?? 1), [mission?.seed]);
   const [command, setCommand] = useState('');
@@ -91,11 +89,8 @@ export function ChapterZeroWorkspace() {
     setCompletionErrors(attempt.reasons);
   };
 
-  const continueToClinic = () => {
-    const learned = ['pwd', 'ls', 'cd-case', 'read-brief'];
-    setFlag('terminalObjectives', Array.from(new Set([...progress.terminalObjectives, ...learned])));
-    setFlag('clinicIntroComplete', true);
-    setFlag('onboardingDone', true);
+  const continueToLogs = () => {
+    runtime.ensureMission('logs-01');
   };
 
   if (mission.status === 'completed') {
@@ -118,10 +113,10 @@ export function ChapterZeroWorkspace() {
           </div>
           <div className="chapter-zero-next">
             <span>ДАЛЬШЕ</span>
-            <h2>Глава 0.2 — журналы и процессы</h2>
-            <p>Навигационные шаги старой CLINIC-01 заменены. Следующая цель начинается сразу с работы с auth.log и process snapshot.</p>
+            <h2>Глава 0.2 — Shell, логи и время</h2>
+            <p>Следующая глава учит pipelines, stdout/stderr, форматы данных, UTC и самостоятельный разбор изменённого JSONL-набора.</p>
           </div>
-          <button className="primary-action" onClick={continueToClinic}>Перейти к CLINIC-01 <ArrowRight size={18} /></button>
+          <button className="primary-action" onClick={continueToLogs}>Перейти к главе 0.2 <ArrowRight size={18} /></button>
         </section>
       </main>
     );
@@ -203,7 +198,7 @@ export function ChapterZeroWorkspace() {
         </section>
 
         <div className="chapter-zero-right-column">
-          <EvidenceBoard />
+          <EvidenceBoard suggestions={[{ claimId: 'outcome.workspace.transfer', evidenceId: 'artifact.workspace.transfer', label: 'Связать найденный пакет', note: 'Файл открыт в локальной среде и содержит код пакета из brief.txt.' }]} />
           <section className="chapter-zero-checks">
             <header><FolderSearch size={17} /><strong>Проверка главы</strong></header>
             {mission.assessment?.rules.filter((rule) => !rule.critical).map((rule) => (

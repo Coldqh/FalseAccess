@@ -16,15 +16,15 @@ const terminalDone = (progress: ProgressState) => terminalObjectiveDefinitions.e
 
 export function getClinicStage(progress: ProgressState): ClinicStageRuntime {
   if (!progress.onboardingDone) return {
-    id: 'intro', app: 'missions', title: 'Глава 0.1 / Рабочее место',
-    objective: 'Пройти обязательную стартовую главу и подтвердить базовую навигацию.',
-    dialogue: 'Сначала разберись с локальной копией. К журналам перейдём после.',
+    id: 'intro', app: 'missions', title: 'Акт 0 / обязательное обучение',
+    objective: 'Пройти главы 0.1 и 0.2: рабочее место, shell, форматы и время.',
+    dialogue: 'До CLINIC-01 нужно доказать базовую работу с локальными данными.',
     action: 'Открыть Missions',
   };
   if (!terminalDone(progress)) return {
-    id: 'terminal', app: 'terminal', title: 'Глава 0.2 / Журналы и процессы',
-    objective: 'Исследовать auth.log и снимок процессов. Навигационные шаги главы 0.1 уже засчитаны.',
-    dialogue: 'Не ищи слово “взлом”. Выдели события входа и отдельно проверь процессы.',
+    id: 'terminal', app: 'terminal', title: 'Глава 0.3 / CLINIC-01: процессы',
+    objective: 'Исследовать process snapshot как отдельную линию после доказанного разбора auth.log.',
+    dialogue: 'Отказы входа уже разобраны. Теперь проверь процесс и не связывай линии без evidence.',
     action: 'Открыть Terminal',
   };
   if (!progress.pythonComplete) return {
@@ -64,8 +64,8 @@ export function isClinicStageActive(progress: ProgressState, stage: ClinicStageI
 }
 
 export const clinicStageOrder: Array<{ id: Exclude<ClinicStageId, 'complete'>; label: string }> = [
-  { id: 'intro', label: 'Рабочее место' },
-  { id: 'terminal', label: 'Журналы и процессы' },
+  { id: 'intro', label: 'Главы 0.1–0.2' },
+  { id: 'terminal', label: 'Процессы' },
   { id: 'code', label: 'Автоматизация' },
   { id: 'siem', label: 'Проверить алерт' },
   { id: 'report', label: 'Связать evidence' },
