@@ -5,6 +5,9 @@ import { clinic01Definition } from './clinic01/definition';
 import { logs01Definition } from './logs01/definition';
 import { act0ContractDefinitions } from '../contracts/act0/definitions';
 import { foundationCheck01Definition } from './foundationCheck01/definition';
+import { sferaOrientation01Definition } from './sferaOrientation01/definition';
+import { act1ContractDefinitions } from '../contracts/act1/definitions';
+import { sferaShiftCheck01Definition } from './sferaShiftCheck01/definition';
 
 const definitions = [
   workspace01Definition,
@@ -12,6 +15,9 @@ const definitions = [
   clinic01Definition,
   ...act0ContractDefinitions,
   foundationCheck01Definition,
+  sferaOrientation01Definition,
+  ...act1ContractDefinitions,
+  sferaShiftCheck01Definition,
 ] as const;
 
 export const missionRegistry: Readonly<Record<string, MissionDefinition>> = Object.freeze(
