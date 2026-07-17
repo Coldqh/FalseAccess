@@ -1,288 +1,165 @@
-import { ArrowRight, BookOpenCheck, Boxes, Braces, BriefcaseBusiness, Building2, Cloud, Crosshair, FileSearch, Fingerprint, HardDrive, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldAlert, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network, Workflow } from 'lucide-react';
+import {
+  ArrowRight, BookOpenCheck, Boxes, Braces, Building2, Check, Cloud, Crosshair,
+  FileSearch, Fingerprint, HardDrive, Mail, MailWarning, MapPinned, MonitorCog,
+  Network, Router, ServerCog, ShieldAlert, ShieldCheck, Smartphone, UserRoundCheck,
+  Waypoints, Workflow,
+} from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
+import { useMissionRuntime } from '../system/MissionRuntimeContext';
 import { getClinicStage } from '../missions/clinic01';
 
-const shiftStages = [
-  { title: 'Первый день', objective: 'Войти в офис и получить рабочий доступ.', dialogue: 'Ты Илья? Пропуск держи.', speaker: 'КЗ' },
-  { title: 'Письмо в бухгалтерию', objective: 'Проверить отправителя, ссылку и вложение.', dialogue: 'Пользователь ничего не открыл. Начни с адреса.', speaker: 'КЗ' },
-  { title: 'Word запустил PowerShell', objective: 'Разобрать событие 4688 и выбрать первое действие.', dialogue: 'Читай родительский процесс и командную строку.', speaker: 'КЗ' },
-  { title: 'Повторяющиеся DNS-запросы', objective: 'Найти источник и описать подтверждённые факты.', dialogue: 'Узел уже изолирован. Теперь разберись, что он делал.', speaker: 'КЗ' },
-  { title: 'Отчёт по смене', objective: 'Выбрать точную формулировку и закрыть смену.', dialogue: 'Укажи трафик. Не пиши то, чего мы не доказали.', speaker: 'КЗ' },
-];
+interface CampaignEntry {
+  id: string;
+  act: string;
+  title: string;
+  subtitle: string;
+  target: AppId;
+  icon: typeof BookOpenCheck;
+  complete: boolean;
+  available: boolean;
+}
+
+interface CurrentMission {
+  id: string;
+  act: string;
+  time: string;
+  title: string;
+  context: string;
+  objective: string;
+  dialogue: string;
+  speaker: string;
+  target: AppId;
+  button: string;
+  icon: typeof BookOpenCheck;
+}
+
+function currentAfterClinic(progress: any): CurrentMission {
+  if (!progress.interviewComplete) return {
+    id: 'INTERVIEW-01', act: 'АКТ 1 / СФЕРА', time: '15 МАРТА / 11:30', title: 'Техническое собеседование',
+    context: 'Анна получила evidence report по CLINIC-01.', objective: 'Разобрать собственные решения и границы доказанного.',
+    dialogue: 'Мне важнее ход работы, чем выученные определения.', speaker: 'АС', target: 'interview', button: 'Ответить на звонок', icon: UserRoundCheck,
+  };
+  if (!progress.jobAccepted) return {
+    id: 'MAIL-01', act: 'АКТ 1 / СФЕРА', time: '15 МАРТА / 16:42', title: 'Предложение от «Сферы»',
+    context: 'Во входящих письмо от Анны.', objective: 'Прочитать условия и принять решение.',
+    dialogue: 'Ответ нужен до завтра, 18:00.', speaker: 'АС', target: 'mail', button: 'Открыть Mail', icon: Mail,
+  };
+  if (!progress.firstShiftComplete) return {
+    id: 'FIRST-SHIFT', act: 'АКТ 1 / СФЕРА', time: 'ПОНЕДЕЛЬНИК', title: 'Первая смена',
+    context: 'Очередь связанных алертов: почта, endpoint и DNS.', objective: 'Разбирать данные, фиксировать scope и не принимать сигнал за доказанный инцидент.',
+    dialogue: 'Очередь сама себя не закроет. Смотри источники.', speaker: 'КЗ', target: 'firstshift', button: 'Продолжить смену', icon: ShieldCheck,
+  };
+  if (progress.criminalContactUnlocked && !progress.criminalContactResponse) return {
+    id: 'WIRE-UNKNOWN', act: 'ПЕРЕХОД', time: 'ПОНЕДЕЛЬНИК / 19:27', title: 'Новый контакт',
+    context: 'После смены написал незнакомый номер.', objective: 'Прочитать предложение и решить, вступать ли в серую линию.',
+    dialogue: 'Есть подработка по логам. Оплата после результата.', speaker: '?', target: 'messenger', button: 'Открыть Messenger', icon: Network,
+  };
+  if (progress.criminalContactResponse === 'interested' && !progress.routeCaseAccepted) return {
+    id: 'MARSHRUT-01', act: 'АКТ 2 / МАРШРУТ', time: 'ВЕЧЕР', title: 'Встреча с Игорем',
+    context: 'Материалы не отправляют в переписке.', objective: 'Приехать в кафе и получить локальную копию.',
+    dialogue: 'Столик у стены.', speaker: 'И', target: 'city', button: 'Открыть City', icon: MapPinned,
+  };
+
+  const sequence: Array<[boolean, CurrentMission]> = [
+    [!progress.routeCaseComplete, { id:'MARSHRUT-01', act:'АКТ 2 / МАРШРУТ', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'HTTP, JSONL и временная линия', context:'Служба доставки, спорная сессия и конфликт интересов заказчика.', objective:'Связать HTTP, учётку, время и действия. Затем решить, кому передать результат.', dialogue:'Нужен воспроизводимый путь, не три значения из формы.', speaker:'И', target:'routecase', button:'Открыть MARSHRUT-01', icon:FileSearch }],
+    [!progress.windowsCaseComplete, { id:'NORTHLINE-07', act:'АКТ 3 / ХОСТЫ И СЕТИ', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Windows workstation', context:'Две машины, process tree и возможное persistence.', objective:'Связать процессы, командные строки, файлы и закрепление.', dialogue:'Сначала цепочка. Потом вывод.', speaker:'И', target:'windowscase', button:'Открыть NORTHLINE-07', icon:MonitorCog }],
+    [!progress.linuxCaseComplete, { id:'REDTABLE-02', act:'АКТ 3 / ХОСТЫ И СЕТИ', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Linux server', context:'SSH, sudo, systemd и работающий резерв.', objective:'Восстановить вход, привилегии, persistence и безопасный recovery.', dialogue:'Не ломай сервис, который ещё жив.', speaker:'И', target:'linuxcase', button:'Открыть REDTABLE-02', icon:ServerCog }],
+    [!progress.networkCaseComplete, { id:'BLACKWIRE-03', act:'АКТ 3 / ХОСТЫ И СЕТИ', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Network investigation', context:'DHCP, DNS, gateway и отдельный сегмент камер.', objective:'Разобрать сетевую причину и выбрать точечный containment.', dialogue:'Не выключай весь DNS из-за одного узла.', speaker:'И', target:'networkcase', button:'Открыть BLACKWIRE-03', icon:Router }],
+    [!progress.webCaseComplete, { id:'VANTA-04', act:'АКТ 4 / ДОСТУП', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Web / API / SQL', context:'Обычная сессия получает чужой объект.', objective:'Отделить authentication от authorization и исправить серверный контроль.', dialogue:'Прод не трогай. Локальный стенд готов.', speaker:'И', target:'webcase', button:'Открыть VANTA-04', icon:Braces }],
+    [!progress.mobileCaseComplete, { id:'MIRRORCELL-05', act:'АКТ 4 / ДОСТУП', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Mobile sessions', context:'Телефон, backup, токены и MDM.', objective:'Связать пакет, полномочия, сохранённую сессию и удалённую активность.', dialogue:'Нужна цепочка, а не страшное разрешение.', speaker:'И', target:'mobilecase', button:'Открыть MIRRORCELL-05', icon:Smartphone }],
+    [!progress.adCaseComplete, { id:'IRONROOT-06', act:'АКТ 4 / ДОСТУП', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Active Directory', context:'Старая учётка, Kerberos, GPO и несколько хостов.', objective:'Восстановить identity path и исправить избыточные права.', dialogue:'Домен клонирован. Докажи путь.', speaker:'И', target:'adcase', button:'Открыть IRONROOT-06', icon:Waypoints }],
+    [!progress.mailCaseComplete, { id:'BLACKPOST-07', act:'АКТ 4 / ДОСТУП', time:`ДЕНЬ ${progress.simulation.clock.day}`, title:'Mail security', context:'Raw EML, вложение, endpoint и OAuth.', objective:'Связать заголовки, сессию, правило пересылки и масштаб кампании.', dialogue:'Received сначала. Вывод потом.', speaker:'И', target:'mailcase', button:'Открыть BLACKPOST-07', icon:MailWarning }],
+    [!progress.darknetComplete, { id:'DARKNET-00', act:'ПЕРЕХОД', time:'НОЧЬ', title:'Неизвестное приглашение', context:'Локальный пакет с onion-адресом и подписью.', objective:'Проверить полный адрес и работать только в учебной сети.', dialogue:'Обычный браузер здесь не нужен.', speaker:'?', target:'tor', button:'Открыть Tor Browser', icon:Network }],
+    [!progress.forensicsCaseComplete, { id:'DEADFRAME-08', act:'АКТ 5 / ИНЦИДЕНТ', time:'НОЧЬ', title:'Disk & memory forensics', context:'E01, RAM и второй образ без готового порядка.', objective:'Сохранить integrity, построить timeline и связать disk, browser, registry и memory.', dialogue:'Оригиналы не трогай.', speaker:'?', target:'forensicscase', button:'Открыть DEADFRAME-08', icon:HardDrive }],
+    [!progress.incidentCaseComplete, { id:'GREYLOCK-09', act:'АКТ 5 / ИНЦИДЕНТ', time:'АКТИВНЫЙ ИНЦИДЕНТ', title:'Incident Response', context:'Gateway, identity и критический расчётный контур.', objective:'Доказать scope, локализовать и вернуть сервисы поэтапно.', dialogue:'Не глуши чистые системы из страха.', speaker:'G', target:'incidentcase', button:'Открыть GREYLOCK-09', icon:ShieldAlert }],
+    [!progress.huntCaseComplete, { id:'NIGHTGLASS-10', act:'АКТ 5 / ИНЦИДЕНТ', time:'HUNT', title:'Threat Hunting', context:'Готового алерта нет.', objective:'Сформулировать гипотезу, проверить baseline и перевести находку в detection.', dialogue:'IOC наугад не ищут.', speaker:'G', target:'huntcase', button:'Открыть NIGHTGLASS-10', icon:Crosshair }],
+    [!progress.cryptoCaseComplete, { id:'CIPHERFALL-11', act:'АКТ 6 / ЦЕПОЧКА ДОВЕРИЯ', time:'EVIDENCE', title:'Cryptography & malware', context:'TLS, подпись и два безопасных учебных бинарника.', objective:'Отделить доверие к каналу от доверия к файлу.', dialogue:'Подпись не делает код честным.', speaker:'G', target:'cryptocase', button:'Открыть CIPHERFALL-11', icon:Fingerprint }],
+    [!progress.cloudCaseComplete, { id:'SKYVAULT-12', act:'АКТ 6 / ЦЕПОЧКА ДОВЕРИЯ', time:'CLOUD', title:'Cloud identity', context:'Workload identity, bucket и KMS.', objective:'Показать, какая identity выполнила каждое действие и как ограничить доступ.', dialogue:'Private не означает недоступный.', speaker:'G', target:'cloudcase', button:'Открыть SKYVAULT-12', icon:Cloud }],
+    [!progress.supplyCaseComplete, { id:'CHAINBREAK-13', act:'АКТ 6 / ЦЕПОЧКА ДОВЕРИЯ', time:'SUPPLY CHAIN', title:'Containers & CI/CD', context:'Commit, pipeline, image, RBAC и cloud role.', objective:'Восстановить provenance и поставить проверяемые release gates.', dialogue:'Свяжи всю цепочку.', speaker:'G', target:'supplycase', button:'Открыть CHAINBREAK-13', icon:Boxes }],
+    [!progress.architectureCaseComplete, { id:'BASTION-14', act:'АКТ 7 / КОМАНДОВАНИЕ', time:'DESIGN REVIEW', title:'Security architecture', context:'Три города, ограниченный бюджет и критичный settlement.', objective:'Расставить приоритеты, владельцев, controls и recovery checks.', dialogue:'Список продуктов не является архитектурой.', speaker:'G', target:'architecturecase', button:'Открыть BASTION-14', icon:Building2 }],
+    [!progress.capstoneCaseComplete, { id:'BLACKSKY-15', act:'АКТ 7 / КОМАНДОВАНИЕ', time:'CAPSTONE', title:'Enterprise incident', context:'Identity, CI, Kubernetes и cloud в одной активной цепочке.', objective:'Самостоятельно выбрать источники, стратегию ответа и коммуникацию.', dialogue:'Первое решение будет иметь последствия.', speaker:'G', target:'capstonecase', button:'Открыть BLACKSKY-15', icon:Workflow }],
+  ];
+  return sequence.find(([condition]) => condition)?.[1] ?? {
+    id:'FREEPLAY', act:'СВОБОДНАЯ ИГРА', time:'ПОСЛЕ КАМПАНИИ', title:'Повторяемые операции', context:'Основная линия завершена.', objective:'Брать валидированные контракты и развивать специализации.', dialogue:'Теперь форма задачи заранее не известна.', speaker:'G', target:'contracts', button:'Открыть Work Queue', icon:Network,
+  };
+}
 
 export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
-  const { progress } = useProgress();
-  const clinic = getClinicStage(progress);
+  const { progress: rawProgress } = useProgress();
+  const progress = rawProgress as any;
+  const runtime = useMissionRuntime();
+  const clinic = getClinicStage(rawProgress);
+  const workspace = runtime.store.missions['workspace-01'];
+  const clinicComplete = clinic.id === 'complete';
 
-  let current: { caseId: string; time: string; title: string; context: string; objective: string; dialogue: string; speaker: string; target: AppId; button: string; icon: typeof BookOpenCheck };
+  const current: CurrentMission = !clinicComplete ? {
+    id: clinic.id === 'terminal' ? 'CLINIC-01 / 0.2' : clinic.id === 'code' ? 'CLINIC-01 / 0.3' : 'CLINIC-01',
+    act: 'АКТ 0 / НЕТ ДОСТУПА',
+    time: '14 МАРТА / ЛОКАЛЬНАЯ КОПИЯ',
+    title: clinic.title,
+    context: 'Первая операция теперь разбита на главы: рабочее место, журналы и процессы, автоматизация, проверка алерта и evidence report.',
+    objective: clinic.objective,
+    dialogue: clinic.dialogue,
+    speaker: 'МБ',
+    target: clinic.app,
+    button: clinic.action,
+    icon: BookOpenCheck,
+  } : currentAfterClinic(progress);
 
-  if (clinic.id !== 'complete') {
-    current = {
-      caseId: 'CLINIC-01', time: '14 МАРТА / 21:20', title: 'Компьютер регистратуры',
-      context: 'Максим прислал копию журналов с компьютера клиники.',
-      objective: clinic.objective,
-      dialogue: clinic.dialogue, speaker: 'МБ',
-      target: clinic.app, button: clinic.action, icon: MessageSquare,
-    };
-  } else if (!progress.interviewComplete) {
-    current = {
-      caseId: 'INTERVIEW-01', time: '15 МАРТА / 11:30', title: 'Собеседование',
-      context: 'Анна Соколова получила отчёт от Максима.',
-      objective: 'Ответить на пять вопросов по делу CLINIC-01.',
-      dialogue: 'Пять вопросов. Где не знаешь — не выдумывай.', speaker: 'АС',
-      target: 'interview', button: 'Ответить на звонок', icon: UserRoundCheck,
-    };
-  } else if (!progress.jobAccepted) {
-    current = {
-      caseId: 'MAIL-01', time: '15 МАРТА / 16:42', title: 'Ответ от «Сферы»',
-      context: 'Во входящих письмо от Анны.',
-      objective: 'Открыть письмо и дать ответ.',
-      dialogue: 'Ответ нужен до завтра, 18:00.', speaker: 'АС',
-      target: 'mail', button: 'Открыть Mail', icon: Mail,
-    };
-  } else if (!progress.firstShiftComplete) {
-    const stage = shiftStages[Math.min(progress.firstShiftStage, shiftStages.length - 1)];
-    current = {
-      caseId: 'SHIFT-01', time: progress.firstShiftStage === 0 ? 'ПОНЕДЕЛЬНИК / 08:57' : 'ПОНЕДЕЛЬНИК', title: stage.title,
-      context: 'Первая смена Ильи в SOC «Сферы».',
-      objective: stage.objective,
-      dialogue: stage.dialogue, speaker: stage.speaker,
-      target: 'firstshift', button: progress.firstShiftStage === 0 ? 'Войти в офис' : 'Продолжить смену', icon: ShieldCheck,
-    };
-  } else if (progress.criminalContactUnlocked && !progress.criminalContactResponse) {
-    current = {
-      caseId: 'WIRE-UNKNOWN', time: 'ПОНЕДЕЛЬНИК / 19:27', title: 'Новый контакт',
-      context: 'После смены написал незнакомый номер.',
-      objective: 'Открыть Messenger и прочитать сообщение.',
-      dialogue: 'Есть подработка по логам. 8 тысяч после результата.', speaker: '?',
-      target: 'messenger', button: 'Открыть Messenger', icon: MessageSquare,
-    };
-  } else if (progress.criminalContactResponse === 'interested' && !progress.routeCaseAccepted) {
-    current = {
-      caseId: 'MARSHRUT-01', time: 'ВЕЧЕР', title: 'Встреча с Игорем',
-      context: 'Игорь ждёт в кафе «Сигнал». Он не прислал архив в переписке.',
-      objective: 'Приехать в кафе и забрать копию журналов.',
-      dialogue: 'Столик у стены. Не опаздывай.', speaker: 'И',
-      target: 'city', button: 'Открыть карту', icon: MapPinned,
-    };
-  } else if (progress.routeCaseAccepted && !progress.routeCaseComplete) {
-    const routeObjectives = ['Прочитать условия работы.', 'Разобраться с HTTP-запросами.', 'Осмотреть журналы в терминале.', 'Собрать временную линию в Python.', 'Выбрать подтверждённые факты.', 'Составить отчёт.', 'Решить, что отправить Игорю.', 'Закрыть дело.'];
-    current = {
-      caseId: 'MARSHRUT-01', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Ночная сессия',
-      context: 'Архив службы доставки «Маршрут» открыт в отдельном рабочем пространстве.',
-      objective: routeObjectives[Math.min(progress.routeCaseStage, routeObjectives.length - 1)],
-      dialogue: progress.routeCaseStage < 6 ? 'Нужны IP, время и учётка. Остальное потом.' : 'Скинь IP, время, учётку и cookie.', speaker: 'И',
-      target: 'routecase', button: 'Продолжить дело', icon: FileSearch,
-    };
-  } else if (!progress.windowsCaseComplete) {
-    const windowsObjectives = [
-      'Прочитать условия и данные по FIN-WS-07.',
-      'Разобрать дерево процессов.',
-      'Собрать артефакты PowerShell-командами.',
-      'Написать сборщик collect-artifacts.ps1.',
-      'Самостоятельно разобрать OPS-WS-12.',
-      'Выбрать подтверждённые выводы.',
-      'Составить отчёт по двум машинам.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'NORTHLINE-07', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Рабочая станция',
-      context: 'Игорь передал изолированные снимки двух Windows-машин со склада «Северной линии».',
-      objective: windowsObjectives[Math.min(progress.windowsCaseStage, windowsObjectives.length - 1)],
-      dialogue: progress.windowsCaseStage === 0 ? 'Машина уже без сети. Сначала пойми, что запустилось.' : 'Нужны цепочка, файл, закрепление и соседние узлы.', speaker: 'И',
-      target: 'windowscase', button: 'Открыть NORTHLINE-07', icon: MonitorCog,
-    };
-  } else if (!progress.linuxCaseComplete) {
-    const linuxObjectives = [
-      'Прочитать условия по BET-CORE-02.',
-      'Разобрать пользователей и права.',
-      'Восстановить SSH, sudo, systemd и сетевую цепочку.',
-      'Написать Bash-сборщик артефактов.',
-      'Выбрать безопасный план изоляции и восстановления.',
-      'Самостоятельно разобрать EDGE-BET-04.',
-      'Собрать вывод и отчёт по двум серверам.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'REDTABLE-02', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Linux-сервер',
-      context: 'На сервере подпольной букмекерской сети пропала очередь расчётов. Администратор отрицает изменения.',
-      objective: linuxObjectives[Math.min(progress.linuxCaseStage, linuxObjectives.length - 1)],
-      dialogue: progress.linuxCaseStage === 0 ? 'Основной трафик уже на резерве. Не ломай то, что осталось.' : 'Нужны вход, sudo, закрепление и точный масштаб.', speaker: 'И',
-      target: 'linuxcase', button: 'Открыть REDTABLE-02', icon: ServerCog,
-    };
-  } else if (!progress.networkCaseComplete) {
-    const networkObjectives = [
-      'Прочитать условия и схему BLACKWIRE-03.',
-      'Разобрать IP, gateway, DHCP, DNS и NAT.',
-      'Проверить интерфейсы, маршруты и сетевые параметры.',
-      'Разобрать DHCP, DNS и TCP в захвате трафика.',
-      'Выбрать безопасный план изоляции.',
-      'Самостоятельно проверить сегмент камер.',
-      'Собрать вывод и отчёт по двум сегментам.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'BLACKWIRE-03', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Офисная сеть',
-      context: 'В диспетчерском офисе часть компьютеров получила чужой gateway и DNS. Отдельно зафиксирован внешний трафик камер.',
-      objective: networkObjectives[Math.min(progress.networkCaseStage, networkObjectives.length - 1)],
-      dialogue: progress.networkCaseStage === 0 ? 'Платёжный сегмент на резерве. Не выключай всё подряд.' : 'Нужны DHCP, DNS, маршрут, MAC и точный масштаб.', speaker: 'И',
-      target: 'networkcase', button: 'Открыть BLACKWIRE-03', icon: Router,
-    };
-  } else if (!progress.webCaseComplete) {
-    const webObjectives = [
-      'Прочитать условия и архитектуру VANTA-04.',
-      'Разобрать HTTP-запрос, ответ, cookie и API.',
-      'Подтвердить чтение чужого объекта через API.',
-      'Разделить аутентификацию и авторизацию.',
-      'Исправить серверный маршрут и проверить SQL.',
-      'Самостоятельно проверить второй API.',
-      'Собрать вывод и отчёт по двум сервисам.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'VANTA-04', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Web / API / SQL',
-      context: 'В закрытом расчётном портале обычный аккаунт получает чужие объекты по прямому ID.',
-      objective: webObjectives[Math.min(progress.webCaseStage, webObjectives.length - 1)],
-      dialogue: progress.webCaseStage === 0 ? 'Копия портала готова. Прод не трогай.' : 'Нужны запрос, сессия, проверка прав, SQL и точный масштаб.', speaker: 'И',
-      target: 'webcase', button: 'Открыть VANTA-04', icon: Braces,
-    };
-  } else if (!progress.mobileCaseComplete) {
-    const mobileObjectives = [
-      'Прочитать условия и архитектуру MIRRORCELL-05.',
-      'Разобрать разрешения, специальные доступы и токены.',
-      'Найти подозрительный пакет и его полномочия.',
-      'Связать backup, refresh token и удалённую выгрузку.',
-      'Исправить хранение сессии и AndroidManifest.',
-      'Выбрать безопасную локализацию и fleet hunt.',
-      'Самостоятельно разобрать второе устройство и отчёт.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'MIRRORCELL-05', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Смартфон и сессии',
-      context: 'Корпоративный телефон курьера вернули через два часа. Позже с его учётки выгрузили маршруты.',
-      objective: mobileObjectives[Math.min(progress.mobileCaseStage, mobileObjectives.length - 1)],
-      dialogue: progress.mobileCaseStage === 0 ? 'Есть образ Android, MDM и OAuth. Сначала докажи цепочку.' : 'Нужны пакет, полномочия, backup, токен и второй телефон.', speaker: 'И',
-      target: 'mobilecase', button: 'Открыть MIRRORCELL-05', icon: Smartphone,
-    };
-  } else if (!progress.adCaseComplete) {
-    const adObjectives = [
-      'Прочитать условия и схему IRONROOT-06.',
-      'Разобрать объекты, группы, Kerberos и GPO.',
-      'Найти старую учётку и лишние права.',
-      'Восстановить путь между несколькими машинами.',
-      'Исправить GPO, SYSVOL ACL и сервисную учётку.',
-      'Выбрать безопасную локализацию домена.',
-      'Самостоятельно проверить второй сегмент и отчёт.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'IRONROOT-06', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Корпоративный домен',
-      context: 'Старая учётка подрядчика прошла через jump-host к файловому серверу и приложению. В домене изменена GPO.',
-      objective: adObjectives[Math.min(progress.adCaseStage, adObjectives.length - 1)],
-      dialogue: progress.adCaseStage === 0 ? 'Домен уже клонирован. Нужны путь, закрепление и масштаб.' : 'Проверь учётки, билеты, GPO, SYSVOL и второй сегмент.', speaker: 'И',
-      target: 'adcase', button: 'Открыть IRONROOT-06', icon: Waypoints,
-    };
-  } else if (!progress.mailCaseComplete) {
-    const mailObjectives = [
-      'Прочитать условия и схему BLACKPOST-07.',
-      'Разобрать SMTP, SPF, DKIM, DMARC и Received.',
-      'Подтвердить подмену по raw-заголовкам.',
-      'Связать вложение, PowerShell, прокси и второй хост.',
-      'Исправить шлюз, пересылку и OAuth-политику.',
-      'Выбрать безопасную локализацию.',
-      'Самостоятельно разобрать OAuth-фишинг и отчёт.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'BLACKPOST-07', time: `ДЕНЬ ${progress.simulation.clock.day}`, title: 'Почта и фишинг',
-      context: 'Платёжное письмо прошло шлюз, запустило PowerShell и оставило правило пересылки с OAuth-доступом.',
-      objective: mailObjectives[Math.min(progress.mailCaseStage, mailObjectives.length - 1)],
-      dialogue: progress.mailCaseStage === 0 ? 'Есть raw EML, шлюз, ящик, две машины и прокси. Разбери цепочку.' : 'Нужны заголовки, вложение, endpoint, OAuth и масштаб.', speaker: 'И',
-      target: 'mailcase', button: 'Открыть BLACKPOST-07', icon: MailWarning,
-    };
-  } else if (!progress.darknetComplete) {
-    current = {
-      caseId: 'DARKNET-00', time: `ДЕНЬ ${progress.simulation.clock.day} / НОЧЬ`, title: 'Неизвестное приглашение',
-      context: 'После BLACKPOST пришёл локальный пакет с адресом onion-каталога и подписью. Источник не указан.',
-      objective: progress.darknetConnected ? (progress.darknetIdentityCreated ? 'Проверить адреса, создать отдельную историю и прочитать сообщение.' : 'Создать отдельный псевдоним.') : 'Подключить Tor Browser к учебной сети.',
-      dialogue: 'Не открывай ссылку в обычном браузере. Сверь полный адрес и подпись.', speaker: '?',
-      target: 'tor', button: 'Открыть Tor Browser', icon: Network,
-    };
-  } else if (!progress.forensicsCaseComplete) {
-    const objectives = [
-      'Прочитать условия и зафиксировать источники.',
-      'Разобрать образ, хэши, volatile data и временные метки.',
-      'Собрать файловую временную линию.',
-      'Связать browser, Prefetch, registry и удалённый лог.',
-      'Разобрать процессы, команды, handles и сеть в памяти.',
-      'Выбрать безопасную локализацию и сохранить chain of custody.',
-      'Самостоятельно разобрать второй образ и составить отчёт.',
-      'Закрыть дело.',
-    ];
-    current = {
-      caseId: 'DEADFRAME-08', time: `ДЕНЬ ${progress.simulation.clock.day} / НОЧЬ`, title: 'Форензика диска и памяти',
-      context: 'Включённый ноутбук остался после сорванной сделки. Есть E01, снимок RAM и второй образ без готового порядка действий.',
-      objective: objectives[Math.min(progress.forensicsCaseStage, objectives.length - 1)],
-      dialogue: progress.forensicsCaseStage === 0 ? 'Оригиналы не трогай. Сначала хэши и рабочие копии.' : 'Нужны загрузка, исполнение, файлы, сеть и границы доказанного.', speaker: '?',
-      target: 'forensicscase', button: 'Открыть DEADFRAME-08', icon: HardDrive,
-    };
-  } else if (!progress.incidentCaseComplete) {
-    const objectives = [
-      'Принять активный инцидент и понять ограничения бизнеса.',
-      'Разобрать жизненный цикл Incident Response.',
-      'Связать SIEM, EDR, identity и network telemetry.',
-      'Определить подтверждённый scope.',
-      'Собрать точечный containment без остановки чистых систем.',
-      'Удалить учётки, токены, закрепление и первоначальную причину.',
-      'Вернуть сервисы поэтапно и включить усиленный мониторинг.',
-      'Самостоятельно разобрать вторую волну и составить отчёт.',
-      'Закрыть инцидент.',
-    ];
-    current = {
-      caseId: 'GREYLOCK-09', time: `ДЕНЬ ${progress.simulation.clock.day} / АКТИВНЫЙ ИНЦИДЕНТ`, title: 'SIEM, EDR и Incident Response',
-      context: 'Расчётный gateway отправляет трафик наружу. Сервисная учётка прошла через VPN и jump-host, но весь контур выключать нельзя.',
-      objective: objectives[Math.min(progress.incidentCaseStage, objectives.length - 1)],
-      dialogue: progress.incidentCaseStage === 0 ? 'Не глуши всё. Сначала докажи scope и подготовь резерв.' : 'Нужны действия, время, результат и причина каждого решения.', speaker: 'G',
-      target: 'incidentcase', button: 'Открыть GREYLOCK-09', icon: ShieldAlert,
-    };
-  } else if (!progress.huntCaseComplete) {
-    const objectives = ['Сформулировать гипотезу.', 'Проверить baseline и telemetry.', 'Собрать hunt-данные.', 'Написать Sigma и KQL.', 'Настроить аналитику.', 'Самостоятельно проверить второй набор.', 'Составить отчёт.', 'Закрыть hunt.'];
-    current = { caseId:'NIGHTGLASS-10', time:'НОЧЬ / HUNT', title:'Threat Hunting', context:'Готового алерта нет. Есть редкие identity и process события.', objective:objectives[Math.min(progress.huntCaseStage, objectives.length-1)], dialogue:'Не ищи IOC наугад. Сначала гипотеза и данные.', speaker:'G', target:'huntcase', button:'Открыть NIGHTGLASS-10', icon:Crosshair };
-  } else if (!progress.cryptoCaseComplete) {
-    const objectives = ['Разобрать криптографическую модель.', 'Проверить PKI и TLS.', 'Разобрать PE/ELF.', 'Написать YARA.', 'Самостоятельно проверить второй файл.', 'Составить отчёт.', 'Закрыть дело.'];
-    current = { caseId:'CIPHERFALL-11', time:'НОЧЬ / EVIDENCE', title:'Cryptography & Malware', context:'Подпись обновления не сходится, внутри два бинарника.', objective:objectives[Math.min(progress.cryptoCaseStage, objectives.length-1)], dialogue:'Отдели доверие к каналу от доверия к файлу.', speaker:'G', target:'cryptocase', button:'Открыть CIPHERFALL-11', icon:Fingerprint };
-  } else if (!progress.cloudCaseComplete) {
-    const objectives = ['Разобрать cloud identity.', 'Проверить CloudTrail и scope.', 'Исправить IAM/KMS.', 'Проверить второй аккаунт.', 'Составить отчёт.', 'Закрыть дело.'];
-    current = { caseId:'SKYVAULT-12', time:'НОЧЬ / CLOUD', title:'Cloud Security', context:'Долгоживущий ключ runner использовали для чтения bucket и KMS grant.', objective:objectives[Math.min(progress.cloudCaseStage, objectives.length-1)], dialogue:'Private bucket не оправдание. Покажи, какая identity что сделала.', speaker:'G', target:'cloudcase', button:'Открыть SKYVAULT-12', icon:Cloud };
-  } else if (!progress.supplyCaseComplete) {
-    const objectives = ['Разобрать image и pipeline.', 'Проверить registry, SBOM и подпись.', 'Проверить Kubernetes RBAC/audit.', 'Исправить CI/CD и workload.', 'Проверить второй namespace.', 'Составить отчёт.', 'Закрыть дело.'];
-    current = { caseId:'CHAINBREAK-13', time:'НОЧЬ / SUPPLY CHAIN', title:'Containers & CI/CD', context:'Тег stable указывает на неподписанный digest, workload получил cluster-admin.', objective:objectives[Math.min(progress.supplyCaseStage, objectives.length-1)], dialogue:'Свяжи commit, workflow, image, ServiceAccount и cloud role.', speaker:'G', target:'supplycase', button:'Открыть CHAINBREAK-13', icon:Boxes };
-  } else if (!progress.architectureCaseComplete) {
-    const objectives = ['Собрать требования бизнеса.', 'Построить inventory и risk priorities.', 'Проверить telemetry и recovery.', 'Спроектировать Zero Trust и controls.', 'Проверить бюджет и exceptions.', 'Составить отчёт.', 'Закрыть проект.'];
-    current = { caseId:'BASTION-14', time:'ДЕНЬ / DESIGN REVIEW', title:'Security Engineering', context:'Три города, ограниченный бюджет и критичный settlement.', objective:objectives[Math.min(progress.architectureCaseStage, objectives.length-1)], dialogue:'Не продавай список продуктов. Нужны приоритеты, владельцы и проверка восстановления.', speaker:'G', target:'architecturecase', button:'Открыть BASTION-14', icon:Building2 };
-  } else if (!progress.capstoneCaseComplete) {
-    const objectives = ['Принять брифинг.', 'Самостоятельно выбрать источники.', 'Восстановить полную цепочку.', 'Написать план ответа.', 'Проверить gaps и detection.', 'Составить финальный отчёт.', 'Закрыть capstone.'];
-    current = { caseId:'BLACKSKY-15', time:'АКТИВНЫЙ ИНЦИДЕНТ / 1.0', title:'Independent Enterprise Incident', context:'Identity, CI, Kubernetes и cloud связаны в одну активную цепочку. Готового маршрута нет.', objective:objectives[Math.min(progress.capstoneCaseStage, objectives.length-1)], dialogue:'Первое решение запомнится. Не выключай чистые системы из страха.', speaker:'G', target:'capstonecase', button:'Открыть BLACKSKY-15', icon:Workflow };
-  } else {
-    current = {
-      caseId: 'VERSION-1.0', time: 'СВОБОДНАЯ ИГРА', title: 'Middle-ready vertical завершена',
-      context: `BLACKSKY-15 закрыт. Итоговый балл: ${progress.capstoneCaseScore}/100.`,
-      objective: 'Повторять лаборатории, брать контракты и развивать независимую карьеру.',
-      dialogue: 'Теперь задачи не обязаны ждать, пока ты будешь готов.', speaker: 'G',
-      target: 'contracts', button: 'Открыть Work Queue', icon: Network,
-    };
-  }
+  const campaign: CampaignEntry[] = [
+    { id:'0.1', act:'АКТ 0', title:'Рабочее место', subtitle:'filesystem · paths · evidence', target:'missions', icon:BookOpenCheck, complete:workspace?.status === 'completed', available:true },
+    { id:'0.2', act:'АКТ 0', title:'Журналы и процессы', subtitle:'auth.log · process snapshot', target:'terminal', icon:ServerCog, complete:progress.terminalObjectives?.includes('inspect-processes'), available:workspace?.status === 'completed' },
+    { id:'0.3', act:'АКТ 0', title:'Автоматизация', subtitle:'Python · errors · repeatability', target:'code', icon:Braces, complete:progress.pythonComplete, available:progress.terminalObjectives?.includes('inspect-processes') },
+    { id:'1', act:'АКТ 1', title:'Сфера', subtitle:'SOC · telemetry · first shift', target:'firstshift', icon:ShieldCheck, complete:progress.firstShiftComplete, available:progress.jobAccepted },
+    { id:'2', act:'АКТ 2', title:'Маршрут', subtitle:'HTTP · JSONL · timeline', target:'routecase', icon:FileSearch, complete:progress.routeCaseComplete, available:progress.routeCaseAccepted },
+    { id:'3', act:'АКТ 3', title:'Хосты и сети', subtitle:'Windows · Linux · Network', target:'windowscase', icon:Router, complete:progress.networkCaseComplete, available:progress.routeCaseComplete },
+    { id:'4', act:'АКТ 4', title:'Доступ', subtitle:'Web · Mobile · AD · Mail', target:'webcase', icon:Waypoints, complete:progress.mailCaseComplete, available:progress.networkCaseComplete },
+    { id:'5', act:'АКТ 5', title:'Инцидент', subtitle:'DFIR · IR · Hunting', target:'forensicscase', icon:ShieldAlert, complete:progress.huntCaseComplete, available:progress.darknetComplete },
+    { id:'6', act:'АКТ 6', title:'Цепочка доверия', subtitle:'Crypto · Cloud · Supply Chain', target:'cryptocase', icon:Fingerprint, complete:progress.supplyCaseComplete, available:progress.huntCaseComplete },
+    { id:'7', act:'АКТ 7', title:'Командование', subtitle:'Architecture · Capstone', target:'architecturecase', icon:Building2, complete:progress.capstoneCaseComplete, available:progress.supplyCaseComplete },
+  ];
 
   const Icon = current.icon;
 
   return (
-    <div className="missions-current-only app-scroll">
-      <header><p className="eyebrow">{current.time}</p><span>{current.caseId}</span></header>
-      <section className="current-mission-title"><Icon size={30} /><div><h2>{current.title}</h2><p>{current.context}</p></div></section>
-      <section className="current-objective"><span>ТЕКУЩАЯ ЦЕЛЬ</span><h3>{current.objective}</h3></section>
-      <section className="current-dialogue"><div>{current.speaker}</div><p>{current.dialogue}</p></section>
-      <button className="primary-action current-mission-action" onClick={() => openApp(current.target)}>{current.button}<ArrowRight size={17} /></button>
+    <div className="missions-v2 app-scroll">
+      <header className="missions-v2-header">
+        <div><p className="eyebrow">{current.act}</p><h2>Основная кампания</h2></div>
+        <span>{campaign.filter((entry) => entry.complete).length}/{campaign.length} глав</span>
+      </header>
+
+      <section className="missions-v2-current">
+        <div className="missions-v2-current-code"><Icon size={27} /><span>{current.id}</span></div>
+        <div className="missions-v2-current-copy">
+          <p>{current.time}</p>
+          <h1>{current.title}</h1>
+          <span>{current.context}</span>
+        </div>
+        <div className="missions-v2-objective">
+          <small>ТЕКУЩАЯ ЦЕЛЬ</small>
+          <strong>{current.objective}</strong>
+        </div>
+        <div className="missions-v2-dialogue"><i>{current.speaker}</i><span>{current.dialogue}</span></div>
+        <button className="primary-action" onClick={() => openApp(current.target)}>{current.button}<ArrowRight size={16} /></button>
+      </section>
+
+      <section className="missions-v2-path">
+        <header><span>ПУТЬ ОБУЧЕНИЯ</span><small>Глава открывается доказанным действием, не количеством кликов.</small></header>
+        <div>
+          {campaign.map((entry) => {
+            const EntryIcon = entry.icon;
+            return (
+              <button key={entry.id} disabled={!entry.available} className={`${entry.complete ? 'complete' : ''} ${entry.available && !entry.complete ? 'available' : ''}`} onClick={() => entry.available && openApp(entry.target)}>
+                <span>{entry.complete ? <Check size={13} /> : entry.id}</span>
+                <EntryIcon size={18} />
+                <div><small>{entry.act}</small><strong>{entry.title}</strong><p>{entry.subtitle}</p></div>
+                <ArrowRight size={14} />
+              </button>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

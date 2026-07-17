@@ -1,8 +1,9 @@
 import type { MissionDefinition } from '../../core/scenario/types';
 import { validateMissionDefinition } from '../../core/scenario/validation';
+import { workspace01Definition } from './workspace01/definition';
 import { clinic01Definition } from './clinic01/definition';
 
-const definitions = [clinic01Definition] as const;
+const definitions = [workspace01Definition, clinic01Definition] as const;
 
 export const missionRegistry: Readonly<Record<string, MissionDefinition>> = Object.freeze(
   Object.fromEntries(definitions.map((definition) => {

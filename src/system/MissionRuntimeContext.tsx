@@ -11,6 +11,7 @@ import {
   upsertHypothesis,
   useHint,
 } from '../core/scenario/engine';
+import { addSkillEvidence, createSkillMastery, evidenceFromAssessment } from '../core/progression/mastery';
 import type {
   EvidenceLink,
   MissionActionInput,
@@ -85,9 +86,10 @@ export function MissionRuntimeProvider({ children }: { children: ReactNode }) {
     ensureMission: (missionId, seed) => setStore((current) => {
       const definition = getMissionDefinition(missionId);
       if (!definition) return current;
-      if (current.missions[missionId]) {
-        return current.activeMissionId ? current : { ...current, activeMissionId: missionId };
-      }
+      const existing = current.missions[missionId];
+      if (existing) return current.activeMissionId === missionId
+        ? current
+        : { ...current, activeMissionId: missionId };
       const runtime = createMissionRuntime(definition, seed ?? seedForMission(missionId));
       return {
         ...current,
@@ -131,10 +133,31 @@ export function MissionRuntimeProvider({ children }: { children: ReactNode }) {
       const definition = getMissionDefinition(activeMission.missionId);
       if (!definition) return { completed: false, reasons: ['mission-definition-missing'] };
       const attempt = attemptMissionCompletion(definition, activeMission);
-      setStore((current) => ({
-        ...current,
-        missions: { ...current.missions, [activeMission.missionId]: attempt.state },
-      }));
+      setStore((current) => {
+        if (!attempt.completed || !attempt.state.assessment) {
+          return {
+            ...current,
+            missions: { ...current.missions, [activeMission.missionId]: attempt.state },
+          };
+        }
+        const mastery = { ...current.mastery };
+        for (const outcome of definition.outcomes) {
+          const currentSkill = mastery[outcome.skillId] ?? createSkillMastery(outcome.skillId);
+          mastery[outcome.skillId] = addSkillEvidence(currentSkill, evidenceFromAssessment({
+            skillId: outcome.skillId,
+            missionId: definition.id,
+            outcomeId: outcome.id,
+            type: outcome.evidenceType,
+            assessment: attempt.state.assessment,
+            recordedAt: attempt.state.completedAt ?? undefined,
+          }));
+        }
+        return {
+          ...current,
+          missions: { ...current.missions, [activeMission.missionId]: attempt.state },
+          mastery,
+        };
+      });
       return { completed: attempt.completed, reasons: attempt.reasons };
     },
     resetActiveMission: () => updateActive((state) => {

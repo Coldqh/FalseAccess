@@ -3,31 +3,70 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { terminalObjectiveDefinitions } from '../data/content';
 import { useProgress } from '../system/ProgressContext';
+import { useMissionRuntime } from '../system/MissionRuntimeContext';
 import { runShellCommand } from '../system/virtualShell';
 import { getClinicStage, clinicTransitions } from '../missions/clinic01';
 import { MissionGuideStrip } from '../components/MissionGuideStrip';
 import { MissionStageComplete } from '../components/MissionStageComplete';
 import type { AppId } from '../types';
 
-function commandForObjective(id: string | undefined, cwd: string) {
-  if (id === 'pwd') return 'pwd';
-  if (id === 'ls') return 'ls';
-  if (id === 'cd-case') {
-    if (cwd === '/home/ilya') return 'cd cases/clinic-01';
-    if (cwd === '/home/ilya/cases') return 'cd clinic-01';
-    return 'cd /home/ilya/cases/clinic-01';
-  }
-  if (id === 'read-brief') return cwd === '/home/ilya/cases/clinic-01' ? 'cat brief.txt' : 'cat /home/ilya/cases/clinic-01/brief.txt';
-  if (id === 'grep-failed') return cwd === '/home/ilya/cases/clinic-01' ? 'grep "Failed password" auth.log' : 'grep "Failed password" /home/ilya/cases/clinic-01/auth.log';
-  if (id === 'inspect-processes') return 'ps';
-  return 'help';
+function commandName(raw: string) {
+  return raw.trim().match(/^([^\s]+)/)?.[1]?.toLowerCase() ?? '';
 }
 
+function targetArtifact(raw: string): string | null {
+  const name = commandName(raw);
+  if (/\bauth\.log\b/i.test(raw)) return 'artifact.clinic.auth-log';
+  if (/\bprocesses\.txt\b/i.test(raw) || name === 'ps') return 'artifact.clinic.processes';
+  if (/\bbrief\.txt\b/i.test(raw)) return 'artifact.clinic.brief';
+  if (/\bnetwork\.txt\b/i.test(raw) || name === 'ss') return 'artifact.clinic.network';
+  return null;
+}
+
+function commandFailed(lines: string[]) {
+  return lines.some((line) => /(^|\s)(command not found|No such file|No such directory|missing operand|usage:)/i.test(line));
+}
+
+const objectiveGuidance: Record<string, { title: string; text: string; detail: string }> = {
+  pwd: {
+    title: 'Определи текущий каталог',
+    text: 'Этот шаг уже проходится в главе 0.1.',
+    detail: 'При новом сохранении он будет закрыт автоматически после стартовой главы.',
+  },
+  ls: {
+    title: 'Осмотри домашний каталог',
+    text: 'Этот шаг уже проходится в главе 0.1.',
+    detail: 'Не вводи команды по памяти — сначала проверяй контекст.',
+  },
+  'cd-case': {
+    title: 'Перейди к материалам дела',
+    text: 'Этот шаг уже проходится в главе 0.1.',
+    detail: 'Абсолютный и относительный путь считаются разными допустимыми методами.',
+  },
+  'read-brief': {
+    title: 'Прочитай постановку',
+    text: 'Этот шаг уже проходится в главе 0.1.',
+    detail: 'Ограничения читаются до анализа данных.',
+  },
+  'grep-failed': {
+    title: 'Выдели события отказа входа',
+    text: 'Найди строки Failed password в auth.log. Отказ входа не равен успешной компрометации.',
+    detail: 'Выбери read-only команду поиска самостоятельно. Синтаксис доступных инструментов есть в help.',
+  },
+  'inspect-processes': {
+    title: 'Исследуй процессы отдельно',
+    text: 'События SSH не объясняют локальный процесс. Получи снимок процессов и проверь путь запуска.',
+    detail: 'Не связывай две линии расследования только потому, что они происходят на одном узле.',
+  },
+};
+
 export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const fillCommandRef = useRef<(command: string) => void>(() => undefined);
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const { progress, completeTerminalObjective } = useProgress();
+  const missionRuntime = useMissionRuntime();
   const completeRef = useRef(completeTerminalObjective);
+  const recordRef = useRef(missionRuntime.recordAction);
+  const artifactRef = useRef(missionRuntime.markArtifactOpened);
   const [cwdState, setCwdState] = useState('/home/ilya');
   const stage = getClinicStage(progress);
   const missionActive = stage.id === 'terminal';
@@ -36,9 +75,11 @@ export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
     () => missionActive ? terminalObjectiveDefinitions.find((item) => !progress.terminalObjectives.includes(item.id)) : undefined,
     [missionActive, progress.terminalObjectives],
   );
-  const suggestedCommand = commandForObjective(nextObjective?.id, cwdState);
+  const guidance = nextObjective ? objectiveGuidance[nextObjective.id] : null;
 
   useEffect(() => { completeRef.current = completeTerminalObjective; }, [completeTerminalObjective]);
+  useEffect(() => { recordRef.current = missionRuntime.recordAction; }, [missionRuntime.recordAction]);
+  useEffect(() => { artifactRef.current = missionRuntime.markArtifactOpened; }, [missionRuntime.markArtifactOpened]);
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -75,16 +116,9 @@ export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
       if (moveLeft > 0) terminal.write(`\x1b[${moveLeft}D`);
     };
 
-    fillCommandRef.current = (command) => {
-      input = command;
-      cursor = command.length;
-      terminal.focus();
-      redraw();
-    };
-
     terminal.writeln('\x1b[1;38;2;255;90;56mFALSE ACCESS TERMINAL\x1b[0m');
-    terminal.writeln(missionActive ? 'case: CLINIC-01' : 'local shell');
-    terminal.writeln('help — список команд');
+    terminal.writeln(missionActive ? 'CLINIC-01 / ГЛАВА 0.2 / LOCAL READ ONLY' : 'local shell');
+    terminal.writeln('help — доступные команды. Готовые команды не вставляются.');
     prompt();
 
     const disposable = terminal.onData((data) => {
@@ -95,13 +129,38 @@ export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
         historyIndex = history.length;
         input = '';
         cursor = 0;
+        const before = cwd;
         const result = runShellCommand(raw, cwd);
         if (result.clear) terminal.clear();
         if (result.cwd) { cwd = result.cwd; setCwdState(cwd); }
         result.lines.forEach((line) => terminal.writeln(line));
+
+        const failed = commandFailed(result.lines);
+        const artifactId = targetArtifact(raw);
+        if (raw.trim()) {
+          recordRef.current({
+            type: 'command.executed',
+            source: 'terminal',
+            payload: {
+              command: raw.trim(),
+              name: commandName(raw),
+              cwd: before,
+              nextCwd: cwd,
+              stdout: result.lines,
+              stderr: failed ? result.lines : [],
+              success: !failed,
+              exitCode: failed ? 1 : 0,
+              readOnly: true,
+              destructive: false,
+              externalNetwork: false,
+              targetArtifactId: artifactId,
+            },
+          });
+        }
+        if (artifactId && !failed) artifactRef.current(artifactId, 'terminal');
         if (missionActive && result.objective) {
           completeRef.current(result.objective);
-          terminal.writeln('\x1b[38;2;157;207;116m[OK]\x1b[0m');
+          terminal.writeln('\x1b[38;2;157;207;116m[RECORDED]\x1b[0m действие добавлено в evidence journal');
         }
         prompt();
         return;
@@ -134,7 +193,6 @@ export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
     resize.observe(hostRef.current);
     terminal.focus();
     return () => {
-      fillCommandRef.current = () => undefined;
       resize.disconnect();
       disposable.dispose();
       terminal.dispose();
@@ -143,14 +201,11 @@ export function TerminalApp({ openApp }: { openApp: (id: AppId) => void }) {
 
   return (
     <div className={`terminal-app-v4 ${missionActive ? 'mission-layer-active' : 'base-app-only'}`}>
-      {missionActive && nextObjective && (
+      {missionActive && nextObjective && guidance && (
         <MissionGuideStrip
-          title={nextObjective.label}
-          text={nextObjective.mentor}
-          detail={`${nextObjective.reply} ${nextObjective.why}`}
-          code={suggestedCommand}
-          insertLabel="Вставить команду"
-          onInsert={() => fillCommandRef.current(suggestedCommand)}
+          title={guidance.title}
+          text={guidance.text}
+          detail={`${guidance.detail} Текущий каталог: ${cwdState}`}
         />
       )}
       <div className="terminal-host terminal-host-v4" ref={hostRef} />
