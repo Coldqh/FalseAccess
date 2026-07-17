@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, HardDrive, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldAlert, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Boxes, Braces, BriefcaseBusiness, Building2, Cloud, Crosshair, FileSearch, Fingerprint, HardDrive, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldAlert, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network, Workflow } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -246,12 +246,30 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.incidentCaseStage === 0 ? 'Не глуши всё. Сначала докажи scope и подготовь резерв.' : 'Нужны действия, время, результат и причина каждого решения.', speaker: 'G',
       target: 'incidentcase', button: 'Открыть GREYLOCK-09', icon: ShieldAlert,
     };
+  } else if (!progress.huntCaseComplete) {
+    const objectives = ['Сформулировать гипотезу.', 'Проверить baseline и telemetry.', 'Собрать hunt-данные.', 'Написать Sigma и KQL.', 'Настроить аналитику.', 'Самостоятельно проверить второй набор.', 'Составить отчёт.', 'Закрыть hunt.'];
+    current = { caseId:'NIGHTGLASS-10', time:'НОЧЬ / HUNT', title:'Threat Hunting', context:'Готового алерта нет. Есть редкие identity и process события.', objective:objectives[Math.min(progress.huntCaseStage, objectives.length-1)], dialogue:'Не ищи IOC наугад. Сначала гипотеза и данные.', speaker:'G', target:'huntcase', button:'Открыть NIGHTGLASS-10', icon:Crosshair };
+  } else if (!progress.cryptoCaseComplete) {
+    const objectives = ['Разобрать криптографическую модель.', 'Проверить PKI и TLS.', 'Разобрать PE/ELF.', 'Написать YARA.', 'Самостоятельно проверить второй файл.', 'Составить отчёт.', 'Закрыть дело.'];
+    current = { caseId:'CIPHERFALL-11', time:'НОЧЬ / EVIDENCE', title:'Cryptography & Malware', context:'Подпись обновления не сходится, внутри два бинарника.', objective:objectives[Math.min(progress.cryptoCaseStage, objectives.length-1)], dialogue:'Отдели доверие к каналу от доверия к файлу.', speaker:'G', target:'cryptocase', button:'Открыть CIPHERFALL-11', icon:Fingerprint };
+  } else if (!progress.cloudCaseComplete) {
+    const objectives = ['Разобрать cloud identity.', 'Проверить CloudTrail и scope.', 'Исправить IAM/KMS.', 'Проверить второй аккаунт.', 'Составить отчёт.', 'Закрыть дело.'];
+    current = { caseId:'SKYVAULT-12', time:'НОЧЬ / CLOUD', title:'Cloud Security', context:'Долгоживущий ключ runner использовали для чтения bucket и KMS grant.', objective:objectives[Math.min(progress.cloudCaseStage, objectives.length-1)], dialogue:'Private bucket не оправдание. Покажи, какая identity что сделала.', speaker:'G', target:'cloudcase', button:'Открыть SKYVAULT-12', icon:Cloud };
+  } else if (!progress.supplyCaseComplete) {
+    const objectives = ['Разобрать image и pipeline.', 'Проверить registry, SBOM и подпись.', 'Проверить Kubernetes RBAC/audit.', 'Исправить CI/CD и workload.', 'Проверить второй namespace.', 'Составить отчёт.', 'Закрыть дело.'];
+    current = { caseId:'CHAINBREAK-13', time:'НОЧЬ / SUPPLY CHAIN', title:'Containers & CI/CD', context:'Тег stable указывает на неподписанный digest, workload получил cluster-admin.', objective:objectives[Math.min(progress.supplyCaseStage, objectives.length-1)], dialogue:'Свяжи commit, workflow, image, ServiceAccount и cloud role.', speaker:'G', target:'supplycase', button:'Открыть CHAINBREAK-13', icon:Boxes };
+  } else if (!progress.architectureCaseComplete) {
+    const objectives = ['Собрать требования бизнеса.', 'Построить inventory и risk priorities.', 'Проверить telemetry и recovery.', 'Спроектировать Zero Trust и controls.', 'Проверить бюджет и exceptions.', 'Составить отчёт.', 'Закрыть проект.'];
+    current = { caseId:'BASTION-14', time:'ДЕНЬ / DESIGN REVIEW', title:'Security Engineering', context:'Три города, ограниченный бюджет и критичный settlement.', objective:objectives[Math.min(progress.architectureCaseStage, objectives.length-1)], dialogue:'Не продавай список продуктов. Нужны приоритеты, владельцы и проверка восстановления.', speaker:'G', target:'architecturecase', button:'Открыть BASTION-14', icon:Building2 };
+  } else if (!progress.capstoneCaseComplete) {
+    const objectives = ['Принять брифинг.', 'Самостоятельно выбрать источники.', 'Восстановить полную цепочку.', 'Написать план ответа.', 'Проверить gaps и detection.', 'Составить финальный отчёт.', 'Закрыть capstone.'];
+    current = { caseId:'BLACKSKY-15', time:'АКТИВНЫЙ ИНЦИДЕНТ / 1.0', title:'Independent Enterprise Incident', context:'Identity, CI, Kubernetes и cloud связаны в одну активную цепочку. Готового маршрута нет.', objective:objectives[Math.min(progress.capstoneCaseStage, objectives.length-1)], dialogue:'Первое решение запомнится. Не выключай чистые системы из страха.', speaker:'G', target:'capstonecase', button:'Открыть BLACKSKY-15', icon:Workflow };
   } else {
     current = {
-      caseId: 'WORK//QUEUE', time: 'НОЧЬ', title: 'Закрытая сеть',
-      context: 'GREYLOCK-09 закрыт. SIEM, EDR и полный Incident Response пройдены.',
-      objective: 'Выбрать повторяемый IR-заказ или дождаться главы Threat Hunting.',
-      dialogue: 'Следующая глава — охота за скрытой активностью без готового алерта.', speaker: '?',
+      caseId: 'VERSION-1.0', time: 'СВОБОДНАЯ ИГРА', title: 'Middle-ready vertical завершена',
+      context: `BLACKSKY-15 закрыт. Итоговый балл: ${progress.capstoneCaseScore}/100.`,
+      objective: 'Повторять лаборатории, брать контракты и развивать независимую карьеру.',
+      dialogue: 'Теперь задачи не обязаны ждать, пока ты будешь готов.', speaker: 'G',
       target: 'contracts', button: 'Открыть Work Queue', icon: Network,
     };
   }

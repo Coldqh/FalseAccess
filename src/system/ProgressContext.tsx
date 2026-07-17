@@ -54,6 +54,7 @@ interface ProgressContextValue {
   completeIncidentCase: () => void;
   completeHuntCase: () => void;
   completeCryptoCase: () => void;
+  completeAdvancedCase: (id: 'cloud' | 'supply' | 'architecture' | 'capstone') => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -61,7 +62,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v21';
+const STORAGE_KEY = 'false-access-progress-v22';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -281,6 +282,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v21Raw = localStorage.getItem('false-access-progress-v21');
     const v20Raw = localStorage.getItem('false-access-progress-v20');
     const v19Raw = localStorage.getItem('false-access-progress-v19');
     const v18Raw = localStorage.getItem('false-access-progress-v18');
@@ -300,6 +302,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v21Raw
       ?? v20Raw
       ?? v19Raw
       ?? v18Raw
@@ -321,7 +324,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v20Raw && !v19Raw && !v18Raw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v21Raw && !v20Raw && !v19Raw && !v18Raw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -335,7 +338,7 @@ function persist(progress: ProgressState) {
 }
 
 function addContractSkill(progress: ProgressState, skill: GeneratedContract['skill'], clean: boolean) {
-  const skillId: SimulationSkillId = skill === 'mobile' ? 'mobileSecurity' : skill === 'email' ? 'emailSecurity' : skill;
+  const skillId: SimulationSkillId = skill === 'mobile' ? 'mobileSecurity' : skill === 'email' ? 'emailSecurity' : skill === 'container' ? 'containerSecurity' : skill === 'architecture' ? 'architecture' : skill;
   const current = progress.simulation.skills[skillId];
   return {
     ...progress.simulation.skills,
@@ -1430,6 +1433,71 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       }};
       simulation = recordSimulationEvent(simulation, 'contract', 'CIPHERFALL-11 закрыт', `PKI, TLS, PE/ELF и YARA разобраны. Подсказок: ${current.cryptoCaseHintUses}.`, 23000);
       return { ...current, cryptoCaseComplete: true, cryptoCaseStage: 7, balance: advanced.balance + 23000, darknetReputation: bump(current.darknetReputation, 9), contractOffers: [], simulation };
+    }),
+    completeAdvancedCase: (id) => setProgress((current) => {
+      const prefix = id === 'cloud' ? 'cloudCase' : id === 'supply' ? 'supplyCase' : id === 'architecture' ? 'architectureCase' : 'capstoneCase';
+      const completeKey = `${prefix}Complete` as keyof ProgressState;
+      if (Boolean(current[completeKey])) return current;
+      const stageKey = `${prefix}Stage` as keyof ProgressState;
+      const hintsKey = `${prefix}HintUses` as keyof ProgressState;
+      const hints = Number(current[hintsKey] ?? 0);
+      const advanced = advanceSlots(current.simulation, current.balance, id === 'capstone' ? 4 : 3, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      const addExam = (examId: string) => { if (!passedExamIds.includes(examId)) passedExamIds.push(examId); };
+      if ((id === 'cloud' && current.supplyCaseComplete) || (id === 'supply' && current.cloudCaseComplete)) addExam('stage-5-capstone');
+      if (id === 'architecture') addExam('stage-6-capstone');
+      if (id === 'capstone') addExam('stage-7-capstone');
+      const skills = { ...advanced.simulation.skills };
+      const grant = (skillId: SimulationSkillId, theory: number, guided: number, independent: number, production: number) => {
+        const track = skills[skillId];
+        skills[skillId] = {
+          ...track,
+          theory: bump(track.theory, theory), guided: bump(track.guided, guided),
+          independent: bump(track.independent, independent), production: bump(track.production, production),
+        };
+      };
+      if (id === 'cloud') {
+        grant('cloud', 34, 32, 26, 10); grant('securityEngineering', 16, 14, 10, 5);
+        grant('incidentResponse', 10, 10, 8, 4); grant('cryptography', 8, 6, 4, 2);
+      } else if (id === 'supply') {
+        grant('containerSecurity', 34, 32, 26, 10); grant('devsecops', 34, 30, 24, 9);
+        grant('appsec', 16, 14, 10, 4); grant('cloud', 10, 8, 6, 3);
+      } else if (id === 'architecture') {
+        grant('architecture', 36, 32, 28, 12); grant('vulnerabilityManagement', 30, 28, 22, 10);
+        grant('governanceRisk', 28, 24, 20, 9); grant('businessContinuity', 28, 24, 20, 8);
+        grant('securityEngineering', 22, 20, 16, 8); grant('operationalPlanning', 18, 16, 14, 8);
+      } else {
+        grant('operationalPlanning', 20, 18, 24, 16); grant('incidentResponse', 16, 14, 22, 16);
+        grant('securityEngineering', 16, 14, 22, 16); grant('architecture', 14, 12, 20, 14);
+        grant('cloud', 12, 10, 16, 10); grant('containerSecurity', 12, 10, 16, 10);
+        grant('communication', 12, 12, 18, 14); grant('threatHunting', 10, 8, 14, 9);
+      }
+      const pay = id === 'cloud' ? 26000 : id === 'supply' ? 28000 : id === 'architecture' ? 30000 : 50000;
+      const title = id === 'cloud' ? 'SKYVAULT-12' : id === 'supply' ? 'CHAINBREAK-13' : id === 'architecture' ? 'BASTION-14' : 'BLACKSKY-15';
+      let simulation = {
+        ...advanced.simulation,
+        skills,
+        progression: { ...advanced.simulation.progression, passedExamIds },
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, id === 'capstone' ? 14 : 8),
+          reliability: bump(advanced.simulation.reputation.reliability, hints > 12 ? 4 : 10),
+          underground: bump(advanced.simulation.reputation.underground, id === 'capstone' ? 15 : 9),
+          notoriety: bump(advanced.simulation.reputation.notoriety, id === 'capstone' ? 8 : 3),
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', `${title} закрыт`, `Модуль завершён. Подсказок: ${hints}.`, pay);
+      const patch: Partial<ProgressState> = {
+        [completeKey]: true,
+        [stageKey]: 6,
+        balance: advanced.balance + pay,
+        darknetReputation: bump(current.darknetReputation, id === 'capstone' ? 18 : 10),
+        contractOffers: [],
+        simulation,
+      };
+      if (id === 'capstone') patch.capstoneCaseScore = Math.max(40, 100 - hints * 4);
+      return { ...current, ...patch } as ProgressState;
     }),
     toggleSpecialization: (id) => setProgress((current) => {
       const selected = current.simulation.progression.selectedSpecializations;

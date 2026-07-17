@@ -49,6 +49,12 @@ export const skillLabels: Record<SimulationSkillId, string> = {
   appsec: 'AppSec',
   mobileSecurity: 'Mobile Security',
   cloud: 'Cloud Security',
+  containerSecurity: 'Container Security',
+  devsecops: 'DevSecOps / Supply Chain',
+  vulnerabilityManagement: 'Vulnerability Management',
+  architecture: 'Security Architecture',
+  governanceRisk: 'Governance / Risk',
+  businessContinuity: 'BCP / DR',
   activeDirectory: 'Active Directory',
   emailSecurity: 'Email Security',
   communication: 'Коммуникация',
@@ -156,6 +162,8 @@ export const progressionStages: ProgressionStageDefinition[] = [
     requirements: {
       appsec: { theory: 50, guided: 42, independent: 35 },
       cloud: { theory: 45, guided: 38, independent: 28 },
+      containerSecurity: { theory: 35, guided: 30, independent: 22 },
+      devsecops: { theory: 32, guided: 28, independent: 20 },
       securityEngineering: { theory: 52, independent: 38, production: 25 },
       web: { independent: 45, production: 25 },
       operationalPlanning: { theory: 35, guided: 30 },
@@ -170,6 +178,9 @@ export const progressionStages: ProgressionStageDefinition[] = [
     examTitle: 'Крупная операция без готовой последовательности',
     requirements: {
       operationalPlanning: { theory: 55, guided: 48, independent: 40, production: 25 },
+      architecture: { theory: 50, guided: 45, independent: 40, production: 25 },
+      vulnerabilityManagement: { theory: 40, guided: 35, independent: 30 },
+      businessContinuity: { theory: 35, guided: 30, independent: 25 },
       incidentResponse: { independent: 55, production: 42 },
       securityEngineering: { independent: 52, production: 38 },
       communication: { independent: 50, production: 42 },
@@ -201,9 +212,9 @@ export const specializations: Array<{
   { id: 'blue-team', title: 'Blue Team', description: 'SOC, SIEM, Detection, IR и Threat Hunting.', skills: ['soc', 'siem', 'incidentResponse', 'threatHunting', 'emailSecurity'] },
   { id: 'red-team', title: 'Red Team', description: 'Web, инфраструктура, анализ доступов и планирование атак в стендах.', skills: ['web', 'networking', 'activeDirectory', 'operationalPlanning'] },
   { id: 'dfir', title: 'DFIR', description: 'Диски, события, временные линии и расследования.', skills: ['forensics', 'incidentResponse', 'windows', 'linux'] },
-  { id: 'security-engineering', title: 'Security Engineering', description: 'Архитектура, сегментация, доступы и мониторинг.', skills: ['securityEngineering', 'networking', 'cloud', 'activeDirectory'] },
-  { id: 'appsec', title: 'AppSec', description: 'Код, API, зависимости, secrets и CI/CD.', skills: ['appsec', 'web', 'python', 'sql', 'mobileSecurity'] },
-  { id: 'cloud-security', title: 'Cloud Security', description: 'Облачные роли, контейнеры, токены и журналы.', skills: ['cloud', 'securityEngineering', 'appsec', 'networking'] },
+  { id: 'security-engineering', title: 'Security Engineering', description: 'Архитектура, сегментация, доступы и мониторинг.', skills: ['securityEngineering', 'architecture', 'vulnerabilityManagement', 'businessContinuity', 'networking', 'cloud', 'activeDirectory'] },
+  { id: 'appsec', title: 'AppSec', description: 'Код, API, зависимости, secrets и CI/CD.', skills: ['appsec', 'devsecops', 'containerSecurity', 'web', 'python', 'sql', 'mobileSecurity'] },
+  { id: 'cloud-security', title: 'Cloud Security', description: 'Облачные роли, контейнеры, токены и журналы.', skills: ['cloud', 'containerSecurity', 'devsecops', 'securityEngineering', 'appsec', 'networking'] },
 ];
 
 function storyExamComplete(stage: ProgressionStageId, progress: ProgressState) {
@@ -299,6 +310,9 @@ const contractRequirements: Record<ContractSkill, { stage: ProgressionStageId; t
   threatHunting: { stage: 4, tracks: { threatHunting: { theory: 20, guided: 18 }, detectionEngineering: { guided: 12 }, siem: { independent: 18 } } },
   cryptography: { stage: 4, tracks: { cryptography: { theory: 20, guided: 16 }, networking: { theory: 30 } } },
   malwareAnalysis: { stage: 4, tracks: { malwareAnalysis: { theory: 18, guided: 16 }, forensics: { guided: 25 } } },
+  cloud: { stage: 5, tracks: { cloud: { theory: 22, guided: 20 }, securityEngineering: { guided: 25 } } },
+  container: { stage: 5, tracks: { containerSecurity: { theory: 20, guided: 18 }, devsecops: { guided: 16 } } },
+  architecture: { stage: 5, tracks: { architecture: { theory: 20, guided: 18 }, vulnerabilityManagement: { guided: 14 }, businessContinuity: { theory: 12 } } },
 };
 
 const difficultyStage: Record<ContractDifficulty, number> = { STARTER: 0, STANDARD: 1, HARD: 2 };

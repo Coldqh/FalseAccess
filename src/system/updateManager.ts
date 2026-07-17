@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.8.1';
+export const APP_VERSION = '1.0.0';
 
 export type UpdatePhase = 'idle' | 'checking' | 'latest' | 'available' | 'updating' | 'offline' | 'error';
 

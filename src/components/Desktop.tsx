@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
+  Bell, BookOpenCheck, Braces, BriefcaseBusiness, Building2, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Cloud, Code2,
   FileSearch, Globe2, HardDrive, Crosshair, Fingerprint, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldAlert, ShieldCheck, Signal, Smartphone, Network, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
+  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldAlert, ShieldCheck, Signal, Smartphone, Network, TerminalSquare, UserRoundCheck, Waypoints, Wifi, Workflow, Boxes, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -35,6 +35,10 @@ import { ForensicsCaseApp } from '../apps/ForensicsCaseApp';
 import { IncidentResponseCaseApp } from '../apps/IncidentResponseCaseApp';
 import { ThreatHuntCaseApp } from '../apps/ThreatHuntCaseApp';
 import { CryptoMalwareCaseApp } from '../apps/CryptoMalwareCaseApp';
+import { CloudCaseApp } from '../apps/CloudCaseApp';
+import { SupplyChainCaseApp } from '../apps/SupplyChainCaseApp';
+import { ArchitectureCaseApp } from '../apps/ArchitectureCaseApp';
+import { CapstoneCaseApp } from '../apps/CapstoneCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -133,6 +137,26 @@ const apps: RuntimeAppDefinition[] = [
     width: 1380, height: 880, accent: '#d6a3ff', kind: 'temporary',
     visible: (progress) => progress.huntCaseComplete && !progress.cryptoCaseComplete,
   },
+  {
+    id: 'cloudcase', title: 'SKYVAULT-12', shortTitle: 'Cloud-12', icon: Cloud,
+    width: 1400, height: 900, accent: '#70a5d8', kind: 'temporary',
+    visible: (progress) => progress.cryptoCaseComplete && !progress.cloudCaseComplete,
+  },
+  {
+    id: 'supplycase', title: 'CHAINBREAK-13', shortTitle: 'Supply-13', icon: Boxes,
+    width: 1400, height: 900, accent: '#9dcf74', kind: 'temporary',
+    visible: (progress) => progress.cloudCaseComplete && !progress.supplyCaseComplete,
+  },
+  {
+    id: 'architecturecase', title: 'BASTION-14', shortTitle: 'Arch-14', icon: Building2,
+    width: 1400, height: 900, accent: '#efc46b', kind: 'temporary',
+    visible: (progress) => progress.supplyCaseComplete && !progress.architectureCaseComplete,
+  },
+  {
+    id: 'capstonecase', title: 'BLACKSKY-15', shortTitle: '1.0 Capstone', icon: Workflow,
+    width: 1440, height: 920, accent: '#ff5a38', kind: 'temporary',
+    visible: (progress) => progress.architectureCaseComplete && !progress.capstoneCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -163,6 +187,10 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'incidentcase': return <IncidentResponseCaseApp />;
     case 'huntcase': return <ThreatHuntCaseApp />;
     case 'cryptocase': return <CryptoMalwareCaseApp />;
+    case 'cloudcase': return <CloudCaseApp />;
+    case 'supplycase': return <SupplyChainCaseApp />;
+    case 'architecturecase': return <ArchitectureCaseApp />;
+    case 'capstonecase': return <CapstoneCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

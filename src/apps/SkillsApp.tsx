@@ -25,6 +25,13 @@ const skillMeta: Array<{ id: SimulationSkillId; name: string; icon: typeof Termi
   { id: 'threatIntelligence', name: 'Threat Intelligence', icon: Globe2 },
   { id: 'cryptography', name: 'Cryptography / PKI', icon: LockKeyhole },
   { id: 'malwareAnalysis', name: 'Malware Analysis', icon: FileCode2 },
+  { id: 'cloud', name: 'Cloud Security', icon: Globe2 },
+  { id: 'containerSecurity', name: 'Container Security', icon: ShieldCheck },
+  { id: 'devsecops', name: 'DevSecOps / Supply Chain', icon: Code2 },
+  { id: 'vulnerabilityManagement', name: 'Vulnerability Management', icon: Radar },
+  { id: 'architecture', name: 'Security Architecture', icon: Network },
+  { id: 'governanceRisk', name: 'Governance / Risk', icon: BookOpenCheck },
+  { id: 'businessContinuity', name: 'BCP / DR', icon: Shield },
   { id: 'communication', name: 'Communication', icon: UserRoundCheck },
 ];
 
@@ -50,6 +57,10 @@ export function SkillsApp() {
     ['Провести Incident Response', progress.incidentCaseComplete],
     ['Закрыть Threat Hunt без готового алерта', progress.huntCaseComplete],
     ['Разобрать PKI и два бинарных формата', progress.cryptoCaseComplete],
+    ['Закрыть Cloud Security', progress.cloudCaseComplete],
+    ['Закрыть Container / Supply Chain', progress.supplyCaseComplete],
+    ['Спроектировать Security Architecture', progress.architectureCaseComplete],
+    ['Пройти BLACKSKY-15', progress.capstoneCaseComplete],
     ['Закрыть заказ без подсказки', progress.completedContracts.some((item) => item.clean)],
   ];
   const moduleDone = (key?: string) => key ? Boolean((progress as unknown as Record<string, unknown>)[key]) : false;

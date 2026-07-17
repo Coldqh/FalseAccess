@@ -38,6 +38,8 @@ export const curriculumModules: CurriculumModule[] = [
   { id: 'ir-i', title: 'Incident Response', level: 'MODULE I', statusKey: 'incidentCaseComplete', topics: ['triage', 'scope', 'containment', 'eradication', 'recovery'], mappings: ['NIST SP 800-61r3'] },
   { id: 'hunt-ii', title: 'Threat Hunting & Detection', level: 'MODULE II', statusKey: 'huntCaseComplete', topics: ['hypotheses', 'telemetry gaps', 'Sigma', 'KQL', 'tuning'], mappings: ['MITRE TTP-based Hunting'] },
   { id: 'crypto-ii', title: 'Cryptography, PKI & Malware', level: 'MODULE II', statusKey: 'cryptoCaseComplete', topics: ['hashing', 'signatures', 'TLS', 'PE/ELF', 'YARA'], mappings: ['NIST Cryptographic Standards', 'NICE Cryptography'] },
-  { id: 'cloud-ii', title: 'Cloud & DevSecOps', level: 'MODULE II', topics: ['IAM', 'KMS', 'containers', 'CI/CD', 'SBOM'], mappings: ['NIST SSDF', 'NICE DevSecOps'] },
-  { id: 'enterprise-capstone', title: 'Independent Enterprise Incident', level: 'CAPSTONE', topics: ['unknown path', 'multiple systems', 'business impact', 'report'], mappings: ['NICE cross-role validation'] },
+  { id: 'cloud-ii', title: 'Cloud Security', level: 'MODULE II', statusKey: 'cloudCaseComplete', topics: ['IAM', 'temporary credentials', 'storage', 'KMS', 'CloudTrail'], mappings: ['AWS IAM Best Practices', 'NIST SP 800-207'] },
+  { id: 'supply-ii', title: 'Containers & Supply Chain', level: 'MODULE II', statusKey: 'supplyCaseComplete', topics: ['Docker', 'Kubernetes', 'CI/CD', 'SBOM', 'provenance'], mappings: ['NIST SSDF', 'SLSA', 'Kubernetes Security Checklist'] },
+  { id: 'architecture-ii', title: 'Security Engineering', level: 'MODULE II', statusKey: 'architectureCaseComplete', topics: ['Zero Trust', 'vulnerability management', 'RTO/RPO', 'risk', 'budget'], mappings: ['NIST SP 800-207', 'CIS Controls 8.1'] },
+  { id: 'enterprise-capstone', title: 'Independent Enterprise Incident', level: 'CAPSTONE', statusKey: 'capstoneCaseComplete', topics: ['unknown path', 'multiple systems', 'business impact', 'report'], mappings: ['NICE cross-role validation', 'NIST SP 800-61r3'] },
 ];

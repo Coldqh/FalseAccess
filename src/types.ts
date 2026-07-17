@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'huntcase' | 'cryptocase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'huntcase' | 'cryptocase' | 'cloudcase' | 'supplycase' | 'architecturecase' | 'capstonecase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics' | 'incidentResponse' | 'threatHunting' | 'cryptography' | 'malwareAnalysis';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics' | 'incidentResponse' | 'threatHunting' | 'cryptography' | 'malwareAnalysis' | 'cloud' | 'container' | 'architecture';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -279,6 +279,43 @@ export interface ProgressState {
   cryptoCaseReportSelections: Record<string, string>;
   cryptoCaseHintUses: number;
   cryptoCaseComplete: boolean;
+  cloudCaseStage: number;
+  cloudCaseFoundationAnswers: Record<string, string>;
+  cloudCaseObjectives: string[];
+  cloudCasePatch: string;
+  cloudCaseIndependentObjectives: string[];
+  cloudCaseIndependentAnswers: Record<string, string>;
+  cloudCaseReportSelections: Record<string, string>;
+  cloudCaseHintUses: number;
+  cloudCaseComplete: boolean;
+  supplyCaseStage: number;
+  supplyCaseFoundationAnswers: Record<string, string>;
+  supplyCaseObjectives: string[];
+  supplyCasePatch: string;
+  supplyCaseIndependentObjectives: string[];
+  supplyCaseIndependentAnswers: Record<string, string>;
+  supplyCaseReportSelections: Record<string, string>;
+  supplyCaseHintUses: number;
+  supplyCaseComplete: boolean;
+  architectureCaseStage: number;
+  architectureCaseFoundationAnswers: Record<string, string>;
+  architectureCaseObjectives: string[];
+  architectureCasePatch: string;
+  architectureCaseIndependentObjectives: string[];
+  architectureCaseIndependentAnswers: Record<string, string>;
+  architectureCaseReportSelections: Record<string, string>;
+  architectureCaseHintUses: number;
+  architectureCaseComplete: boolean;
+  capstoneCaseStage: number;
+  capstoneCaseFoundationAnswers: Record<string, string>;
+  capstoneCaseObjectives: string[];
+  capstoneCasePatch: string;
+  capstoneCaseIndependentObjectives: string[];
+  capstoneCaseIndependentAnswers: Record<string, string>;
+  capstoneCaseReportSelections: Record<string, string>;
+  capstoneCaseHintUses: number;
+  capstoneCaseScore: number;
+  capstoneCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;
