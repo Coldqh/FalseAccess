@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics' | 'incidentResponse';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -241,6 +241,19 @@ export interface ProgressState {
   forensicsCaseReportSelections: Record<string, string>;
   forensicsCaseHintUses: number;
   forensicsCaseComplete: boolean;
+  incidentCaseStage: number;
+  incidentCaseFoundationAnswers: Record<string, string>;
+  incidentCaseTriageObjectives: string[];
+  incidentCaseScopeAnswers: Record<string, string>;
+  incidentCaseContainmentSelections: Record<string, string>;
+  incidentCaseEradicationObjectives: string[];
+  incidentCaseRecoverySelections: Record<string, string>;
+  incidentCaseIndependentObjectives: string[];
+  incidentCaseIndependentAnswers: Record<string, string>;
+  incidentCaseFindingSelections: Record<string, string>;
+  incidentCaseReportSelections: Record<string, string>;
+  incidentCaseHintUses: number;
+  incidentCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

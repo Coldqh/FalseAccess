@@ -758,7 +758,71 @@ function forensicDeletedArtifactContract(seed: number, index: number): Generated
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract, forensicTimelineContract, forensicDeletedArtifactContract] as const;
+
+function irContainmentContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const host = pick(random, ['PAY-GW-04', 'OPS-JUMP-07', 'EDGE-12', 'ARCHIVE-06']);
+  const account = pick(random, ['svc_backup', 'svc_reports', 'deploybot', 'archive_runner']);
+  const remote = ip(random);
+  const difficulty: ContractDifficulty = index % 3 === 0 ? 'HARD' : 'STANDARD';
+  return {
+    id: `ir-containment-${seed}`,
+    seed,
+    type: 'IR_CONTAINMENT',
+    title: 'Точечная локализация активного инцидента',
+    client: pick(random, ['закрытый расчётный узел', 'серый логистический сервис', 'подпольный обменник']),
+    factionId: pick(random, ['north', 'line']),
+    factionName: '',
+    skill: 'incidentResponse',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `На ${host} подтверждён внешний канал. Учётка ${account} использовалась на нескольких узлах. Выбери безопасный containment без остановки чистого контура.`,
+    constraint: 'Сохрани evidence и не выключай системы, для которых нет подтверждённого scope.',
+    files: [
+      { name: 'alerts.log', content: `02:11:04 host=${host} user=${account} event=remote_logon src=${remote}\n02:13:18 host=${host} process=relay.exe dst=${remote}:443 bytes_out=88124` },
+      { name: 'scope.txt', content: `${host}=confirmed\nDB-CORE-01=no_hits\nWEB-01=no_hits\nOPS-JUMP-07=identity_hit` },
+    ],
+    questions: [
+      { id: 'host', label: 'Подтверждённо затронутый узел', placeholder: 'host', answers: [host] },
+      { id: 'account', label: 'Учётка для отключения и отзыва сессий', placeholder: 'account', answers: [account] },
+      { id: 'action', label: 'Безопасная локализация', placeholder: 'кратко', answers: ['изолировать затронутые узлы и отозвать сессии', 'точечная изоляция', 'isolate affected hosts', 'revoke sessions'] },
+    ],
+    hint: 'Сначала выдели confirmed assets. Затем зафиксируй volatile-данные, отзови identity и изолируй только затронутые узлы.',
+  };
+}
+
+function irRecoveryContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed);
+  const service = pick(random, ['settlement-api', 'dispatch-core', 'archive-gateway']);
+  const snapshot = pick(random, ['snap-1842-clean', 'snap-7711-gold', 'snap-4204-verified']);
+  const difficulty: ContractDifficulty = index % 2 === 0 ? 'STANDARD' : 'HARD';
+  return {
+    id: `ir-recovery-${seed}`,
+    seed,
+    type: 'IR_RECOVERY',
+    title: 'Возврат сервиса после компрометации',
+    client: pick(random, ['закрытый рынок', 'расчётный посредник', 'сеть складов']),
+    factionId: pick(random, ['line', 'north']),
+    factionName: '',
+    skill: 'incidentResponse',
+    difficulty,
+    pay: payFor(difficulty, random),
+    summary: `${service} очищен после инцидента. Нужно выбрать источник восстановления, порядок возврата и критерии усиленного мониторинга.`,
+    constraint: 'Не возвращай весь трафик одним шагом. Сначала проверка целостности и ограниченная нагрузка.',
+    files: [
+      { name: 'snapshots.txt', content: `${snapshot} hash=verified created=01:20 patched=true\nsnap-current hash=unknown created=03:51 patched=false` },
+      { name: 'healthchecks.txt', content: `db_integrity=pass\nauth_rotation=pass\nedr_sensor=online\nlogging=online\nsynthetic_transactions=pass` },
+    ],
+    questions: [
+      { id: 'snapshot', label: 'Источник восстановления', placeholder: 'snapshot', answers: [snapshot] },
+      { id: 'order', label: 'Порядок возврата', placeholder: 'кратко', answers: ['поэтапно', 'ограниченный трафик затем полный', 'staged recovery'] },
+      { id: 'monitor', label: 'После возврата', placeholder: 'кратко', answers: ['усиленный мониторинг', 'наблюдать индикаторы', 'heightened monitoring'] },
+    ],
+    hint: 'Проверенный snapshot, health checks, ограниченный трафик, бизнес-проверка и усиленный мониторинг.',
+  };
+}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract, forensicTimelineContract, forensicDeletedArtifactContract, irContainmentContract, irRecoveryContract] as const;
 
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
@@ -774,7 +838,8 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.mobileCaseComplete || !['MOBILE_PROFILE', 'MOBILE_TOKEN_BACKUP'].includes(contract.type))
     .filter((contract) => progress.adCaseComplete || !['AD_STALE_ACCOUNT', 'AD_GPO_ACL'].includes(contract.type))
     .filter((contract) => progress.mailCaseComplete || !['EMAIL_HEADER', 'EMAIL_OAUTH'].includes(contract.type))
-    .filter((contract) => progress.forensicsCaseComplete || !['FORENSIC_TIMELINE', 'FORENSIC_DELETED_ARTIFACT'].includes(contract.type));
+    .filter((contract) => progress.forensicsCaseComplete || !['FORENSIC_TIMELINE', 'FORENSIC_DELETED_ARTIFACT'].includes(contract.type))
+    .filter((contract) => progress.incidentCaseComplete || !['IR_CONTAINMENT', 'IR_RECOVERY'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);

@@ -51,6 +51,7 @@ interface ProgressContextValue {
   completeMailCase: () => void;
   completeDarknetCore: (choice: 'accept' | 'ignore') => void;
   completeForensicsCase: () => void;
+  completeIncidentCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -58,7 +59,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v17';
+const STORAGE_KEY = 'false-access-progress-v18';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -242,6 +243,19 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     forensicsCaseReportSelections: parsed.forensicsCaseReportSelections && typeof parsed.forensicsCaseReportSelections === 'object' ? parsed.forensicsCaseReportSelections as Record<string, string> : {},
     forensicsCaseHintUses: Number.isFinite(Number(parsed.forensicsCaseHintUses)) ? Math.max(0, Number(parsed.forensicsCaseHintUses)) : 0,
     forensicsCaseComplete: Boolean(parsed.forensicsCaseComplete),
+    incidentCaseStage: Number.isFinite(Number(parsed.incidentCaseStage)) ? Math.max(0, Math.min(8, Number(parsed.incidentCaseStage))) : 0,
+    incidentCaseFoundationAnswers: parsed.incidentCaseFoundationAnswers && typeof parsed.incidentCaseFoundationAnswers === 'object' ? parsed.incidentCaseFoundationAnswers as Record<string, string> : {},
+    incidentCaseTriageObjectives: Array.isArray(parsed.incidentCaseTriageObjectives) ? parsed.incidentCaseTriageObjectives.filter((item): item is string => typeof item === 'string') : [],
+    incidentCaseScopeAnswers: parsed.incidentCaseScopeAnswers && typeof parsed.incidentCaseScopeAnswers === 'object' ? parsed.incidentCaseScopeAnswers as Record<string, string> : {},
+    incidentCaseContainmentSelections: parsed.incidentCaseContainmentSelections && typeof parsed.incidentCaseContainmentSelections === 'object' ? parsed.incidentCaseContainmentSelections as Record<string, string> : {},
+    incidentCaseEradicationObjectives: Array.isArray(parsed.incidentCaseEradicationObjectives) ? parsed.incidentCaseEradicationObjectives.filter((item): item is string => typeof item === 'string') : [],
+    incidentCaseRecoverySelections: parsed.incidentCaseRecoverySelections && typeof parsed.incidentCaseRecoverySelections === 'object' ? parsed.incidentCaseRecoverySelections as Record<string, string> : {},
+    incidentCaseIndependentObjectives: Array.isArray(parsed.incidentCaseIndependentObjectives) ? parsed.incidentCaseIndependentObjectives.filter((item): item is string => typeof item === 'string') : [],
+    incidentCaseIndependentAnswers: parsed.incidentCaseIndependentAnswers && typeof parsed.incidentCaseIndependentAnswers === 'object' ? parsed.incidentCaseIndependentAnswers as Record<string, string> : {},
+    incidentCaseFindingSelections: parsed.incidentCaseFindingSelections && typeof parsed.incidentCaseFindingSelections === 'object' ? parsed.incidentCaseFindingSelections as Record<string, string> : {},
+    incidentCaseReportSelections: parsed.incidentCaseReportSelections && typeof parsed.incidentCaseReportSelections === 'object' ? parsed.incidentCaseReportSelections as Record<string, string> : {},
+    incidentCaseHintUses: Number.isFinite(Number(parsed.incidentCaseHintUses)) ? Math.max(0, Number(parsed.incidentCaseHintUses)) : 0,
+    incidentCaseComplete: Boolean(parsed.incidentCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
     terminalObjectives,
@@ -265,6 +279,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v17Raw = localStorage.getItem('false-access-progress-v17');
     const v16Raw = localStorage.getItem('false-access-progress-v16');
     const v15Raw = localStorage.getItem('false-access-progress-v15');
     const v14Raw = localStorage.getItem('false-access-progress-v14');
@@ -280,6 +295,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v17Raw
       ?? v16Raw
       ?? v15Raw
       ?? v14Raw
@@ -297,7 +313,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -1272,6 +1288,100 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         balance: advanced.balance + 19000,
         darknetReputation: bump(current.darknetReputation, 12),
         factionRep: { ...current.factionRep, line: (current.factionRep.line ?? 0) + 12 },
+        contractOffers: [],
+        simulation,
+      };
+    }),
+    completeIncidentCase: () => setProgress((current) => {
+      if (current.incidentCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 4, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      ['siem-edr-incident', 'incident-response', 'stage-4-capstone'].forEach((id) => { if (!passedExamIds.includes(id)) passedExamIds.push(id); });
+      const heat = {
+        ...advanced.simulation.heat,
+        digitalTrace: bump(advanced.simulation.heat.digitalTrace, 3),
+        criminalExposure: bump(advanced.simulation.heat.criminalExposure, 7),
+      };
+      heat.wantedLevel = calculateWantedLevel(heat);
+      let simulation = {
+        ...advanced.simulation,
+        heat,
+        reputation: {
+          ...advanced.simulation.reputation,
+          professional: bump(advanced.simulation.reputation.professional, 10),
+          reliability: bump(advanced.simulation.reputation.reliability, current.incidentCaseHintUses > 12 ? 5 : 12),
+          underground: bump(advanced.simulation.reputation.underground, 14),
+        },
+        progression: { ...advanced.simulation.progression, passedExamIds },
+        skills: {
+          ...advanced.simulation.skills,
+          incidentResponse: {
+            ...advanced.simulation.skills.incidentResponse,
+            theory: bump(advanced.simulation.skills.incidentResponse.theory, 50),
+            guided: bump(advanced.simulation.skills.incidentResponse.guided, 48),
+            independent: bump(advanced.simulation.skills.incidentResponse.independent, 38),
+            production: bump(advanced.simulation.skills.incidentResponse.production, 20),
+          },
+          siem: {
+            ...advanced.simulation.skills.siem,
+            theory: bump(advanced.simulation.skills.siem.theory, 35),
+            guided: bump(advanced.simulation.skills.siem.guided, 34),
+            independent: bump(advanced.simulation.skills.siem.independent, 28),
+            production: bump(advanced.simulation.skills.siem.production, 14),
+          },
+          soc: {
+            ...advanced.simulation.skills.soc,
+            theory: bump(advanced.simulation.skills.soc.theory, 30),
+            guided: bump(advanced.simulation.skills.soc.guided, 28),
+            independent: bump(advanced.simulation.skills.soc.independent, 24),
+            production: bump(advanced.simulation.skills.soc.production, 14),
+          },
+          securityEngineering: {
+            ...advanced.simulation.skills.securityEngineering,
+            theory: bump(advanced.simulation.skills.securityEngineering.theory, 22),
+            guided: bump(advanced.simulation.skills.securityEngineering.guided, 24),
+            independent: bump(advanced.simulation.skills.securityEngineering.independent, 18),
+            production: bump(advanced.simulation.skills.securityEngineering.production, 10),
+          },
+          operationalPlanning: {
+            ...advanced.simulation.skills.operationalPlanning,
+            theory: bump(advanced.simulation.skills.operationalPlanning.theory, 24),
+            guided: bump(advanced.simulation.skills.operationalPlanning.guided, 22),
+            independent: bump(advanced.simulation.skills.operationalPlanning.independent, 18),
+            production: bump(advanced.simulation.skills.operationalPlanning.production, 10),
+          },
+          forensics: {
+            ...advanced.simulation.skills.forensics,
+            theory: bump(advanced.simulation.skills.forensics.theory, 10),
+            guided: bump(advanced.simulation.skills.forensics.guided, 12),
+            independent: bump(advanced.simulation.skills.forensics.independent, 8),
+            production: bump(advanced.simulation.skills.forensics.production, 4),
+          },
+          threatHunting: {
+            ...advanced.simulation.skills.threatHunting,
+            theory: bump(advanced.simulation.skills.threatHunting.theory, 10),
+            guided: bump(advanced.simulation.skills.threatHunting.guided, 12),
+            independent: bump(advanced.simulation.skills.threatHunting.independent, 12),
+            production: bump(advanced.simulation.skills.threatHunting.production, 6),
+          },
+          communication: {
+            ...advanced.simulation.skills.communication,
+            theory: bump(advanced.simulation.skills.communication.theory, 10),
+            guided: bump(advanced.simulation.skills.communication.guided, 12),
+            independent: bump(advanced.simulation.skills.communication.independent, 12),
+            production: bump(advanced.simulation.skills.communication.production, 8),
+          },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'GREYLOCK-09 закрыт', `Активный инцидент локализован, инфраструктура восстановлена, повторный CI-токен отозван. Подсказок: ${current.incidentCaseHintUses}.`, 24000);
+      return {
+        ...current,
+        incidentCaseComplete: true,
+        incidentCaseStage: 8,
+        balance: advanced.balance + 24000,
+        darknetReputation: bump(current.darknetReputation, 15),
+        factionRep: { ...current.factionRep, line: (current.factionRep.line ?? 0) + 15 },
         contractOffers: [],
         simulation,
       };

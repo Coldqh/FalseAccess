@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
   FileSearch, Globe2, HardDrive, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
-  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldCheck, Signal, Smartphone, Network, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
+  Settings as SettingsIcon, Router, ServerCog, Shield, ShieldAlert, ShieldCheck, Signal, Smartphone, Network, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
 import { WindowFrame } from './WindowFrame';
@@ -32,6 +32,7 @@ import { MobileCaseApp } from '../apps/MobileCaseApp';
 import { AdCaseApp } from '../apps/AdCaseApp';
 import { MailCaseApp } from '../apps/MailCaseApp';
 import { ForensicsCaseApp } from '../apps/ForensicsCaseApp';
+import { IncidentResponseCaseApp } from '../apps/IncidentResponseCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -115,6 +116,11 @@ const apps: RuntimeAppDefinition[] = [
     width: 1340, height: 850, accent: '#86b8d8', kind: 'temporary',
     visible: (progress) => progress.darknetComplete && !progress.forensicsCaseComplete,
   },
+  {
+    id: 'incidentcase', title: 'GREYLOCK-09', shortTitle: 'IR-09', icon: ShieldAlert,
+    width: 1360, height: 860, accent: '#ef7d63', kind: 'temporary',
+    visible: (progress) => progress.forensicsCaseComplete && !progress.incidentCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -142,6 +148,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'adcase': return <AdCaseApp />;
     case 'mailcase': return <MailCaseApp />;
     case 'forensicscase': return <ForensicsCaseApp />;
+    case 'incidentcase': return <IncidentResponseCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, HardDrive, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Braces, BriefcaseBusiness, FileSearch, HardDrive, Mail, MailWarning, MapPinned, MonitorCog, MessageSquare, Router, ServerCog, ShieldAlert, ShieldCheck, Smartphone, UserRoundCheck, Waypoints, Network } from 'lucide-react';
 import type { AppId } from '../types';
 import { useProgress } from '../system/ProgressContext';
 import { getClinicStage } from '../missions/clinic01';
@@ -227,12 +227,31 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
       dialogue: progress.forensicsCaseStage === 0 ? 'Оригиналы не трогай. Сначала хэши и рабочие копии.' : 'Нужны загрузка, исполнение, файлы, сеть и границы доказанного.', speaker: '?',
       target: 'forensicscase', button: 'Открыть DEADFRAME-08', icon: HardDrive,
     };
+  } else if (!progress.incidentCaseComplete) {
+    const objectives = [
+      'Принять активный инцидент и понять ограничения бизнеса.',
+      'Разобрать жизненный цикл Incident Response.',
+      'Связать SIEM, EDR, identity и network telemetry.',
+      'Определить подтверждённый scope.',
+      'Собрать точечный containment без остановки чистых систем.',
+      'Удалить учётки, токены, закрепление и первоначальную причину.',
+      'Вернуть сервисы поэтапно и включить усиленный мониторинг.',
+      'Самостоятельно разобрать вторую волну и составить отчёт.',
+      'Закрыть инцидент.',
+    ];
+    current = {
+      caseId: 'GREYLOCK-09', time: `ДЕНЬ ${progress.simulation.clock.day} / АКТИВНЫЙ ИНЦИДЕНТ`, title: 'SIEM, EDR и Incident Response',
+      context: 'Расчётный gateway отправляет трафик наружу. Сервисная учётка прошла через VPN и jump-host, но весь контур выключать нельзя.',
+      objective: objectives[Math.min(progress.incidentCaseStage, objectives.length - 1)],
+      dialogue: progress.incidentCaseStage === 0 ? 'Не глуши всё. Сначала докажи scope и подготовь резерв.' : 'Нужны действия, время, результат и причина каждого решения.', speaker: 'G',
+      target: 'incidentcase', button: 'Открыть GREYLOCK-09', icon: ShieldAlert,
+    };
   } else {
     current = {
       caseId: 'WORK//QUEUE', time: 'НОЧЬ', title: 'Закрытая сеть',
-      context: 'DEADFRAME-08 закрыт. Дисковая и memory-forensics база пройдена.',
-      objective: 'Выбрать повторяемый DFIR-заказ или дождаться следующей технической главы.',
-      dialogue: 'Следующая глава — Incident Response и управление активным инцидентом.', speaker: '?',
+      context: 'GREYLOCK-09 закрыт. SIEM, EDR и полный Incident Response пройдены.',
+      objective: 'Выбрать повторяемый IR-заказ или дождаться главы Threat Hunting.',
+      dialogue: 'Следующая глава — охота за скрытой активностью без готового алерта.', speaker: '?',
       target: 'contracts', button: 'Открыть Work Queue', icon: Network,
     };
   }

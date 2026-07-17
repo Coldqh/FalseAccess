@@ -291,6 +291,7 @@ const contractRequirements: Record<ContractSkill, { stage: ProgressionStageId; t
   activeDirectory: { stage: 3, tracks: { activeDirectory: { theory: 15, guided: 15 }, windows: { guided: 25 }, powershell: { guided: 18 } } },
   email: { stage: 3, tracks: { emailSecurity: { theory: 15, guided: 15 }, soc: { guided: 25 }, networking: { guided: 20 } } },
   forensics: { stage: 3, tracks: { forensics: { theory: 20, guided: 18 }, incidentResponse: { guided: 24 }, windows: { guided: 25 } } },
+  incidentResponse: { stage: 4, tracks: { incidentResponse: { theory: 30, guided: 28 }, siem: { guided: 24 }, soc: { independent: 18 } } },
 };
 
 const difficultyStage: Record<ContractDifficulty, number> = { STARTER: 0, STANDARD: 1, HARD: 2 };
