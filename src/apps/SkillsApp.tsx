@@ -6,6 +6,7 @@ import { useProgress } from '../system/ProgressContext';
 import type { SimulationSkillId } from '../simulation/types';
 import { getMiddleReadiness } from '../simulation/mastery';
 import { curriculumModules, curriculumSources } from '../data/curriculum';
+import { learningEvidenceLabels } from '../data/learningStandards';
 
 const skillMeta: Array<{ id: SimulationSkillId; name: string; icon: typeof TerminalSquare }> = [
   { id: 'linux', name: 'Linux', icon: TerminalSquare },
@@ -36,7 +37,7 @@ const skillMeta: Array<{ id: SimulationSkillId; name: string; icon: typeof Termi
 ];
 
 function total(track: { theory: number; guided: number; independent: number; production: number }) {
-  return Math.round(track.theory * 0.15 + track.guided * 0.2 + track.independent * 0.3 + track.production * 0.35);
+  return Math.round(track.theory * 0.2 + track.guided * 0.25 + track.independent * 0.4 + track.production * 0.15);
 }
 
 export function SkillsApp() {
@@ -68,42 +69,42 @@ export function SkillsApp() {
   return (
     <div className="skills-app app-scroll skills-app-v5 curriculum-hardened">
       <header className="skills-header">
-        <div><p className="eyebrow">ПРОФИЛЬ / ПОДТВЕРЖДЁННЫЕ КОМПЕТЕНЦИИ</p><h2>Одна глава — один модуль, а не освоенное направление</h2><p>Теория, практика с подсказкой, самостоятельная работа и опыт считаются отдельно. MODULE I даёт фундамент; глубина приходит в MODULE II и capstone.</p></div>
-        <div className="profile-badge"><span>{readiness.total}</span><small>middle-ready</small></div>
+        <div><p className="eyebrow">УЧЕБНЫЙ ПРОФИЛЬ / НЕ СЕРТИФИКАЦИЯ</p><h2>Показываем только внутриигровые доказательства</h2><p>Теория, практика с опорой, самостоятельная работа и симуляционные задачи считаются отдельно. Эти числа помогают выбирать следующий модуль, но не подтверждают должность, стаж или внешний сертификат.</p></div>
+        <div className="profile-badge"><span>{readiness.total}</span><small>lab-readiness</small></div>
       </header>
 
-      <section className="mastery-summary"><div><strong>{readiness.total}%</strong><span>Общая готовность</span></div><p>Процент не заменяет доказательства: нужны разные модули, самостоятельные лаборатории и производственный опыт.</p></section>
+      <section className="mastery-summary"><div><strong>{readiness.total}%</strong><span>Готовность к лабораториям</span></div><p>Процент строится из игрового прогресса. Для профессионального уровня нужны реальные инструменты, неизвестные datasets, hidden tests и внешняя оценка.</p></section>
 
       <section className="skill-track-grid">
         {skillMeta.map((meta) => {
           const track = tracks[meta.id]; const Icon = meta.icon; const score = total(track);
           return <article key={meta.id} className={score === 0 ? 'locked' : ''}>
-            <header><span><Icon size={19} /></span><strong>{meta.name}</strong><b>{score}</b></header>
-            <div className="skill-total"><i style={{ width: `${score}%` }} /></div>
-            <dl><div><dt>Теория</dt><dd>{track.theory}</dd></div><div><dt>С куратором</dt><dd>{track.guided}</dd></div><div><dt>Самостоятельно</dt><dd>{track.independent}</dd></div><div><dt>Рабочий опыт</dt><dd>{track.production}</dd></div></dl>
+            <header><span><Icon size={19}/></span><strong>{meta.name}</strong><b>{score}</b></header>
+            <div className="skill-total"><i style={{ width: `${score}%` }}/></div>
+            <dl><div><dt>Теория</dt><dd>{track.theory}</dd></div><div><dt>С опорой</dt><dd>{track.guided}</dd></div><div><dt>Самостоятельно</dt><dd>{track.independent}</dd></div><div><dt>Симулятор</dt><dd>{track.production}</dd></div></dl>
           </article>;
         })}
       </section>
 
       <section className="curriculum-panel">
-        <header><div><p className="eyebrow">CURRICULUM MAP</p><h3>Покрытие программы</h3></div><BookOpenCheck size={22} /></header>
+        <header><div><p className="eyebrow">CURRICULUM MAP</p><h3>Покрытие и границы программы</h3></div><BookOpenCheck size={22}/></header>
         <div className="curriculum-grid">{curriculumModules.map((module) => {
           const done = moduleDone(module.statusKey, module.completionId);
           return <article key={module.id} className={done ? 'done' : module.statusKey || module.completionId ? '' : 'planned'}>
             <div><span>{module.level}</span><b>{done ? 'ПРОЙДЕНО' : module.statusKey || module.completionId ? 'НЕ ЗАКРЫТО' : 'ДАЛЬШЕ'}</b></div>
-            <h4>{module.title}</h4><p>{module.topics.join(' · ')}</p><small>{module.mappings.join(' / ')}</small>
+            <h4>{module.title}</h4><p>{module.topics.join(' · ')}</p><small>{learningEvidenceLabels[module.evidenceLevel]} · {module.mappings.join(' / ')}</small><p>{module.limitation}</p>
           </article>;
         })}</div>
       </section>
 
       <section className="curriculum-sources">
-        <header><div><p className="eyebrow">SOURCE BASELINE</p><h3>На чём строится теория</h3></div><ExternalLink size={20} /></header>
-        <div>{curriculumSources.map((source) => <article key={source.id}><strong>{source.authority}</strong><span>{source.title}</span><b>{source.version}</b><p>{source.scope}</p></article>)}</div>
+        <header><div><p className="eyebrow">SOURCE BASELINE</p><h3>Эталонные программы и стандарты</h3></div><ExternalLink size={20}/></header>
+        <div>{curriculumSources.map((source) => <article key={source.id}><strong>{source.authority}</strong><span>{source.title}</span><b>{source.version}</b><p>{source.scope}</p><small>{source.assessment}</small></article>)}</div>
       </section>
 
       <section className="milestone-panel">
-        <div><p className="eyebrow">ПОДТВЕРЖДЁННЫЕ ДЕЙСТВИЯ</p><h3>Кампания и симулятор</h3><MailWarning size={20} /></div>
-        <div className="milestone-list">{milestones.map(([label, done]) => <div key={label as string} className={done ? 'done' : ''}><span>{done ? <Check size={14} /> : <Circle size={12} />}</span><strong>{label as string}</strong></div>)}</div>
+        <div><p className="eyebrow">НАБЛЮДАЕМЫЕ ДЕЙСТВИЯ</p><h3>Что игрок реально сделал в кампании</h3><MailWarning size={20}/></div>
+        <div className="milestone-list">{milestones.map(([label, done]) => <div key={label as string} className={done ? 'done' : ''}><span>{done ? <Check size={14}/> : <Circle size={12}/>}</span><strong>{label as string}</strong></div>)}</div>
       </section>
     </div>
   );

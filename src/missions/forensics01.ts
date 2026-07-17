@@ -18,29 +18,29 @@ export const forensicsFoundationQuestions = [
   {
     id: 'image', label: 'Зачем работать с образом, а не с оригинальным диском?', options: [
       option('preserve', 'Чтобы не менять исходный носитель и повторить анализ', true),
-      option('speed', 'Только ради скорости'),
-      option('encrypt', 'Чтобы автоматически расшифровать данные'),
+      option('performance', 'Чтобы ускорить чтение, даже если оригинал при этом изменяется'),
+      option('mount', 'Чтобы обязательно смонтировать оригинал на запись'),
     ],
   },
   {
     id: 'hash', label: 'Зачем считать хэш до и после копирования?', options: [
       option('integrity', 'Подтвердить целостность и неизменность образа', true),
-      option('password', 'Получить пароль пользователя'),
-      option('compress', 'Сжать файл'),
+      option('identity', 'Определить реального пользователя компьютера'),
+      option('timeline', 'Автоматически восстановить все события'),
     ],
   },
   {
     id: 'volatile', label: 'Что есть в памяти, но может исчезнуть после выключения?', options: [
       option('ram', 'Процессы, сетевые соединения, команды и часть ключей/токенов', true),
-      option('mft', 'Только MFT'),
-      option('bios', 'Только настройки BIOS'),
+      option('disk-only', 'Только таблица разделов диска'),
+      option('firmware', 'Только настройки прошивки'),
     ],
   },
   {
     id: 'timeline', label: 'Почему одна временная метка не доказывает действие?', options: [
       option('correlate', 'Её нужно сверять с другими источниками и учитывать тип метки', true),
-      option('always', 'Любая метка всегда точна'),
-      option('ignore', 'Время в расследовании не используется'),
+      option('exact', 'Любая метка однозначно показывает намерение пользователя'),
+      option('local', 'Время полезно только при анализе сети'),
     ],
   },
 ] as const;
@@ -52,25 +52,25 @@ export const diskObjectives = [
   },
   {
     id: 'partitions', title: 'Посмотри таблицу разделов', command: 'mmls evidence/LOCKER-17.E01',
-    output: 'DOS Partition Table\n000: Meta 0000000000-0000000000\n001: NTFS 0000002048-0976558079  C:',
+    output: 'DOS Partition Table\n000: Meta 0000000000-0000000000\n001: NTFS 0000002048-0976558079  C:\npartition_offset=2048 sectors',
   },
   {
-    id: 'files', title: 'Построй список файлов без монтирования на запись', command: 'fls -r -m C: evidence/LOCKER-17.E01 > analysis/bodyfile.txt',
-    output: 'bodyfile.txt created: 184229 records / read-only source',
+    id: 'files', title: 'Построй список файлов NTFS без монтирования на запись', command: 'fls -o 2048 -r -m C: evidence/LOCKER-17.E01 > analysis/bodyfile.txt',
+    output: 'bodyfile.txt created: 184229 records / offset=2048 / read-only source',
   },
   {
     id: 'timeline', title: 'Собери файловую временную линию', command: 'mactime -b analysis/bodyfile.txt -d > analysis/timeline.csv',
     output: 'timeline.csv created: 184229 rows sorted by timestamp',
   },
   {
-    id: 'search', title: 'Найди подозрительный файл и соседние события', command: "grep -i 'invoice_viewer.exe\|preview.ps1\|Recent\\\\invoice' analysis/timeline.csv",
+    id: 'search', title: 'Найди подозрительный файл и соседние события', command: "grep -i 'invoice_viewer.exe\\|preview.ps1\\|Recent\\\\invoice' analysis/timeline.csv",
     output: '02:14:19,MACB,C:/Users/roman/Downloads/invoice_viewer.exe\n02:14:22,.A.B,C:/Users/roman/AppData/Local/Temp/preview.ps1\n02:14:41,M...,C:/Users/roman/AppData/Roaming/Microsoft/Windows/Recent/invoice.lnk',
   },
 ] as const;
 
 export const diskQuestions = [
   {
-    id: 'source', label: 'Какой файл появился первым?', options: [
+    id: 'source', label: 'Какой файл появился первым по этой временной линии?', options: [
       option('viewer', 'invoice_viewer.exe в Downloads', true),
       option('ps1', 'preview.ps1 во временной папке'),
       option('lnk', 'ярлык invoice.lnk'),
@@ -79,31 +79,31 @@ export const diskQuestions = [
   {
     id: 'proof', label: 'Что подтверждает запуск, а не только наличие файла?', options: [
       option('multi', 'Prefetch/Amcache/процесс в памяти и связанные события', true),
-      option('name', 'Одно имя файла'),
-      option('download', 'Только папка Downloads'),
+      option('name', 'Только подозрительное имя файла'),
+      option('folder', 'Только расположение в Downloads'),
     ],
   },
 ] as const;
 
 export const artifactObjectives = [
   {
-    id: 'browser', title: 'Проверь историю загрузок', command: "sqlite3 artifacts/History.db \"select datetime(start_time,'unixepoch'), target_path, tab_url from downloads;\"",
-    output: '02:14:17|C:\\Users\\roman\\Downloads\\invoice_viewer.exe|https://files-deadframe.example/invoice/771',
+    id: 'browser', title: 'Проверь историю загрузок Chromium', command: "sqlite3 artifacts/History.db \"select datetime((start_time/1000000)-11644473600,'unixepoch'), target_path, tab_url from downloads;\"",
+    output: '2026-07-16 02:14:17|C:\\Users\\roman\\Downloads\\invoice_viewer.exe|https://files-deadframe.example/invoice/771',
   },
   {
     id: 'prefetch', title: 'Проверь факт исполнения', command: 'cat artifacts/INVOICE_VIEWER.EXE.pf.txt',
     output: 'Executable=INVOICE_VIEWER.EXE\nRunCount=1\nLastRun=2026-07-16 02:14:20\nReferenced=KERNEL32.DLL, POWERSHELL.EXE, preview.ps1',
   },
   {
-    id: 'registry', title: 'Проверь пользовательский автозапуск', command: "grep -i 'invoice\|preview' artifacts/NTUSER-runkeys.txt",
+    id: 'registry', title: 'Проверь пользовательский автозапуск', command: "grep -i 'invoice\\|preview' artifacts/NTUSER-runkeys.txt",
     output: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\PreviewSync = powershell.exe -File C:\\Users\\roman\\AppData\\Local\\Temp\\preview.ps1',
   },
   {
-    id: 'deleted', title: 'Найди удалённый журнал', command: "fls -rd evidence/LOCKER-17.E01 | grep 'sync.log'",
+    id: 'deleted', title: 'Найди удалённый журнал в NTFS-разделе', command: "fls -o 2048 -rd evidence/LOCKER-17.E01 | grep 'sync.log'",
     output: 'r/r * 128774-128-4: Users/roman/AppData/Local/Temp/sync.log',
   },
   {
-    id: 'recover', title: 'Извлеки удалённый файл в рабочую папку', command: 'icat evidence/LOCKER-17.E01 128774-128-4 > analysis/sync.log',
+    id: 'recover', title: 'Извлеки удалённый файл в рабочую папку', command: 'icat -o 2048 evidence/LOCKER-17.E01 128774-128-4 > analysis/sync.log',
     output: 'Recovered 742 bytes to analysis/sync.log\n02:15:01 token_loaded sid=dl_49a1\n02:15:07 upload_started dst=198.51.100.67:443\n02:15:39 upload_complete bytes=2847712',
   },
 ] as const;
@@ -135,15 +135,15 @@ export const memoryQuestions = [
   {
     id: 'chain', label: 'Какая цепочка подтверждена?', options: [
       option('chain', 'invoice_viewer.exe → PowerShell → syncsvc.exe → 198.51.100.67:443', true),
-      option('browser', 'Chrome → explorer.exe → SMB'),
-      option('unknown', 'Процессы не связаны'),
+      option('partial', 'Только invoice_viewer.exe → PowerShell; сеть не связана с процессом'),
+      option('parallel', 'Все процессы независимы и имеют разных родителей'),
     ],
   },
   {
-    id: 'scope', label: 'Какие данные мог читать syncsvc.exe?', options: [
-      option('handles', 'Документ, sync.log и браузерную Login Data по открытым handles', true),
-      option('all', 'Весь диск без доказательств'),
-      option('none', 'Никакие'),
+    id: 'scope', label: 'Какие данные процесс мог читать по открытым handles?', options: [
+      option('handles', 'Документ, sync.log и браузерную Login Data; это не доказывает чтение всего диска', true),
+      option('all', 'Все файлы организации'),
+      option('none', 'Handles не дают никакого контекста'),
     ],
   },
 ] as const;
@@ -152,22 +152,22 @@ export const containmentSections = [
   {
     id: 'preserve', label: 'Сохранность доказательств', options: [
       option('hash', 'Зафиксировать источник, время, хэши и рабочие копии', true),
-      option('edit', 'Открыть оригинал и удалить подозрительные файлы'),
-      option('rename', 'Переименовать образ'),
+      option('live-edit', 'Удалить файл на оригинальном носителе до хэширования'),
+      option('single-copy', 'Оставить только одну рабочую копию без журнала'),
     ],
   },
   {
     id: 'host', label: 'Устройство', options: [
       option('isolate', 'Изолировать узел, сохранить volatile-данные и затем восстанавливать', true),
-      option('wipe', 'Сразу переустановить без сбора'),
-      option('leave', 'Оставить в сети'),
+      option('reboot', 'Сначала перезагрузить, затем решать, нужна ли память'),
+      option('observe', 'Оставить подтверждённый канал активным без согласованного наблюдения'),
     ],
   },
   {
     id: 'identity', label: 'Сессии и учётные данные', options: [
       option('revoke', 'Отозвать сессии после фиксации артефактов и проверить использование токена', true),
-      option('password', 'Только сменить пароль'),
-      option('ignore', 'Ничего не делать'),
+      option('password-only', 'Сменить только пароль, не проверяя токены'),
+      option('delay', 'Оставить активные сессии до завершения всего отчёта'),
     ],
   },
 ] as const;
@@ -182,17 +182,17 @@ export const independentCommands = [
 
 export const independentQuestions = [
   {
-    id: 'entry', label: 'Начальная точка второго инцидента', options: [
-      option('download', 'Загрузка archive_pack.exe из браузера', true),
-      option('service', 'Само появление vaultsvc.exe без причины'),
-      option('network', 'Внешний адрес создал файл'),
+    id: 'entry', label: 'Какая начальная точка поддерживается артефактами?', options: [
+      option('download', 'Загрузка archive_pack.exe из браузера с последующим созданием vault.ps1', true),
+      option('service', 'Само наличие vaultsvc.exe без данных о родителе'),
+      option('network', 'Удалённый адрес сам создал локальный файл'),
     ],
   },
   {
-    id: 'process', label: 'Процесс внешнего соединения', options: [
+    id: 'process', label: 'Какой процесс связан с внешним соединением?', options: [
       option('vaultsvc', 'vaultsvc.exe PID 5310', true),
-      option('explorer', 'explorer.exe'),
-      option('powershell', 'Любой powershell.exe'),
+      option('explorer', 'explorer.exe, потому что он предок дерева'),
+      option('powershell', 'powershell.exe без привязки PID'),
     ],
   },
 ] as const;
@@ -200,30 +200,30 @@ export const independentQuestions = [
 export const findingSections = [
   {
     id: 'initial', label: 'Первоначальное действие', options: [
-      option('download', 'Пользователь скачал и запустил invoice_viewer.exe', true),
-      option('usb', 'Заражение через USB'),
-      option('rdp', 'Успешный RDP-вход'),
+      option('download', 'Пользователь скачал, а execution artifacts подтверждают запуск invoice_viewer.exe', true),
+      option('download-only', 'Файл был скачан, но запуск ничем не подтверждён'),
+      option('rdp', 'Первоначальным доступом был подтверждённый RDP-вход'),
     ],
   },
   {
     id: 'execution', label: 'Исполнение', options: [
       option('process', 'invoice_viewer → PowerShell → syncsvc', true),
-      option('service-only', 'Только штатная служба'),
-      option('none', 'Запуск не подтверждён'),
+      option('service-only', 'Есть только штатная служба без parent-child связи'),
+      option('unknown-parent', 'Процесс найден, но родитель неизвестен'),
     ],
   },
   {
     id: 'data', label: 'Доступ к данным', options: [
-      option('handles', 'Подтверждены открытые документ, sync.log и браузерная Login Data', true),
-      option('database', 'Украдена вся база компании'),
-      option('unknown', 'Процесс не открывал файлов'),
+      option('handles', 'Подтверждены открытые документ, sync.log и браузерная Login Data; полный объём чтения неизвестен', true),
+      option('database', 'Подтверждена выгрузка всей базы компании'),
+      option('none', 'Процесс не имел открытых файлов'),
     ],
   },
   {
     id: 'network', label: 'Внешний канал', options: [
       option('remote', 'syncsvc.exe установил TLS-соединение с 198.51.100.67:443', true),
-      option('dns', 'Только DNS без соединения'),
-      option('none', 'Сетевой активности нет'),
+      option('dns', 'Есть только DNS-запрос без соединения'),
+      option('unattributed', 'Соединение есть, но PID отсутствует'),
     ],
   },
 ] as const;
@@ -231,23 +231,23 @@ export const findingSections = [
 export const reportSections = [
   {
     id: 'evidence', label: 'Доказательства', options: [
-      option('sources', 'E01 и RAM с хэшами, browser history, Prefetch, registry, timeline и recovered log', true),
-      option('screenshot', 'Один скриншот процесса'),
-      option('guess', 'Предположение пользователя'),
+      option('sources', 'E01 и RAM с хэшами, browser history с корректной epoch-конвертацией, Prefetch, registry, timeline и recovered log', true),
+      option('partial', 'Только timeline и имя файла без memory evidence'),
+      option('untracked', 'Рабочая копия без хэша и chain of custody'),
     ],
   },
   {
     id: 'limits', label: 'Ограничение вывода', options: [
       option('limit', 'Открытые файлы и upload подтверждены, полный состав переданных данных требует серверных журналов', true),
-      option('all', 'Точно украдены все данные'),
-      option('none', 'Никаких ограничений нет'),
+      option('all', 'Точно украдены все данные, доступные пользователю'),
+      option('none', 'Собранные артефакты не имеют ограничений'),
     ],
   },
   {
     id: 'response', label: 'Рекомендация', options: [
       option('response', 'Изоляция, отзыв сессий, поиск индикаторов, восстановление и сохранение evidence chain', true),
-      option('delete', 'Удалить один EXE и закрыть дело'),
-      option('wipe-all', 'Уничтожить все носители'),
+      option('delete', 'Удалить EXE и считать root cause закрытой'),
+      option('wipe', 'Переустановить устройство до сбора volatile evidence'),
     ],
   },
 ] as const;
