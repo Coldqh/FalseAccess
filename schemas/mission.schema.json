@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://false-access.local/schemas/mission.schema.json",
+  "title": "FALSE ACCESS Mission Definition v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "chapterId",
+    "title",
+    "level",
+    "faction",
+    "durationMinutes",
+    "skills",
+    "briefing",
+    "artifacts",
+    "outcomes",
+    "hypotheses",
+    "decisions",
+    "assessmentRules",
+    "solutionFamilies",
+    "completion",
+    "consequences",
+    "replay",
+    "safety"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9._-]+$" },
+    "chapterId": { "type": "string", "minLength": 3 },
+    "title": { "type": "string", "minLength": 3 },
+    "level": { "enum": ["foundation", "junior", "middle", "advanced"] },
+    "faction": { "type": "string", "minLength": 2 },
+    "durationMinutes": { "type": "integer", "minimum": 1 },
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9._-]+$" }
+    },
+    "briefing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "objective", "constraints", "hiddenTruth"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 10 },
+        "objective": { "type": "string", "minLength": 10 },
+        "constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "hiddenTruth": { "type": "string", "minLength": 10 }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "format", "origin", "description", "containsNoise"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "format": { "type": "string" },
+          "origin": { "type": "string" },
+          "description": { "type": "string" },
+          "containsNoise": { "type": "boolean" },
+          "integrity": { "type": "string" }
+        }
+      }
+    },
+    "outcomes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "skillId", "statement", "evidenceType"],
+        "properties": {
+          "id": { "type": "string" },
+          "skillId": { "type": "string" },
+          "statement": { "type": "string", "minLength": 10 },
+          "evidenceType": { "enum": ["recognition", "guided", "independent", "transfer", "design", "review"] },
+          "criticalErrors": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "hypotheses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "description", "allowedStatuses"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "allowedStatuses": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["open", "supported", "rejected", "unknown"] }
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "description", "risk"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "risk": { "enum": ["low", "medium", "high"] }
+        }
+      }
+    },
+    "assessmentRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "dimension", "weight", "matcher"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "dimension": { "enum": ["correctness", "evidence", "method", "coverage", "efficiency", "communication", "judgment", "autonomy"] },
+          "weight": { "type": "number", "minimum": 0 },
+          "critical": { "type": "boolean" },
+          "matcher": { "type": "object", "required": ["kind"] }
+        }
+      }
+    },
+    "solutionFamilies": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "description", "requiredRuleIds"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "requiredRuleIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coreRuleIds"],
+      "properties": {
+        "coreRuleIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "minDimensionScores": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    "consequences": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "trigger", "summary", "effects"],
+        "properties": {
+          "id": { "type": "string" },
+          "trigger": { "enum": ["success", "critical-error", "decision"] },
+          "decisionId": { "type": "string" },
+          "summary": { "type": "string" },
+          "effects": { "type": "object" }
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seeded", "variables"],
+      "properties": {
+        "seeded": { "const": true },
+        "variables": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sandboxed", "externalNetwork", "allowedActions", "resettable"],
+      "properties": {
+        "sandboxed": { "const": true },
+        "externalNetwork": { "const": false },
+        "allowedActions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "resettable": { "const": true }
+      }
+    }
+  }
+}
