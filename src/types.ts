@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'huntcase' | 'cryptocase' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -31,7 +31,7 @@ export interface Objective {
   complete: boolean;
 }
 
-export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics' | 'incidentResponse';
+export type ContractSkill = 'linux' | 'windows' | 'networking' | 'python' | 'soc' | 'web' | 'mobile' | 'activeDirectory' | 'email' | 'forensics' | 'incidentResponse' | 'threatHunting' | 'cryptography' | 'malwareAnalysis';
 export type ContractDifficulty = 'STARTER' | 'STANDARD' | 'HARD';
 export type ContractRisk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -254,6 +254,31 @@ export interface ProgressState {
   incidentCaseReportSelections: Record<string, string>;
   incidentCaseHintUses: number;
   incidentCaseComplete: boolean;
+  huntCaseStage: number;
+  huntCaseFoundationAnswers: Record<string, string>;
+  huntCaseHypothesisAnswers: Record<string, string>;
+  huntCaseObjectives: string[];
+  huntCaseSigma: string;
+  huntCaseKql: string;
+  huntCaseTuningSelections: Record<string, string>;
+  huntCaseIndependentObjectives: string[];
+  huntCaseIndependentAnswers: Record<string, string>;
+  huntCaseReportSelections: Record<string, string>;
+  huntCaseHintUses: number;
+  huntCaseComplete: boolean;
+  cryptoCaseStage: number;
+  cryptoCaseFoundationAnswers: Record<string, string>;
+  cryptoCasePkiObjectives: string[];
+  cryptoCasePkiAnswers: Record<string, string>;
+  cryptoCaseStaticObjectives: string[];
+  cryptoCaseStaticAnswers: Record<string, string>;
+  cryptoCaseYara: string;
+  cryptoCaseYaraAnswers: Record<string, string>;
+  cryptoCaseIndependentObjectives: string[];
+  cryptoCaseIndependentAnswers: Record<string, string>;
+  cryptoCaseReportSelections: Record<string, string>;
+  cryptoCaseHintUses: number;
+  cryptoCaseComplete: boolean;
   readMail: string[];
   readMessages: string[];
   notes: string;

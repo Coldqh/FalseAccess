@@ -44,7 +44,7 @@ export const windowsPowerShellObjectives = [
   {
     id: 'events',
     title: 'Найди события создания процессов',
-    explanation: 'Event ID 4688 создаётся при запуске процесса, если аудит включён. В нём важны имя нового процесса, родитель и полная командная строка.',
+    explanation: 'Event ID 4688 появляется только при включённом Audit Process Creation. Полная CommandLine требует отдельной политики “Include command line in process creation events”; без неё поле может быть пустым. В событии важны новый процесс, родитель, пользователь и командная строка.',
     command: "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} -MaxEvents 20",
     output: windowsEventLog,
   },

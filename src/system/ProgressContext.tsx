@@ -52,6 +52,8 @@ interface ProgressContextValue {
   completeDarknetCore: (choice: 'accept' | 'ignore') => void;
   completeForensicsCase: () => void;
   completeIncidentCase: () => void;
+  completeHuntCase: () => void;
+  completeCryptoCase: () => void;
   toggleSpecialization: (id: SpecializationId) => void;
   completeProgressionExam: (id: string) => void;
   saveNow: () => string;
@@ -59,7 +61,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v18';
+const STORAGE_KEY = 'false-access-progress-v21';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -279,6 +281,9 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v20Raw = localStorage.getItem('false-access-progress-v20');
+    const v19Raw = localStorage.getItem('false-access-progress-v19');
+    const v18Raw = localStorage.getItem('false-access-progress-v18');
     const v17Raw = localStorage.getItem('false-access-progress-v17');
     const v16Raw = localStorage.getItem('false-access-progress-v16');
     const v15Raw = localStorage.getItem('false-access-progress-v15');
@@ -295,6 +300,9 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v20Raw
+      ?? v19Raw
+      ?? v18Raw
       ?? v17Raw
       ?? v16Raw
       ?? v15Raw
@@ -313,7 +321,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v20Raw && !v19Raw && !v18Raw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -1385,6 +1393,43 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         contractOffers: [],
         simulation,
       };
+    }),
+    completeHuntCase: () => setProgress((current) => {
+      if (current.huntCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 3, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      ['threat-hunting', 'detection-engineering'].forEach((id) => { if (!passedExamIds.includes(id)) passedExamIds.push(id); });
+      let simulation = {
+        ...advanced.simulation,
+        reputation: { ...advanced.simulation.reputation, professional: bump(advanced.simulation.reputation.professional, 6), reliability: bump(advanced.simulation.reputation.reliability, current.huntCaseHintUses > 10 ? 4 : 9), underground: bump(advanced.simulation.reputation.underground, 9) },
+        progression: { ...advanced.simulation.progression, passedExamIds },
+        skills: {
+          ...advanced.simulation.skills,
+          threatHunting: { ...advanced.simulation.skills.threatHunting, theory: bump(advanced.simulation.skills.threatHunting.theory, 32), guided: bump(advanced.simulation.skills.threatHunting.guided, 30), independent: bump(advanced.simulation.skills.threatHunting.independent, 24), production: bump(advanced.simulation.skills.threatHunting.production, 10) },
+          detectionEngineering: { ...advanced.simulation.skills.detectionEngineering, theory: bump(advanced.simulation.skills.detectionEngineering.theory, 28), guided: bump(advanced.simulation.skills.detectionEngineering.guided, 26), independent: bump(advanced.simulation.skills.detectionEngineering.independent, 20), production: bump(advanced.simulation.skills.detectionEngineering.production, 8) },
+          threatIntelligence: { ...advanced.simulation.skills.threatIntelligence, theory: bump(advanced.simulation.skills.threatIntelligence.theory, 14), guided: bump(advanced.simulation.skills.threatIntelligence.guided, 12), independent: bump(advanced.simulation.skills.threatIntelligence.independent, 8) },
+          siem: { ...advanced.simulation.skills.siem, guided: bump(advanced.simulation.skills.siem.guided, 18), independent: bump(advanced.simulation.skills.siem.independent, 18), production: bump(advanced.simulation.skills.siem.production, 7) },
+        },
+      };
+      simulation = recordSimulationEvent(simulation, 'contract', 'NIGHTGLASS-10 закрыт', `Гипотезы, Sigma/KQL и самостоятельная охота завершены. Подсказок: ${current.huntCaseHintUses}.`, 21000);
+      return { ...current, huntCaseComplete: true, huntCaseStage: 7, balance: advanced.balance + 21000, darknetReputation: bump(current.darknetReputation, 10), contractOffers: [], simulation };
+    }),
+    completeCryptoCase: () => setProgress((current) => {
+      if (current.cryptoCaseComplete) return current;
+      const advanced = advanceSlots(current.simulation, current.balance, 3, 'contract');
+      const bump = (value: number, amount: number) => Math.max(0, Math.min(100, value + amount));
+      const passedExamIds = [...advanced.simulation.progression.passedExamIds];
+      ['cryptography-pki', 'malware-static-analysis'].forEach((id) => { if (!passedExamIds.includes(id)) passedExamIds.push(id); });
+      let simulation = { ...advanced.simulation, reputation: { ...advanced.simulation.reputation, professional: bump(advanced.simulation.reputation.professional, 7), reliability: bump(advanced.simulation.reputation.reliability, current.cryptoCaseHintUses > 10 ? 4 : 10), underground: bump(advanced.simulation.reputation.underground, 8) }, progression: { ...advanced.simulation.progression, passedExamIds }, skills: {
+        ...advanced.simulation.skills,
+        cryptography: { ...advanced.simulation.skills.cryptography, theory: bump(advanced.simulation.skills.cryptography.theory, 34), guided: bump(advanced.simulation.skills.cryptography.guided, 30), independent: bump(advanced.simulation.skills.cryptography.independent, 22), production: bump(advanced.simulation.skills.cryptography.production, 7) },
+        malwareAnalysis: { ...advanced.simulation.skills.malwareAnalysis, theory: bump(advanced.simulation.skills.malwareAnalysis.theory, 32), guided: bump(advanced.simulation.skills.malwareAnalysis.guided, 30), independent: bump(advanced.simulation.skills.malwareAnalysis.independent, 24), production: bump(advanced.simulation.skills.malwareAnalysis.production, 8) },
+        forensics: { ...advanced.simulation.skills.forensics, theory: bump(advanced.simulation.skills.forensics.theory, 12), guided: bump(advanced.simulation.skills.forensics.guided, 12), independent: bump(advanced.simulation.skills.forensics.independent, 10) },
+        appsec: { ...advanced.simulation.skills.appsec, theory: bump(advanced.simulation.skills.appsec.theory, 10), guided: bump(advanced.simulation.skills.appsec.guided, 8) },
+      }};
+      simulation = recordSimulationEvent(simulation, 'contract', 'CIPHERFALL-11 закрыт', `PKI, TLS, PE/ELF и YARA разобраны. Подсказок: ${current.cryptoCaseHintUses}.`, 23000);
+      return { ...current, cryptoCaseComplete: true, cryptoCaseStage: 7, balance: advanced.balance + 23000, darknetReputation: bump(current.darknetReputation, 9), contractOffers: [], simulation };
     }),
     toggleSpecialization: (id) => setProgress((current) => {
       const selected = current.simulation.progression.selectedSpecializations;

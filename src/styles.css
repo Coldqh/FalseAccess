@@ -3231,3 +3231,31 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px
   .incident-command-pool code { font-size:11px; }
   .incident-final-grid { grid-template-columns:1fr; }
 }
+
+
+/* 0.8.1.1 curriculum hardening */
+.curriculum-panel,.curriculum-sources{border:1px solid rgba(143,170,198,.18);background:rgba(8,12,17,.72);padding:18px;margin-top:18px}
+.curriculum-panel>header,.curriculum-sources>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.curriculum-panel h3,.curriculum-sources h3{margin:2px 0 0}
+.curriculum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.curriculum-grid article{border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.025);padding:13px;min-height:150px}
+.curriculum-grid article.done{border-color:rgba(104,210,151,.42);background:rgba(48,130,89,.09)}
+.curriculum-grid article.planned{border-style:dashed;opacity:.8}
+.curriculum-grid article>div{display:flex;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:.12em}.curriculum-grid article>div span{color:#7fc7e6}.curriculum-grid article>div b{color:#8bd9a8}
+.curriculum-grid h4{font-size:15px;margin:12px 0 8px}.curriculum-grid p{font-size:12px;line-height:1.45;color:#b7c0ca}.curriculum-grid small{display:block;margin-top:12px;color:#7f8d9c;line-height:1.4}
+.curriculum-sources>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}.curriculum-sources article{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 4px}.curriculum-sources article strong{color:#8cc8e5}.curriculum-sources article span{font-weight:700}.curriculum-sources article b{font-size:10px;color:#a4b0bc}.curriculum-sources article p{grid-column:1/-1;margin:0;color:#8995a1;font-size:12px}
+@media(max-width:720px){.curriculum-panel,.curriculum-sources{padding:14px;margin-top:12px}.curriculum-grid{grid-template-columns:1fr}.curriculum-sources>div{grid-template-columns:1fr}}
+
+
+/* 0.8.2 threat hunting */
+.hunt-case-sidebar header{background:linear-gradient(145deg,rgba(52,125,104,.28),transparent)}
+.hunt-code-stage{display:flex;flex-direction:column;gap:16px;padding-bottom:30px}.hunt-code-stage>header{display:flex;gap:12px;align-items:center}.hunt-code-stage textarea{min-height:260px;font-family:var(--mono,monospace);font-size:13px;line-height:1.45}
+.hunt-case-main .incident-architecture-grid article{border-color:rgba(104,205,173,.22)}
+@media(max-width:720px){.hunt-code-stage{padding:14px}.hunt-code-stage .web-code-workspace{grid-template-columns:1fr}.hunt-code-stage textarea{min-height:220px}}
+
+
+/* 0.8.3 cryptography and malware analysis */
+.crypto-case-sidebar header{background:linear-gradient(145deg,rgba(126,72,165,.3),transparent)}
+.crypto-case-main .incident-architecture-grid article{border-color:rgba(199,147,239,.24)}
+.crypto-case-main .web-code-editor textarea{min-height:300px;font-family:var(--mono,monospace);font-size:13px}
+@media(max-width:720px){.crypto-case-main .web-code-workspace{grid-template-columns:1fr}.crypto-case-main .web-code-editor textarea{min-height:240px}}

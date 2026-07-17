@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpenCheck, Braces, BriefcaseBusiness, CalendarClock, ChartNoAxesCombined, ChevronUp, CircleUserRound, Code2,
-  FileSearch, Globe2, HardDrive, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
+  FileSearch, Globe2, HardDrive, Crosshair, Fingerprint, HeartPulse, Mail, MailWarning, MapPinned, Menu, MessageSquare, Minus, MonitorCog, NotebookPen, Radar, Search,
   Settings as SettingsIcon, Router, ServerCog, Shield, ShieldAlert, ShieldCheck, Signal, Smartphone, Network, TerminalSquare, UserRoundCheck, Waypoints, Wifi, X,
 } from 'lucide-react';
 import type { AppDefinition, AppId, ProgressState, WindowState } from '../types';
@@ -33,6 +33,8 @@ import { AdCaseApp } from '../apps/AdCaseApp';
 import { MailCaseApp } from '../apps/MailCaseApp';
 import { ForensicsCaseApp } from '../apps/ForensicsCaseApp';
 import { IncidentResponseCaseApp } from '../apps/IncidentResponseCaseApp';
+import { ThreatHuntCaseApp } from '../apps/ThreatHuntCaseApp';
+import { CryptoMalwareCaseApp } from '../apps/CryptoMalwareCaseApp';
 import { useProgress } from '../system/ProgressContext';
 import { APP_VERSION } from '../system/updateManager';
 import { UpdateButton } from './UpdateControl';
@@ -121,6 +123,16 @@ const apps: RuntimeAppDefinition[] = [
     width: 1360, height: 860, accent: '#ef7d63', kind: 'temporary',
     visible: (progress) => progress.forensicsCaseComplete && !progress.incidentCaseComplete,
   },
+  {
+    id: 'huntcase', title: 'NIGHTGLASS-10', shortTitle: 'Hunt-10', icon: Crosshair,
+    width: 1380, height: 880, accent: '#8fd0bd', kind: 'temporary',
+    visible: (progress) => progress.incidentCaseComplete && !progress.huntCaseComplete,
+  },
+  {
+    id: 'cryptocase', title: 'CIPHERFALL-11', shortTitle: 'Crypto-11', icon: Fingerprint,
+    width: 1380, height: 880, accent: '#d6a3ff', kind: 'temporary',
+    visible: (progress) => progress.huntCaseComplete && !progress.cryptoCaseComplete,
+  },
 ];
 
 function appContent(id: AppId, openApp: (id: AppId) => void) {
@@ -149,6 +161,8 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'mailcase': return <MailCaseApp />;
     case 'forensicscase': return <ForensicsCaseApp />;
     case 'incidentcase': return <IncidentResponseCaseApp />;
+    case 'huntcase': return <ThreatHuntCaseApp />;
+    case 'cryptocase': return <CryptoMalwareCaseApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;

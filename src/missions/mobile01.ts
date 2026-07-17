@@ -110,37 +110,46 @@ export const mobileSecurePatch = `<manifest xmlns:android="http://schemas.androi
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <application
       android:allowBackup="false"
+      android:dataExtractionRules="@xml/data_extraction_rules"
       android:usesCleartextTraffic="false">
   </application>
 </manifest>
 
-// SessionStore.kt
-val masterKey = MasterKey.Builder(context)
-  .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-  .build()
-val prefs = EncryptedSharedPreferences.create(
-  context,
-  "session_secure",
-  masterKey,
-  EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-  EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-)
-prefs.edit().putString("refresh_token", token).apply()
+<!-- res/xml/data_extraction_rules.xml -->
+<data-extraction-rules>
+  <cloud-backup><exclude domain="sharedpref" path="session.xml" /></cloud-backup>
+  <device-transfer><exclude domain="sharedpref" path="session.xml" /></device-transfer>
+</data-extraction-rules>
+
+// SessionCipher.kt — Android Keystore, AES-GCM
+val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+if (!keyStore.containsAlias("session_key")) {
+  val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+  generator.init(KeyGenParameterSpec.Builder(
+    "session_key",
+    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+  ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+   .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+   .build())
+  generator.generateKey()
+}
+val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+// Храни ciphertext и IV. Refresh token не сохраняй в открытом SharedPreferences.
 `;
 
 export const mobileCodeQuestions = [
   {
-    id: 'backup', label: 'Почему allowBackup=false важно здесь?', options: [
-      { id: 'a', text: 'Сессионные данные не должны попадать в обычную резервную копию приложения.', correct: true },
-      { id: 'b', text: 'Это запрещает пользователю делать фотографии.' },
-      { id: 'c', text: 'Это автоматически отзывает все токены.' },
+    id: 'backup', label: 'Почему одного allowBackup=false недостаточно как архитектурного объяснения?', options: [
+      { id: 'a', text: 'На новых Android нужно явно управлять cloud backup и device transfer через dataExtractionRules и исключать секретные файлы.', correct: true },
+      { id: 'b', text: 'Потому что allowBackup управляет только фотографиями.' },
+      { id: 'c', text: 'Потому что backup вообще нельзя контролировать.' },
     ],
   },
   {
-    id: 'storage', label: 'Что меняет EncryptedSharedPreferences?', options: [
-      { id: 'a', text: 'Ключи и значения хранятся зашифрованно с ключом из Android Keystore.', correct: true },
-      { id: 'b', text: 'Токен больше не передаётся серверу.' },
-      { id: 'c', text: 'Приложение получает права Device Admin.' },
+    id: 'storage', label: 'Что исправляет Android Keystore?', options: [
+      { id: 'a', text: 'Ключ шифрования создаётся и используется через системное хранилище; приложение хранит ciphertext и IV, а не открытый refresh token.', correct: true },
+      { id: 'b', text: 'Токен перестаёт существовать на сервере.' },
+      { id: 'c', text: 'Приложение автоматически получает Device Admin.' },
     ],
   },
 ] as const;

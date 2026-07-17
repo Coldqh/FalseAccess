@@ -41,6 +41,10 @@ export const skillLabels: Record<SimulationSkillId, string> = {
   incidentResponse: 'Incident Response',
   forensics: 'DFIR',
   threatHunting: 'Threat Hunting',
+  detectionEngineering: 'Detection Engineering',
+  threatIntelligence: 'Threat Intelligence',
+  cryptography: 'Cryptography / PKI',
+  malwareAnalysis: 'Malware Analysis',
   securityEngineering: 'Security Engineering',
   appsec: 'AppSec',
   mobileSecurity: 'Mobile Security',
@@ -292,6 +296,9 @@ const contractRequirements: Record<ContractSkill, { stage: ProgressionStageId; t
   email: { stage: 3, tracks: { emailSecurity: { theory: 15, guided: 15 }, soc: { guided: 25 }, networking: { guided: 20 } } },
   forensics: { stage: 3, tracks: { forensics: { theory: 20, guided: 18 }, incidentResponse: { guided: 24 }, windows: { guided: 25 } } },
   incidentResponse: { stage: 4, tracks: { incidentResponse: { theory: 30, guided: 28 }, siem: { guided: 24 }, soc: { independent: 18 } } },
+  threatHunting: { stage: 4, tracks: { threatHunting: { theory: 20, guided: 18 }, detectionEngineering: { guided: 12 }, siem: { independent: 18 } } },
+  cryptography: { stage: 4, tracks: { cryptography: { theory: 20, guided: 16 }, networking: { theory: 30 } } },
+  malwareAnalysis: { stage: 4, tracks: { malwareAnalysis: { theory: 18, guided: 16 }, forensics: { guided: 25 } } },
 };
 
 const difficultyStage: Record<ContractDifficulty, number> = { STARTER: 0, STANDARD: 1, HARD: 2 };

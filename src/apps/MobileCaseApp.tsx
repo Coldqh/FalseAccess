@@ -115,9 +115,11 @@ export function MobileCaseApp() {
   const patchCorrect = () => {
     const code = progress.mobileCasePatch;
     return /allowBackup="false"/i.test(code)
-      && /usesCleartextTraffic="false"/i.test(code)
-      && /EncryptedSharedPreferences/.test(code)
-      && /MasterKey/.test(code)
+      && /dataExtractionRules/i.test(code)
+      && /exclude domain="sharedpref" path="session\.xml"/i.test(code)
+      && /AndroidKeyStore/.test(code)
+      && /KeyGenParameterSpec/.test(code)
+      && /AES\/GCM\/NoPadding/.test(code)
       && !/READ_SMS/.test(code);
   };
   const verify = (key: SelectKey, sections: readonly { id: string; options: readonly { id: string; correct?: boolean }[] }[], next: number) => {
@@ -177,7 +179,7 @@ export function MobileCaseApp() {
 
       {stage === 4 && <section className="web-code-stage mobile-code-stage">
         <header><Code2 size={23} /><div><p className="eyebrow">ANDROID HARDENING</p><h2>Убери лишние разрешения и открытое хранение</h2></div></header>
-        <div className="windows-theory"><strong>Задача</strong><p>Запрети backup и cleartext, убери READ_SMS, перенеси refresh token в EncryptedSharedPreferences с MasterKey.</p></div>
+        <div className="windows-theory"><strong>Задача</strong><p>Запрети cleartext и READ_SMS, добавь dataExtractionRules, исключи session.xml из cloud/device transfer и шифруй токен ключом Android Keystore через AES-GCM.</p></div>
         <div className="web-code-workspace"><div className="web-code-reference"><span>Уязвимая версия</span><pre>{mobileVulnerablePatch}</pre></div><div className="web-code-editor"><span>Твой патч</span><textarea spellCheck={false} value={progress.mobileCasePatch} onChange={(event) => setFlag('mobileCasePatch', event.target.value)} /><button onClick={() => setFlag('mobileCasePatch', mobileSecurePatch)}>Вставить безопасный вариант</button></div></div>
         {renderOptions(mobileCodeQuestions, progress.mobileCaseCodeAnswers, 'mobileCaseCodeAnswers')}
         <button className="primary-action full" onClick={() => { setChecked((current) => ({ ...current, mobileCaseCodeAnswers: true })); if (patchCorrect() && allCorrect(mobileCodeQuestions, progress.mobileCaseCodeAnswers)) setStage(5); }}>Проверить hardening<ArrowRight size={17} /></button>

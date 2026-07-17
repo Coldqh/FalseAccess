@@ -822,7 +822,21 @@ function irRecoveryContract(seed: number, index: number): GeneratedContract {
   };
 }
 
-const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract, forensicTimelineContract, forensicDeletedArtifactContract, irContainmentContract, irRecoveryContract] as const;
+
+function huntRareAccountContract(seed: number, index: number): GeneratedContract {
+  const random = mulberry32(seed); const account = pick(random, ['svc_export', 'backup_sync', 'report_worker']); const host = pick(random, ['OPS-07', 'BUILD-04', 'JUMP-02']);
+  return { id:`hunt-rare-${seed}`, seed, type:'HUNT_RARE_ACCOUNT', title:'Редкое использование сервисной учётки', client:'Greylock / hunt desk', factionId:'line', factionName:'Greylock', skill:'threatHunting', difficulty:'HARD', pay:15000+index*500, summary:'Проверь редкий вход и связанное поведение без готового алерта.', constraint:'Отдели редкость от вредоносности и укажи telemetry gaps.', files:[{name:'auth.csv',content:`time,user,host,src,type\n02:14:11,${account},${host},198.51.100.73,interactive`},{name:'process.txt',content:`powershell.exe -> rundll32.exe -> external TLS`}], questions:[{id:'account',label:'Какая учётка требует проверки',placeholder:'svc_*',answers:[account]},{id:'host',label:'Нетипичный хост',placeholder:'HOST',answers:[host]}], hint:'Сначала baseline, затем process tree и network context.' };
+}
+function huntTelemetryGapContract(seed: number, index: number): GeneratedContract {
+  const random=mulberry32(seed); const missing=pick(random,['module_load','proxy_process_attribution','powershell_script_block']);
+  return { id:`hunt-gap-${seed}`, seed, type:'HUNT_TELEMETRY_GAP', title:'Пробел телеметрии', client:'Greylock / detection', factionId:'line', factionName:'Greylock', skill:'threatHunting', difficulty:'STANDARD', pay:11000+index*400, summary:'Оцени, почему hunt не может проверить технику на части узлов.', constraint:'Не считай отсутствие события доказательством отсутствия активности.', files:[{name:'coverage.txt',content:`hosts_total=84\nhosts_missing=27\nfield=${missing}`}], questions:[{id:'gap',label:'Какое поле отсутствует',placeholder:'field',answers:[missing]}], hint:'Зафиксируй gap и предложи альтернативный источник плюс план улучшения сбора.' };
+}
+
+
+function certificateReviewContract(seed:number,index:number):GeneratedContract{const random=mulberry32(seed);const host=pick(random,['api-gateway.test','updates-edge.test','vault-proxy.test']);return{id:`crypto-cert-${seed}`,seed,type:'CRYPTO_CERT_REVIEW',title:'Проверка TLS и сертификата',client:'Greylock / trust desk',factionId:'line',factionName:'Greylock',skill:'cryptography',difficulty:'STANDARD',pay:12000+index*400,summary:'Раздели проверку цепочки, имени узла и параметров TLS.',constraint:'Не делай вывод о безопасности приложения только по сертификату.',files:[{name:'tls.txt',content:`host=${host}\nprotocol=TLS1.3\nsignature=ecdsa\nsan=DNS:${host}\nverify=ok`}],questions:[{id:'host',label:'Имя в SAN',placeholder:'host',answers:[host]}],hint:'Проверь chain, expiry, SAN и protocol отдельно.'};}
+function malwareStaticContract(seed:number,index:number):GeneratedContract{const random=mulberry32(seed);const marker=pick(random,['Global\\\\SyncCache','--install-agent','/api/checkin']);return{id:`malware-static-${seed}`,seed,type:'MALWARE_STATIC_TRIAGE',title:'Статический triage бинарника',client:'Greylock / evidence',factionId:'line',factionName:'Greylock',skill:'malwareAnalysis',difficulty:'HARD',pay:17000+index*500,summary:'Опиши формат, секции, imports и устойчивый marker без запуска файла.',constraint:'Не называй capability фактически выполненным действием.',files:[{name:'strings.txt',content:`UPX!\n${marker}\nWinHttpSendRequest\nCryptUnprotectData`},{name:'sections.txt',content:'.text entropy=6.2\n.upx0 entropy=7.9'}],questions:[{id:'marker',label:'Уникальный marker',placeholder:'string',answers:[marker]}],hint:'Отдели packing, capability и доказанное поведение.'};}
+
+const builders = [authContract, dnsContract, networkSegmentContract, processContract, linuxPersistenceContract, windowsContract, pythonContract, secretContract, webContract, timelineContract, apiAuthorizationContract, sqlReviewContract, mobileProfileContract, mobileTokenContract, adStaleAccountContract, adGpoAclContract, mailHeaderContract, mailOauthContract, forensicTimelineContract, forensicDeletedArtifactContract, irContainmentContract, irRecoveryContract, huntRareAccountContract, huntTelemetryGapContract, certificateReviewContract, malwareStaticContract] as const;
 
 
 export function generateContractOffers(progress: ProgressState, refreshIndex = 0): GeneratedContract[] {
@@ -839,7 +853,9 @@ export function generateContractOffers(progress: ProgressState, refreshIndex = 0
     .filter((contract) => progress.adCaseComplete || !['AD_STALE_ACCOUNT', 'AD_GPO_ACL'].includes(contract.type))
     .filter((contract) => progress.mailCaseComplete || !['EMAIL_HEADER', 'EMAIL_OAUTH'].includes(contract.type))
     .filter((contract) => progress.forensicsCaseComplete || !['FORENSIC_TIMELINE', 'FORENSIC_DELETED_ARTIFACT'].includes(contract.type))
-    .filter((contract) => progress.incidentCaseComplete || !['IR_CONTAINMENT', 'IR_RECOVERY'].includes(contract.type));
+    .filter((contract) => progress.incidentCaseComplete || !['IR_CONTAINMENT', 'IR_RECOVERY'].includes(contract.type))
+    .filter((contract) => progress.huntCaseComplete || !['HUNT_RARE_ACCOUNT', 'HUNT_TELEMETRY_GAP'].includes(contract.type))
+    .filter((contract) => progress.cryptoCaseComplete || !['CRYPTO_CERT_REVIEW', 'MALWARE_STATIC_TRIAGE'].includes(contract.type));
   const ordered = [...candidates].sort((a, b) => ((a.seed * 2654435761) >>> 0) - ((b.seed * 2654435761) >>> 0));
   const unlocked = ordered.filter((contract) => getContractAccess(contract, progress).available);
   const locked = ordered.filter((contract) => !getContractAccess(contract, progress).available);
