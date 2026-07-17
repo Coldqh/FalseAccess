@@ -1,0 +1,57 @@
+import type { MissionDefinition } from '../../../core/scenario/types';
+
+export const foundationCheck01Definition: MissionDefinition = {
+  schemaVersion: 1, id: 'foundation-check-01', chapterId: 'act-0-mastery', title: 'FOUNDATION-CHECK-01 / Неизвестная активность', level: 'foundation', faction: 'assessment', durationMinutes: 60,
+  skills: ['computing.filesystem', 'shell.pipeline', 'data.logs', 'python.log-analysis', 'analysis.process-correlation', 'analysis.hypothesis', 'reporting.evidence'],
+  briefing: { summary: 'Новый филиал и неизвестный тип проблемы.', objective: 'Самостоятельно выбрать источники, инструменты, гипотезы и containment.', constraints: ['Нет наставника и подсказок.', 'Локальная копия.', 'Причинная связь должна быть доказана.'], hiddenTruth: 'Spray и локальный процесс — независимые события. Процесс имеет внешнее соединение и требует containment.' },
+  artifacts: [
+    { id: 'artifact.foundation.brief', title: 'brief.txt', format: 'text/plain', origin: 'филиал', description: 'Минимальный бриф.', containsNoise: false },
+    { id: 'artifact.foundation.auth', title: 'auth.log', format: 'linux-auth-log', origin: 'host', description: 'Auth события.', containsNoise: true },
+    { id: 'artifact.foundation.processes', title: 'processes.csv', format: 'csv', origin: 'host', description: 'Процессы.', containsNoise: true },
+    { id: 'artifact.foundation.network', title: 'connections.csv', format: 'csv', origin: 'host', description: 'Сокеты.', containsNoise: true },
+    { id: 'artifact.foundation.proxy', title: 'proxy.csv', format: 'csv', origin: 'gateway', description: 'Прокси события.', containsNoise: true },
+    { id: 'artifact.foundation.events', title: 'events.jsonl', format: 'jsonl', origin: 'collector', description: 'Нормализованные события.', containsNoise: true },
+  ],
+  outcomes: [
+    { id: 'outcome.foundation.transfer', skillId: 'analysis.hypothesis', statement: 'Переносит навыки в неизвестную форму задачи.', evidenceType: 'transfer' },
+    { id: 'outcome.foundation.python', skillId: 'python.log-analysis', statement: 'Адаптирует анализатор к другой схеме событий.', evidenceType: 'transfer' },
+    { id: 'outcome.foundation.report', skillId: 'reporting.evidence', statement: 'Самостоятельно составляет воспроизводимый отчёт.', evidenceType: 'transfer' },
+    { id: 'outcome.foundation.shell', skillId: 'shell.pipeline', statement: 'Сам выбирает read-only инструменты и источники.', evidenceType: 'transfer' },
+  ],
+  hypotheses: [
+    { id: 'hypothesis.foundation.spray', title: 'Password spray', description: 'Внешние неудачные auth-события.', allowedStatuses: ['open','supported','rejected','unknown'] },
+    { id: 'hypothesis.foundation.process', title: 'Локальный процесс с внешним соединением', description: 'Процесс требует containment.', allowedStatuses: ['open','supported','rejected','unknown'] },
+    { id: 'hypothesis.foundation.shared', title: 'Одна цепочка событий', description: 'Spray создал локальный процесс.', allowedStatuses: ['open','supported','rejected','unknown'] },
+  ],
+  decisions: [
+    { id: 'decision.foundation.preserve-isolate-process', title: 'Сохранить evidence и изолировать процесс/узел', description: 'Ограничить SSH, сохранить volatile evidence и отделить узел.', risk: 'medium' },
+    { id: 'decision.foundation.restrict-monitor', title: 'Ограничить SSH и усилить мониторинг', description: 'Допустимо при сохранении процесса и наличии контроля.', risk: 'low' },
+  ],
+  assessmentRules: [
+    { id: 'rule.foundation.auth', title: 'Auth исследован', dimension: 'coverage', weight: 2, matcher: { kind: 'event', eventType: 'command.executed', where: [{ path: 'payload.finding', operator: 'eq', value: 'foundation-auth-finding' }] } },
+    { id: 'rule.foundation.process', title: 'Процесс исследован', dimension: 'coverage', weight: 2, matcher: { kind: 'event', eventType: 'command.executed', where: [{ path: 'payload.finding', operator: 'eq', value: 'foundation-process-finding' }] } },
+    { id: 'rule.foundation.network', title: 'Network исследован', dimension: 'coverage', weight: 2, matcher: { kind: 'event', eventType: 'command.executed', where: [{ path: 'payload.finding', operator: 'eq', value: 'foundation-network-finding' }] } },
+    { id: 'rule.foundation.proxy', title: 'Proxy проверен', dimension: 'coverage', weight: 2, matcher: { kind: 'event', eventType: 'command.executed', where: [{ path: 'payload.finding', operator: 'eq', value: 'foundation-proxy-finding' }] } },
+    { id: 'rule.foundation.python', title: 'Python transfer hidden tests', dimension: 'correctness', weight: 4, matcher: { kind: 'event', eventType: 'python.executed', where: [{ path: 'payload.finding', operator: 'eq', value: 'foundation-python-hidden-tests' }, { path: 'payload.success', operator: 'eq', value: true }] } },
+    { id: 'rule.foundation.spray', title: 'Spray поддержан', dimension: 'correctness', weight: 2, matcher: { kind: 'hypothesis', hypothesisId: 'hypothesis.foundation.spray', statuses: ['supported'] } },
+    { id: 'rule.foundation.process-hyp', title: 'Процесс поддержан', dimension: 'correctness', weight: 2, matcher: { kind: 'hypothesis', hypothesisId: 'hypothesis.foundation.process', statuses: ['supported'] } },
+    { id: 'rule.foundation.separate', title: 'Ложная причинность отвергнута', dimension: 'judgment', weight: 3, matcher: { kind: 'hypothesis', hypothesisId: 'hypothesis.foundation.shared', statuses: ['rejected','unknown'] } },
+    { id: 'rule.foundation.auth-evidence', title: 'Auth evidence', dimension: 'evidence', weight: 2, matcher: { kind: 'evidence-link', claimId: 'hypothesis.foundation.spray', evidenceIds: ['artifact.foundation.auth'] } },
+    { id: 'rule.foundation.process-evidence', title: 'Process evidence', dimension: 'evidence', weight: 2, matcher: { kind: 'evidence-link', claimId: 'hypothesis.foundation.process', evidenceIds: ['artifact.foundation.processes'] } },
+    { id: 'rule.foundation.network-evidence', title: 'Network evidence', dimension: 'evidence', weight: 2, matcher: { kind: 'evidence-link', claimId: 'outcome.foundation.transfer', evidenceIds: ['artifact.foundation.network','artifact.foundation.proxy'], minLinks: 1 } },
+    { id: 'rule.foundation.python-evidence', title: 'Python evidence', dimension: 'evidence', weight: 2, matcher: { kind: 'evidence-link', claimId: 'outcome.foundation.python', evidenceIds: ['artifact.foundation.events'] } },
+    { id: 'rule.foundation.report', title: 'Самостоятельный отчёт', dimension: 'communication', weight: 4, matcher: { kind: 'report', requiredSections: ['facts','evidence','limitations','decision','nextSteps'] } },
+    { id: 'rule.foundation.decision-a', title: 'Изоляция', dimension: 'judgment', weight: 1, matcher: { kind: 'decision', decisionIds: ['decision.foundation.preserve-isolate-process'] } },
+    { id: 'rule.foundation.decision-b', title: 'Ограничение и monitoring', dimension: 'judgment', weight: 1, matcher: { kind: 'decision', decisionIds: ['decision.foundation.restrict-monitor'] } },
+    { id: 'critical.foundation.destructive', title: 'Не уничтожать evidence', dimension: 'method', weight: 0, critical: true, matcher: { kind: 'event', eventType: 'command.executed', where: [{ path: 'payload.destructive', operator: 'eq', value: true }] } },
+    { id: 'critical.foundation.network-call', title: 'Нет внешней сети', dimension: 'judgment', weight: 0, critical: true, matcher: { kind: 'event', eventType: 'command.executed', where: [{ path: 'payload.externalNetwork', operator: 'eq', value: true }] } },
+  ],
+  solutionFamilies: [
+    { id: 'solution.foundation.isolate', title: 'Изоляция', description: 'Сохранить и изолировать.', requiredRuleIds: ['rule.foundation.decision-a'] },
+    { id: 'solution.foundation.monitor', title: 'Ограничить и наблюдать', description: 'Ограничить SSH и усилить monitoring.', requiredRuleIds: ['rule.foundation.decision-b'] },
+  ],
+  completion: { coreRuleIds: ['rule.foundation.auth','rule.foundation.process','rule.foundation.network','rule.foundation.proxy','rule.foundation.python','rule.foundation.spray','rule.foundation.process-hyp','rule.foundation.separate','rule.foundation.auth-evidence','rule.foundation.process-evidence','rule.foundation.network-evidence','rule.foundation.python-evidence','rule.foundation.report'], minDimensionScores: { correctness: 100, evidence: 100, coverage: 100, communication: 100, judgment: 75 } },
+  consequences: [{ id: 'consequence.foundation.pass', trigger: 'success', summary: 'Акт 0 подтверждён. Открывается собеседование в Сфере.', effects: { opensAct1: true, masteryConfirmed: true } }],
+  replay: { seeded: true, variables: ['source','count','pid','remote','event-order','field-schema','noise'] },
+  safety: { sandboxed: true, externalNetwork: false, allowedActions: ['read-local-file','filter-local-data','run-sandboxed-python','link-evidence','submit-local-report'], resettable: true },
+};

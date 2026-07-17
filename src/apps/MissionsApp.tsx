@@ -92,6 +92,9 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   const clinic = getClinicStage(rawProgress);
   const workspace = runtime.store.missions['workspace-01'];
   const logsChapter = runtime.store.missions['logs-01'];
+  const clinicRuntime = runtime.store.missions['clinic-01'];
+  const act0ContractsComplete = ['act0-contract-files','act0-contract-logs','act0-contract-process'].every((id) => runtime.store.missions[id]?.status === 'completed');
+  const foundationCheck = runtime.store.missions['foundation-check-01'];
   const clinicComplete = clinic.id === 'complete';
 
   const current: CurrentMission = !clinicComplete ? {
@@ -111,7 +114,9 @@ export function MissionsApp({ openApp }: { openApp: (id: AppId) => void }) {
   const campaign: CampaignEntry[] = [
     { id:'0.1', act:'АКТ 0', title:'Рабочее место', subtitle:'filesystem · paths · evidence', target:'missions', icon:BookOpenCheck, complete:workspace?.status === 'completed', available:true },
     { id:'0.2', act:'АКТ 0', title:'Shell, логи и время', subtitle:'pipelines · CSV · JSONL · UTC', target:'missions', icon:ServerCog, complete:logsChapter?.status === 'completed', available:workspace?.status === 'completed' },
-    { id:'0.3', act:'АКТ 0', title:'CLINIC-01', subtitle:'processes · Python · hypotheses · report', target:'terminal', icon:Braces, complete:progress.reportSubmitted, available:logsChapter?.status === 'completed' },
+    { id:'0.3', act:'АКТ 0 / СЛОЙ 1', title:'CLINIC-01', subtitle:'processes · Python hidden tests · hypotheses · report', target:'missions', icon:Braces, complete:clinicRuntime?.status === 'completed', available:logsChapter?.status === 'completed' },
+    { id:'0.C', act:'АКТ 0 / СЛОЙ 2', title:'Самостоятельные контракты', subtitle:'filesystem · logs · process/network · no hints', target:'contracts', icon:FileSearch, complete:act0ContractsComplete, available:clinicRuntime?.status === 'completed' },
+    { id:'0.X', act:'АКТ 0 / СЛОЙ 3', title:'FOUNDATION-CHECK-01', subtitle:'unknown task · transfer · mastery', target:'missions', icon:ShieldCheck, complete:foundationCheck?.status === 'completed', available:act0ContractsComplete },
     { id:'1', act:'АКТ 1', title:'Сфера', subtitle:'SOC · telemetry · first shift', target:'firstshift', icon:ShieldCheck, complete:progress.firstShiftComplete, available:progress.jobAccepted },
     { id:'2', act:'АКТ 2', title:'Маршрут', subtitle:'HTTP · JSONL · timeline', target:'routecase', icon:FileSearch, complete:progress.routeCaseComplete, available:progress.routeCaseAccepted },
     { id:'3', act:'АКТ 3', title:'Хосты и сети', subtitle:'Windows · Linux · Network', target:'windowscase', icon:Router, complete:progress.networkCaseComplete, available:progress.routeCaseComplete },
