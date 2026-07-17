@@ -11,6 +11,7 @@ export interface CurriculumModule {
   title: string;
   level: 'MODULE I' | 'MODULE II' | 'CAPSTONE';
   statusKey?: string;
+  completionId?: string;
   topics: string[];
   mappings: string[];
 }
@@ -27,6 +28,10 @@ export const curriculumSources: CurriculumSource[] = [
 ] as const;
 
 export const curriculumModules: CurriculumModule[] = [
+  { id: 'foundation-0', title: 'Stage 0 · Absolute Zero', level: 'MODULE I', completionId: 'foundation-0', topics: ['hardware', 'OS', 'files', 'processes', 'hashes', 'Git'], mappings: ['NICE: foundational knowledge', 'CIS: secure configuration basics'] },
+  { id: 'foundation-1', title: 'Stage 1 · IT Foundation', level: 'MODULE I', completionId: 'foundation-1', topics: ['Windows', 'Linux', 'services', 'TCP/IP', 'DNS', 'HTTP/TLS'], mappings: ['NICE: systems and network operations'] },
+  { id: 'foundation-2', title: 'Stage 2 · Junior SOC', level: 'MODULE I', completionId: 'foundation-2', topics: ['SIEM', 'EDR', 'triage', 'scope', 'evidence', 'containment'], mappings: ['NIST SP 800-61r3', 'MITRE ATT&CK telemetry'] },
+  { id: 'foundation-3', title: 'Stage 3 · Automation & Web', level: 'MODULE I', completionId: 'foundation-3', topics: ['Python', 'Bash', 'PowerShell', 'JSON', 'HTTP/API', 'SQL'], mappings: ['OWASP WSTG/API', 'NIST SSDF'] },
   { id: 'windows-i', title: 'Windows Workstation', level: 'MODULE I', statusKey: 'windowsCaseComplete', topics: ['4688', 'process tree', 'PowerShell', 'autorun', 'network'], mappings: ['NICE: incident analysis', 'ATT&CK: Execution / Persistence'] },
   { id: 'linux-i', title: 'Linux Server', level: 'MODULE I', statusKey: 'linuxCaseComplete', topics: ['SSH', 'sudo', 'systemd', 'cron', 'Bash'], mappings: ['NICE: systems security', 'ATT&CK: Unix shell / account access'] },
   { id: 'network-i', title: 'Office Network', level: 'MODULE I', statusKey: 'networkCaseComplete', topics: ['DHCP', 'DNS', 'NAT', 'VLAN', 'TCP'], mappings: ['CIS: Network Infrastructure', 'NICE: network operations'] },

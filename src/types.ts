@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { SimulationState } from './simulation/types';
 
-export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'huntcase' | 'cryptocase' | 'cloudcase' | 'supplycase' | 'architecturecase' | 'capstonecase' | 'skills' | 'notes' | 'settings';
+export type AppId = 'life' | 'city' | 'career' | 'missions' | 'contracts' | 'terminal' | 'code' | 'mail' | 'messenger' | 'browser' | 'tor' | 'siem' | 'interview' | 'firstshift' | 'routecase' | 'windowscase' | 'linuxcase' | 'networkcase' | 'webcase' | 'mobilecase' | 'adcase' | 'mailcase' | 'forensicscase' | 'incidentcase' | 'huntcase' | 'cryptocase' | 'cloudcase' | 'supplycase' | 'architecturecase' | 'capstonecase' | 'practice' | 'skills' | 'notes' | 'settings';
 
 export interface AppDefinition {
   id: AppId;
@@ -93,6 +93,10 @@ export interface ProgressState {
   acknowledgedTransitions: string[];
   reportSelections: Record<string, string>;
   academyLessons: string[];
+  foundationModulesComplete: string[];
+  foundationTaskIds: string[];
+  foundationAnswers: Record<string, string>;
+  foundationExamDrafts: Record<string, string>;
   terminalObjectives: string[];
   pythonLessonStep: number;
   pythonComplete: boolean;

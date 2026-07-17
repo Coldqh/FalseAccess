@@ -3,6 +3,7 @@ import type { CompletedContract, GeneratedContract, ProgressState } from '../typ
 import type { DailyActivityId, DayPeriod, FoodPlanId, SimulationSkillId, SpecializationId, TravelModeId } from '../simulation/types';
 import type { RouteCaseChoice } from '../missions/route01';
 import { createInitialProgress } from '../data/content';
+import { foundationModules, type FoundationModuleId } from '../data/foundationPractice';
 import { generateContractOffers } from '../data/contracts';
 import { jobsCatalog, storeItems } from '../simulation/catalog';
 import { getContractAccess, getJobAccess } from '../simulation/progression';
@@ -16,6 +17,7 @@ import {
 interface ProgressContextValue {
   progress: ProgressState;
   completeAcademyLesson: (id: string) => void;
+  completeFoundationModule: (id: FoundationModuleId) => void;
   completeTerminalObjective: (id: string) => void;
   setFlag: <K extends keyof ProgressState>(key: K, value: ProgressState[K]) => void;
   markMailRead: (id: string) => void;
@@ -62,7 +64,7 @@ interface ProgressContextValue {
   resetProgress: () => void;
 }
 
-const STORAGE_KEY = 'false-access-progress-v22';
+const STORAGE_KEY = 'false-access-progress-v23';
 const SAVE_TIME_KEY = 'false-access-last-saved-at';
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -261,6 +263,10 @@ function normalizeProgress(value: unknown, legacy = false): ProgressState | null
     incidentCaseComplete: Boolean(parsed.incidentCaseComplete),
     pythonLessonStep: Number(parsed.pythonLessonStep ?? 0),
     academyLessons: Array.isArray(parsed.academyLessons) ? parsed.academyLessons.filter((item): item is string => typeof item === 'string') : [],
+    foundationModulesComplete: Array.isArray(parsed.foundationModulesComplete) ? parsed.foundationModulesComplete.filter((item): item is string => typeof item === 'string') : [],
+    foundationTaskIds: Array.isArray(parsed.foundationTaskIds) ? parsed.foundationTaskIds.filter((item): item is string => typeof item === 'string') : [],
+    foundationAnswers: parsed.foundationAnswers && typeof parsed.foundationAnswers === 'object' ? parsed.foundationAnswers as Record<string, string> : {},
+    foundationExamDrafts: parsed.foundationExamDrafts && typeof parsed.foundationExamDrafts === 'object' ? parsed.foundationExamDrafts as Record<string, string> : {},
     terminalObjectives,
     pythonComplete,
     alertReviewed,
@@ -282,6 +288,7 @@ function loadProgress(): ProgressState {
   const fallback = createInitialProgress();
   try {
     const currentRaw = localStorage.getItem(STORAGE_KEY);
+    const v22Raw = localStorage.getItem('false-access-progress-v22');
     const v21Raw = localStorage.getItem('false-access-progress-v21');
     const v20Raw = localStorage.getItem('false-access-progress-v20');
     const v19Raw = localStorage.getItem('false-access-progress-v19');
@@ -302,6 +309,7 @@ function loadProgress(): ProgressState {
     const v4Raw = localStorage.getItem('false-access-progress-v4');
     const v3Raw = localStorage.getItem('false-access-progress-v3');
     const raw = currentRaw
+      ?? v22Raw
       ?? v21Raw
       ?? v20Raw
       ?? v19Raw
@@ -324,7 +332,7 @@ function loadProgress(): ProgressState {
       ?? localStorage.getItem('false-access-progress-v2')
       ?? localStorage.getItem('false-access-progress-v1');
     if (!raw) return fallback;
-    return normalizeProgress(JSON.parse(raw), !currentRaw && !v21Raw && !v20Raw && !v19Raw && !v18Raw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
+    return normalizeProgress(JSON.parse(raw), !currentRaw && !v22Raw && !v21Raw && !v20Raw && !v19Raw && !v18Raw && !v17Raw && !v16Raw && !v15Raw && !v14Raw && !v13Raw && !v12Raw && !v11Raw && !v10Raw && !v9Raw && !v8Raw && !v7Raw && !v6Raw && !v5Raw && !v4Raw && !v3Raw) ?? fallback;
   } catch {
     return fallback;
   }
@@ -393,6 +401,33 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ProgressContextValue>(() => ({
     progress,
     completeAcademyLesson: (id) => setProgress((current) => current.academyLessons.includes(id) ? current : { ...current, academyLessons: [...current.academyLessons, id] }),
+    completeFoundationModule: (id) => setProgress((current) => {
+      if (current.foundationModulesComplete.includes(id)) return current;
+      const module = foundationModules.find((item) => item.id === id);
+      if (!module) return current;
+      const skills = { ...current.simulation.skills };
+      for (const [skillId, floors] of Object.entries(module.skillFloors)) {
+        const key = skillId as SimulationSkillId;
+        const track = { ...skills[key] };
+        for (const [field, target] of Object.entries(floors ?? {})) {
+          const trackKey = field as keyof typeof track;
+          track[trackKey] = Math.max(track[trackKey], Number(target));
+        }
+        skills[key] = track;
+      }
+      const passedExamIds = current.simulation.progression.passedExamIds.includes(id)
+        ? current.simulation.progression.passedExamIds
+        : [...current.simulation.progression.passedExamIds, id];
+      return {
+        ...current,
+        foundationModulesComplete: [...current.foundationModulesComplete, id],
+        simulation: recordSimulationEvent({
+          ...current.simulation,
+          skills,
+          progression: { ...current.simulation.progression, passedExamIds },
+        }, 'progression', `Этап ${module.stage} сертифицирован`, `${module.title}: теория, практика и самостоятельная проверка закрыты.`),
+      };
+    }),
     completeTerminalObjective: (id) => setProgress((current) => current.terminalObjectives.includes(id) ? current : { ...current, terminalObjectives: [...current.terminalObjectives, id], contractOffers: [] }),
     setFlag: (key, value) => setProgress((current) => ({
       ...current,

@@ -63,7 +63,7 @@ export function SkillsApp() {
     ['Пройти BLACKSKY-15', progress.capstoneCaseComplete],
     ['Закрыть заказ без подсказки', progress.completedContracts.some((item) => item.clean)],
   ];
-  const moduleDone = (key?: string) => key ? Boolean((progress as unknown as Record<string, unknown>)[key]) : false;
+  const moduleDone = (key?: string, completionId?: string) => completionId ? progress.foundationModulesComplete.includes(completionId) : key ? Boolean((progress as unknown as Record<string, unknown>)[key]) : false;
 
   return (
     <div className="skills-app app-scroll skills-app-v5 curriculum-hardened">
@@ -88,9 +88,9 @@ export function SkillsApp() {
       <section className="curriculum-panel">
         <header><div><p className="eyebrow">CURRICULUM MAP</p><h3>Покрытие программы</h3></div><BookOpenCheck size={22} /></header>
         <div className="curriculum-grid">{curriculumModules.map((module) => {
-          const done = moduleDone(module.statusKey);
-          return <article key={module.id} className={done ? 'done' : module.statusKey ? '' : 'planned'}>
-            <div><span>{module.level}</span><b>{done ? 'ПРОЙДЕНО' : module.statusKey ? 'НЕ ЗАКРЫТО' : 'ДАЛЬШЕ'}</b></div>
+          const done = moduleDone(module.statusKey, module.completionId);
+          return <article key={module.id} className={done ? 'done' : module.statusKey || module.completionId ? '' : 'planned'}>
+            <div><span>{module.level}</span><b>{done ? 'ПРОЙДЕНО' : module.statusKey || module.completionId ? 'НЕ ЗАКРЫТО' : 'ДАЛЬШЕ'}</b></div>
             <h4>{module.title}</h4><p>{module.topics.join(' · ')}</p><small>{module.mappings.join(' / ')}</small>
           </article>;
         })}</div>

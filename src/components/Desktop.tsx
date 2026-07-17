@@ -16,6 +16,7 @@ import { BrowserApp } from '../apps/BrowserApp';
 import { TorBrowserApp } from '../apps/TorBrowserApp';
 import { SiemApp } from '../apps/SiemApp';
 import { SkillsApp } from '../apps/SkillsApp';
+import { PracticeApp } from '../apps/PracticeApp';
 import { NotesApp } from '../apps/NotesApp';
 import { InterviewApp } from '../apps/InterviewApp';
 import { FirstShiftApp } from '../apps/FirstShiftApp';
@@ -64,6 +65,7 @@ const apps: RuntimeAppDefinition[] = [
   { id: 'browser', title: 'Browser', shortTitle: 'Browser', icon: Globe2, width: 1080, height: 700, accent: '#b58bd8', kind: 'core', visible: always },
   { id: 'tor', title: 'Tor Browser', shortTitle: 'Tor', icon: Network, width: 1220, height: 780, accent: '#7d4698', kind: 'core', visible: (progress) => progress.mailCaseComplete },
   { id: 'siem', title: 'SIEM', shortTitle: 'SIEM', icon: Radar, width: 1080, height: 690, accent: '#ff5a38', kind: 'core', visible: always, locked: (progress) => !progress.pythonComplete },
+  { id: 'practice', title: 'Practice', shortTitle: 'Practice', icon: Workflow, width: 1220, height: 800, accent: '#8fd0bd', kind: 'core', visible: always },
   { id: 'skills', title: 'Skills', shortTitle: 'Skills', icon: Shield, width: 900, height: 650, accent: '#9dcf74', kind: 'core', visible: always },
   { id: 'notes', title: 'Notes / Report', shortTitle: 'Notes', icon: NotebookPen, width: 1000, height: 680, accent: '#efc46b', kind: 'core', visible: always },
   { id: 'settings', title: 'Settings', shortTitle: 'Settings', icon: SettingsIcon, width: 960, height: 700, accent: '#8f949e', kind: 'core', visible: always },
@@ -191,6 +193,7 @@ function appContent(id: AppId, openApp: (id: AppId) => void) {
     case 'supplycase': return <SupplyChainCaseApp />;
     case 'architecturecase': return <ArchitectureCaseApp />;
     case 'capstonecase': return <CapstoneCaseApp />;
+    case 'practice': return <PracticeApp />;
     case 'skills': return <SkillsApp />;
     case 'notes': return <NotesApp openApp={openApp} />;
     case 'settings': return <SettingsApp />;
